@@ -3,7 +3,6 @@ package dev.minirender
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
@@ -16,8 +15,9 @@ import kotlin.math.max
 import kotlin.math.pow
 
 /**
- * [MiniMapView] 画一帧：底色 → 瓦片（缺的拿上一级拉伸顶着）→ 多边形 → 圆 → 折线 → 标记 → 标签 → 气泡 → 比例尺 → 版权。
- * 画布先按 density 缩放，下面全用逻辑像素。顺手把标记 / 气泡 / 标签的位置记进 `hits`（点击按它判）。
+ * [MiniMapView] 画一帧：底色 → 瓦片（缺的拿上一级拉伸顶着）→ 多边形 → 圆 → 折线 → 定位蓝点 → 标记 → 标签 →
+ * 气泡（callout / title / customCallout）→ 控件 → 比例尺 → 版权。气泡、标签、控件、蓝点在 `MapBubbles.kt`（缓存好的位图）。
+ * 画布先按 density 缩放，下面全用逻辑像素。顺手把标记 / 气泡 / 标签 / 控件的位置记进 `hits`（点击按它判）。
  */
 internal object MapDraw {
     /** 瓦片没到时的底色（也是 tools/android-native-align.py 认地图的颜色） */
@@ -39,13 +39,22 @@ internal object MapDraw {
         canvas.save()
         canvas.scale(density, density)
         m.hits.clear()
+        // polygons 在解析时已按 zIndex 排好（稳定排序，同值按数组顺序）
         for (p in m.polygons) polygon(m, canvas, p)
         for (c in m.circles) circle(m, canvas, c)
         for (l in m.lines) line(m, canvas, l)
+        if (m.showLocation) MapBubbles.location(m, canvas)
         val all = (m.markers + m.extraMarkers).sortedBy { it.zIndex }
         for (mk in all) marker(m, canvas, mk)
-        for (mk in all) mk.label?.let { label(m, canvas, mk, it) }
-        for (mk in all) mk.callout?.takeIf { it.always || mk.id in m.openCallouts }?.let { callout(m, canvas, mk, it) }
+        for (mk in all) mk.label?.let { MapBubbles.label(m, canvas, mk, it, density) }
+        for (mk in all) {
+            val cc = mk.custom
+            if (cc != null) {
+                if (cc.always || mk.id in m.openCallouts) MapBubbles.custom(m, canvas, mk, cc)
+            } else mk.callout?.takeIf { it.always || mk.id in m.openCallouts }?.let { MapBubbles.callout(m, canvas, mk, it, density) }
+        }
+        // 控件不随地图动、画在最上面（点击也最先判）
+        MapBubbles.controls(m, canvas)
         if (m.showScale) scaleBar(m, canvas)
         attribution(m, canvas)
         canvas.restore()
@@ -118,8 +127,9 @@ internal object MapDraw {
         fill.color = g.fill
         c.drawPath(p, fill)
         if (g.stroke > 0) {
-            stroke.color = g.strokeColor; stroke.strokeWidth = g.stroke; stroke.pathEffect = null
+            stroke.color = g.strokeColor; stroke.strokeWidth = g.stroke; stroke.pathEffect = g.dash
             c.drawPath(p, stroke)
+            stroke.pathEffect = null
         }
     }
 
@@ -142,12 +152,24 @@ internal object MapDraw {
             stroke.color = l.borderColor; stroke.strokeWidth = l.width + l.borderWidth * 2; stroke.pathEffect = null
             c.drawPath(p, stroke)
         }
-        stroke.color = l.color
         stroke.strokeWidth = l.width
-        stroke.pathEffect = if (l.dotted) DashPathEffect(floatArrayOf(l.width * 1.5f, l.width * 1.5f), 0f) else null
-        c.drawPath(p, stroke)
+        stroke.pathEffect = l.dash
+        if (l.colorList.isEmpty()) {
+            stroke.color = l.color
+            c.drawPath(p, stroke)
+        } else {
+            // 彩虹线：一段一个颜色，不够的段用最后一个（官方）
+            for (i in 0 until l.points.size - 1) {
+                val (ax, ay) = m.toScreen(l.points[i])
+                val (bx, by) = m.toScreen(l.points[i + 1])
+                stroke.color = l.colorList[minOf(i, l.colorList.size - 1)]
+                c.drawLine(ax, ay, bx, by, stroke)
+            }
+        }
         stroke.pathEffect = null
         if (!l.arrow) return
+        val icon = l.arrowIconPath.takeIf { it.isNotBlank() }?.let { p -> MapTiles.icon(p, m.resolvePath(p)) { m.invalidate() } }
+        if (icon != null) return arrowIcons(m, c, l, icon)
         // 箭头：每隔 60 逻辑像素一个白色「>」，朝走向
         stroke.color = Color.WHITE
         stroke.strokeWidth = max(1.2f, l.width / 3)
@@ -204,56 +226,29 @@ internal object MapDraw {
         c.drawCircle(cx, r.top + rad, rad * 0.38f, fill)
     }
 
-    private fun bubbleRect(b: MapBubble, cx: Float, bottom: Float): Pair<RectF, List<String>> {
-        text.textSize = b.fontSize
-        val lines = b.content.split('\n')
-        val tw = lines.maxOf { text.measureText(it) }
-        val lh = b.fontSize * 1.3f
-        val pad = b.padding.coerceAtLeast(4f)
-        val w = tw + pad * 2
-        val h = lh * lines.size + pad * 2
-        return RectF(cx - w / 2, bottom - h, cx + w / 2, bottom) to lines
-    }
+    private val arrowDst = RectF()
 
-    private fun bubble(c: Canvas, b: MapBubble, r: RectF, lines: List<String>, tail: Boolean) {
-        fill.color = b.bg
-        fill.setShadowLayer(3f, 0f, 1f, 0x33000000)
-        c.drawRoundRect(r, b.radius, b.radius, fill)
-        fill.clearShadowLayer()
-        if (tail) {
-            val p = Path()
-            p.moveTo(r.centerX() - 6, r.bottom - 0.5f); p.lineTo(r.centerX(), r.bottom + 6); p.lineTo(r.centerX() + 6, r.bottom - 0.5f); p.close()
-            c.drawPath(p, fill)
+    /** arrowIconPath：图标朝走向、每隔 60 逻辑像素一个，高度跟线宽（至少 8） */
+    private fun arrowIcons(m: MiniMapView, c: Canvas, l: MapLine, icon: Bitmap) {
+        val s = max(8f, l.width)
+        val w = s * icon.width / icon.height.coerceAtLeast(1)
+        for (i in 0 until l.points.size - 1) {
+            val (ax, ay) = m.toScreen(l.points[i])
+            val (bx, by) = m.toScreen(l.points[i + 1])
+            val len = hypot(bx - ax, by - ay)
+            val deg = Math.toDegrees(atan2(by - ay, bx - ax).toDouble()).toFloat()
+            var d = 30f
+            while (d < len) {
+                val x = ax + (bx - ax) * d / len
+                val y = ay + (by - ay) * d / len
+                c.save()
+                c.rotate(deg, x, y)
+                arrowDst.set(x - w / 2, y - s / 2, x + w / 2, y + s / 2)
+                c.drawBitmap(icon, null, arrowDst, bmpPaint)
+                c.restore()
+                d += 60f
+            }
         }
-        if (b.borderWidth > 0) {
-            stroke.color = b.borderColor; stroke.strokeWidth = b.borderWidth; stroke.pathEffect = null
-            c.drawRoundRect(r, b.radius, b.radius, stroke)
-        }
-        text.color = b.color
-        text.textSize = b.fontSize
-        val pad = b.padding.coerceAtLeast(4f)
-        lines.forEachIndexed { i, s ->
-            c.drawText(s, r.left + pad, r.top + pad + b.fontSize * (1.3f * i + 1f), text)
-        }
-    }
-
-    private fun callout(m: MiniMapView, c: Canvas, mk: MapMarker, b: MapBubble) {
-        if (b.content.isEmpty()) return
-        val (x, y) = m.toScreen(mk.pos)
-        val h = if (!mk.height.isNaN()) mk.height else 36f
-        val (r, lines) = bubbleRect(b, x, y - h * mk.anchorY - 8f)
-        bubble(c, b, r, lines, tail = true)
-        m.hits += MapHit(MapHit.CALLOUT, mk.id, r)
-    }
-
-    private fun label(m: MiniMapView, c: Canvas, mk: MapMarker, b: MapBubble) {
-        if (b.content.isEmpty()) return
-        val (x, y) = m.toScreen(mk.pos)
-        val (r0, lines) = bubbleRect(b, 0f, 0f)
-        // 官方：anchorX / anchorY 是标签左上角相对标记锚点的偏移
-        val r = RectF(x + b.anchorX, y + b.anchorY, x + b.anchorX + r0.width(), y + b.anchorY + r0.height())
-        bubble(c, b, r, lines, tail = false)
-        m.hits += MapHit(MapHit.LABEL, mk.id, r)
     }
 
     private val NICE = longArrayOf(5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000)

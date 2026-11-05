@@ -35,3 +35,27 @@
                     reconnectCasting: function() { __emitHostEvent({ type: 'videoCasting', id: String(id), command: 'reconnectCasting' }); }
                 };
             };
+            // <image show-menu-by-longpress>（官方 component/image：长按显示发送给朋友、收藏、保存图片、搜一搜、识别码的菜单）。
+            // 长按绑定由渲染层挂（components/image/attrs.rs，处理函数名 `__imgmenu:<src>`，__dispatchHandler 转到这里）。
+            // 宿主在 hostApis 里接了 `image.showMenu`：交宿主出原生菜单（识别二维码 / 小程序码只有宿主做得了），参数 {src}；
+            // 没接：引擎的 actionSheet 给三项 —— 发送给朋友 / 收藏发宿主事件 {type:'imageMenu', action:'share'|'favorite', src}，
+            // 保存图片走 wx.saveImageToPhotosAlbum（远程图先下载）。返回 true = 长按被处理，这次触摸不再发 tap
+            globalThis.__imageMenu = function(src, event) {
+                if (__hostApiSet['image.showMenu']) {
+                    __hostCall('image.showMenu', { src: src });
+                    return true;
+                }
+                wx.showActionSheet({
+                    itemList: ['发送给朋友', '收藏', '保存图片'],
+                    success: function(res) {
+                        if (res.tapIndex === 2) {
+                            var save = function(path) { wx.saveImageToPhotosAlbum({ filePath: path, fail: function(e) { console.warn('[image] 保存图片失败', e && e.errMsg); } }); };
+                            if (/^https?:\/\//.test(src)) wx.downloadFile({ url: src, success: function(d) { save(d.tempFilePath); } });
+                            else save(src);
+                        } else {
+                            __emitHostEvent({ type: 'imageMenu', action: res.tapIndex === 0 ? 'share' : 'favorite', src: src });
+                        }
+                    }
+                });
+                return true;
+            };

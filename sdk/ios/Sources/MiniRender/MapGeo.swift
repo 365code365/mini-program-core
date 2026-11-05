@@ -23,18 +23,59 @@ enum MapGeo {
 
     static func metersPerPx(_ lat: Double, _ z: Double) -> Double { 156543.03392 * cos(lat * .pi / 180) / pow(2, z) }
 
-    /// `#RRGGBB` / `#RRGGBBAA`（透明度在后）/ `#RGB`
+    /// `#RRGGBB` / `#RRGGBBAA`（透明度在后）/ `#RGB` / `#RGBA`（同样透明度在后）/ `rgb(r, g, b)` / `rgba(r, g, b, a)`
     static func color(_ s: Any?, _ def: UIColor) -> UIColor {
         guard var t = (s as? String)?.trimmingCharacters(in: .whitespaces), !t.isEmpty else { return def }
+        if t.lowercased().hasPrefix("rgb") { return rgbFunc(t) ?? def }
         if t.hasPrefix("#") { t.removeFirst() }
         guard let v = UInt64(t, radix: 16) else { return def }
         func c(_ x: UInt64) -> CGFloat { CGFloat(x) / 255 }
         switch t.count {
         case 3: return UIColor(red: c((v >> 8 & 0xF) * 17), green: c((v >> 4 & 0xF) * 17), blue: c((v & 0xF) * 17), alpha: 1)
+        case 4: return UIColor(red: c((v >> 12 & 0xF) * 17), green: c((v >> 8 & 0xF) * 17), blue: c((v >> 4 & 0xF) * 17), alpha: c((v & 0xF) * 17))
         case 6: return UIColor(red: c(v >> 16 & 0xFF), green: c(v >> 8 & 0xFF), blue: c(v & 0xFF), alpha: 1)
         case 8: return UIColor(red: c(v >> 24 & 0xFF), green: c(v >> 16 & 0xFF), blue: c(v >> 8 & 0xFF), alpha: c(v & 0xFF))
         default: return def
         }
+    }
+
+    /// `rgb(…)` / `rgba(…)`：逗号或空格分隔，通道可以写百分比（与 Android `MapGeo.kt` 同一套）
+    private static func rgbFunc(_ s: String) -> UIColor? {
+        guard let open = s.firstIndex(of: "("), let close = s.firstIndex(of: ")"), open < close else { return nil }
+        let parts = s[s.index(after: open)..<close].split(whereSeparator: { $0 == "," || $0 == " " || $0 == "/" }).map(String.init)
+        guard parts.count >= 3 else { return nil }
+        func val(_ p: String, _ full: Double) -> Double? {
+            p.hasSuffix("%") ? Double(p.dropLast()).map { $0 / 100 * full } : Double(p)
+        }
+        guard let r = val(parts[0], 255), let g = val(parts[1], 255), let b = val(parts[2], 255) else { return nil }
+        let a = parts.count > 3 ? (val(parts[3], 1) ?? 1) : 1
+        func k(_ x: Double) -> CGFloat { CGFloat(min(max(x.rounded(), 0), 255) / 255) }
+        return UIColor(red: k(r), green: k(g), blue: k(b), alpha: CGFloat(min(max(a, 0), 1)))
+    }
+
+    /// 颜色数组（polyline 的 colorList）
+    static func colors(_ a: Any?) -> [UIColor] { (a as? [Any] ?? []).map { color($0, .black) } }
+
+    /// WGS-84（系统定位）→ GCJ-02（微信 map 与高德瓦片）。国外坐标原样返回（与 Android `MapGeo.wgsToGcj` 同一个算法）
+    static func wgsToGcj(_ lat: Double, _ lng: Double) -> LatLng {
+        if lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271 { return LatLng(lat, lng) }
+        let a = 6378245.0, ee = 0.00669342162296594323
+        let x = lng - 105, y = lat - 35
+        var dLat = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * sqrt(abs(x))
+        dLat += (20 * sin(6 * x * .pi) + 20 * sin(2 * x * .pi)) * 2 / 3
+        dLat += (20 * sin(y * .pi) + 40 * sin(y / 3 * .pi)) * 2 / 3
+        dLat += (160 * sin(y / 12 * .pi) + 320 * sin(y * .pi / 30)) * 2 / 3
+        var dLng = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * sqrt(abs(x))
+        dLng += (20 * sin(6 * x * .pi) + 20 * sin(2 * x * .pi)) * 2 / 3
+        dLng += (20 * sin(x * .pi) + 40 * sin(x / 3 * .pi)) * 2 / 3
+        dLng += (150 * sin(x / 12 * .pi) + 300 * sin(x / 30 * .pi)) * 2 / 3
+        let rad = lat / 180 * .pi
+        var magic = sin(rad)
+        magic = 1 - ee * magic * magic
+        let sm = sqrt(magic)
+        dLat = (dLat * 180) / ((a * (1 - ee)) / (magic * sm) * .pi)
+        dLng = (dLng * 180) / (a / sm * cos(rad) * .pi)
+        return LatLng(lat + dLat, lng + dLng)
     }
 
     /// 属性里的 JSON 数组（引擎给原生组件的数组属性是标准 JSON）
@@ -72,8 +113,8 @@ struct LatLng {
     var json: [String: Any] { ["latitude": lat, "longitude": lng] }
 }
 
-/// 气泡（callout）或标签（label）
-struct MapBubble {
+/// 气泡（callout / title）或标签（label）。class：画好的位图挂在它身上（[MapBubbles]，每帧只贴图）
+final class MapBubble {
     let content: String
     let color: UIColor
     let bg: UIColor
@@ -83,8 +124,14 @@ struct MapBubble {
     let borderWidth: CGFloat
     let borderColor: UIColor
     let always: Bool
+    /// callout：气泡整体的偏移（向右 / 向下为正）；label：标签左上角相对标记锚点的位置
     let anchorX: CGFloat
     let anchorY: CGFloat
+    /// 多行文字的对齐：left / center / right（官方没写默认值，按 left，待验）
+    let textAlign: String
+    var image: UIImage?
+    var imageScale: CGFloat = 0
+    var boxSize = CGSize.zero
 
     init(_ o: [String: Any]) {
         content = "\(o["content"] ?? "")"
@@ -95,6 +142,22 @@ struct MapBubble {
         radius = CGFloat(MapGeo.num(o["borderRadius"]) ?? 0)
         borderWidth = CGFloat(MapGeo.num(o["borderWidth"]) ?? 0)
         borderColor = MapGeo.color(o["borderColor"], .clear)
+        always = ((o["display"] as? String) ?? "BYCLICK").uppercased() == "ALWAYS"
+        anchorX = CGFloat(MapGeo.num(o["anchorX"]) ?? 0)
+        anchorY = CGFloat(MapGeo.num(o["anchorY"]) ?? 0)
+        textAlign = ((o["textAlign"] as? String) ?? "left").lowercased()
+    }
+
+    /// marker 的 `title`（没有 callout / customCallout 时点标记显示）
+    static func title(_ s: String) -> MapBubble { MapBubble(["content": s, "padding": 6, "borderRadius": 4, "fontSize": 14]) }
+}
+
+/// marker 的 `customCallout`：内容是 `<map>` 里 slot="callout" 的 cover-view（引擎离屏出图交过来）
+struct MapCustomCallout {
+    let always: Bool
+    let anchorX: CGFloat
+    let anchorY: CGFloat
+    init(_ o: [String: Any]) {
         always = ((o["display"] as? String) ?? "BYCLICK").uppercased() == "ALWAYS"
         anchorX = CGFloat(MapGeo.num(o["anchorX"]) ?? 0)
         anchorY = CGFloat(MapGeo.num(o["anchorY"]) ?? 0)
@@ -111,6 +174,9 @@ final class MapMarker {
     let alpha: CGFloat
     let anchorX: CGFloat
     let anchorY: CGFloat
+    /// 官方：customCallout 存在时忽略 callout 与 title
+    let custom: MapCustomCallout?
+    /// callout；没写 callout 时 title 当一个点了才出的气泡
     let callout: MapBubble?
     let label: MapBubble?
     let zIndex: Int
@@ -127,7 +193,11 @@ final class MapMarker {
         let a = o["anchor"] as? [String: Any]
         anchorX = CGFloat(MapGeo.num(a?["x"]) ?? 0.5)
         anchorY = CGFloat(MapGeo.num(a?["y"]) ?? 1)
-        callout = (o["callout"] as? [String: Any]).map(MapBubble.init)
+        custom = (o["customCallout"] as? [String: Any]).map(MapCustomCallout.init)
+        let title = o["title"] as? String ?? ""
+        if custom != nil { callout = nil }
+        else if let c = o["callout"] as? [String: Any] { callout = MapBubble(c) }
+        else { callout = title.isEmpty ? nil : MapBubble.title(title) }
         label = (o["label"] as? [String: Any]).map(MapBubble.init)
         zIndex = Int(MapGeo.num(o["zIndex"]) ?? 0)
     }
@@ -136,20 +206,57 @@ final class MapMarker {
 struct MapLine {
     let points: [LatLng]
     let color: UIColor
+    /// 彩虹线：第 i 段用第 i 个颜色，不够的段用最后一个（官方）。存在时忽略 color
+    let colorList: [UIColor]
     let width: CGFloat
     let dotted: Bool
     let arrow: Bool
+    let arrowIconPath: String
     let borderColor: UIColor
     let borderWidth: CGFloat
+    /// 压盖关系：瓦片是栅格图（路名 / POI 烧在图里），三个取值画出来一样（照官方解析、不改顺序）
+    let level: String
     init(_ o: [String: Any]) {
         points = MapGeo.points(o["points"])
         color = MapGeo.color(o["color"], .black)
+        colorList = MapGeo.colors(o["colorList"])
         width = CGFloat(MapGeo.num(o["width"]) ?? 2)
         dotted = (o["dottedLine"] as? Bool) ?? false
         arrow = (o["arrowLine"] as? Bool) ?? false
+        arrowIconPath = o["arrowIconPath"] as? String ?? ""
         borderColor = MapGeo.color(o["borderColor"], .clear)
         borderWidth = CGFloat(MapGeo.num(o["borderWidth"]) ?? 0)
+        level = o["level"] as? String ?? "abovelabels"
     }
+}
+
+/// `controls`：不随地图移动的图标（官方：即将废弃，建议用 cover-view；照样支持）
+struct MapControl {
+    let id: Int64
+    let left: CGFloat
+    let top: CGFloat
+    /// 没写按图片尺寸（与 marker 同一个换算：图片像素 / 2）
+    let width: CGFloat?
+    let height: CGFloat?
+    let iconPath: String
+    /// 官方：默认不可点（不可点的不挡地图）
+    let clickable: Bool
+    init(_ o: [String: Any]) {
+        id = Int64(MapGeo.num(o["id"]) ?? 0)
+        let p = o["position"] as? [String: Any]
+        left = CGFloat(MapGeo.num(p?["left"]) ?? 0)
+        top = CGFloat(MapGeo.num(p?["top"]) ?? 0)
+        width = MapGeo.num(p?["width"]).map { CGFloat($0) }
+        height = MapGeo.num(p?["height"]).map { CGFloat($0) }
+        iconPath = o["iconPath"] as? String ?? ""
+        clickable = (o["clickable"] as? Bool) ?? false
+    }
+}
+
+/// 引擎离屏画好的一个自定义气泡（PNG 路径 + 逻辑尺寸）
+struct MapCalloutImage {
+    let path: String
+    let size: CGSize
 }
 
 struct MapCircle {
@@ -172,17 +279,25 @@ struct MapPolygon {
     let stroke: CGFloat
     let strokeColor: UIColor
     let fill: UIColor
+    /// 多边形之间的上下（大的在上；同值按数组顺序）
+    let zIndex: Int
+    /// 边线虚线 `[实线长, 空白长]`（官方默认 [0, 0] 为实线）
+    let dash: [CGFloat]
     init(_ o: [String: Any]) {
         points = MapGeo.points(o["points"])
         stroke = CGFloat(MapGeo.num(o["strokeWidth"]) ?? 0)
         strokeColor = MapGeo.color(o["strokeColor"], .clear)
         fill = MapGeo.color(o["fillColor"], .clear)
+        zIndex = Int(MapGeo.num(o["zIndex"]) ?? 0)
+        let d = (o["dashArray"] as? [Any] ?? []).compactMap { MapGeo.num($0) }.map { CGFloat($0) }
+        let on = d.first ?? 0, off = d.count > 1 ? d[1] : on
+        dash = on > 0 && off > 0 ? [on, off] : []
     }
 }
 
-/// 上一帧画出来的一个可点的东西
+/// 上一帧画出来的一个可点的东西（control 的 id 是 controlId）
 struct MapHit {
-    enum Kind { case marker, callout, label }
+    enum Kind { case marker, callout, label, control }
     let kind: Kind
     let id: Int64
     let rect: CGRect

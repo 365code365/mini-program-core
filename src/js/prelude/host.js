@@ -41,6 +41,11 @@
                 var ev = { type: 'navigationBar' };
                 if (o.frontColor) ev.frontColor = String(o.frontColor);
                 if (o.backgroundColor) ev.backgroundColor = String(o.backgroundColor);
+                // 颜色动画参数原样下传给宿主（官方 animation {duration = 0, timingFunc = 'linear'}；
+                // navigation-bar 的 color-animation-duration / -timing-func 也走这里），宿主自己画渐变
+                if (o.animation && typeof o.animation === 'object') {
+                    ev.animation = { duration: Number(o.animation.duration) || 0, timingFunc: String(o.animation.timingFunc || 'linear') };
+                }
                 __emitHostEvent(ev);
                 return __syncOk(o, 'setNavigationBarColor');
             };

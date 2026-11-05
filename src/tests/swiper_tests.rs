@@ -22,6 +22,7 @@ fn cfg(total: usize) -> SwiperConfig {
         current_attr: None,
         direction: 0,
         scroll_with_animation: true,
+        item_ids: Vec::new(),
     }
 }
 

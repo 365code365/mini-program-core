@@ -1,0 +1,21 @@
+<view class="card">
+  <view class="h">mode="region"</view>
+  <picker mode="region" value="{{region}}" custom-item="全部" bindchange="onRegion">
+    <view class="pick">{{region[0]}} {{region[1]}} {{region[2]}}</view>
+  </picker>
+  <text class="tip">code：{{code || '选一次看区划码'}}</text>
+  <picker mode="region" level="city" value="{{city}}" bindchange="onCity"><view class="pick">level=city：{{city[0]}} {{city[1]}}</view></picker>
+</view>
+<view class="card">
+  <view class="h">time / date</view>
+  <picker mode="time" value="{{time}}" start="08:00" end="18:30" bindchange="onTime"><view class="pick">营业时间内：{{time}}</view></picker>
+  <picker mode="date" value="{{date}}" fields="day" bindchange="onDate"><view class="pick">日期（不写 value 默认本地今天）：{{date || '未选'}}</view></picker>
+</view>
+<view class="card">
+  <view class="h">picker-view 选中框与蒙层</view>
+  <picker-view class="pv" value="{{pv}}" indicator-style="height:50px;background-color:rgba(7,193,96,0.08);border-top:1px solid #07c160;border-bottom:1px solid #07c160" mask-style="background:rgba(255,255,255,0.6)" bindchange="onPv">
+    <picker-view-column><view wx:for="{{hours}}" wx:key="*this" class="pvi">{{item}}</view></picker-view-column>
+    <picker-view-column><view wx:for="{{mins}}" wx:key="*this" class="pvi">{{item}}</view></picker-view-column>
+  </picker-view>
+</view>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

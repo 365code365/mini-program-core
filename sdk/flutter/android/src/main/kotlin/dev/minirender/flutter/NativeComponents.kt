@@ -5,6 +5,8 @@ import android.view.ViewGroup
 import dev.minirender.MiniEngine
 import dev.minirender.MiniHostCall
 import dev.minirender.MiniHostReply
+import dev.minirender.MiniCameraView
+import dev.minirender.MiniLivePusherView
 import dev.minirender.MiniMapView
 import dev.minirender.MiniWebViews
 import dev.minirender.SameLayerViews
@@ -27,11 +29,18 @@ internal class NativeComponents(
     private val onEngine: ((Long) -> Unit) -> Unit,
     private val map: Boolean,
     private val webView: Boolean,
+    /** 自带的相机类组件（camera / live-pusher / voip-room，MiniCameraView / MiniLivePusherView） */
+    private val cameras: List<String>,
     /** 盖 WebView 的容器（独立图层模式下 EngineView 的那层；纹理模式没有） */
     private val overlay: () -> ViewGroup?,
 ) {
     private val sameLayer = SameLayerViews(context, onEngine) { context.resources.displayMetrics.density }.also {
         if (map) it.factories["map"] = { MiniMapView() }
+        for (t in cameras) when (t) {
+            "camera" -> it.factories[t] = { MiniCameraView("camera") }
+            "voip-room" -> it.factories[t] = { MiniCameraView("voip-room") }
+            "live-pusher" -> it.factories[t] = { MiniLivePusherView() }
+        }
     }
     private var webViews: MiniWebViews? = null
     private var lastPage: JSONObject? = null
@@ -54,6 +63,10 @@ internal class NativeComponents(
             add("hostApis", *MAP_APIS.toTypedArray())
         }
         if (webView) add("nativeComponents", "web-view")
+        if (cameras.isNotEmpty()) {
+            add("sameLayer", *cameras.toTypedArray())
+            add("hostApis", *sameLayer.contextApis().filter { !it.startsWith("MapContext.") }.toTypedArray())
+        }
         o.toString()
     } catch (e: org.json.JSONException) {
         json
@@ -75,7 +88,7 @@ internal class NativeComponents(
 
     /** 主线程：处理归这里的事件，返回剩下交给 Dart 的 */
     fun filter(list: List<String>): List<String> {
-        if (!map && !webView) return list
+        if (!map && !webView && cameras.isEmpty()) return list
         val out = ArrayList<String>(list.size)
         for (raw in list) {
             val type = typeOf(raw)
@@ -118,7 +131,10 @@ internal class NativeComponents(
                 }
                 "hostCall" -> {
                     val ev = JSONObject(raw)
-                    if (ev.optString("api").startsWith("MapContext.") && map) contextCall(ev) else out += raw
+                    val api = ev.optString("api")
+                    val mine = (api.startsWith("MapContext.") && map) ||
+                        ((api.startsWith("CameraContext.") || api.startsWith("LivePusherContext.")) && cameras.isNotEmpty())
+                    if (mine) contextCall(ev) else out += raw
                 }
                 else -> out += raw
             }
@@ -164,8 +180,14 @@ internal class NativeComponents(
 
     fun lifecycle(what: Int) {
         when (what) {
-            0 -> webViews?.resume()
-            1 -> webViews?.pause()
+            0 -> {
+                webViews?.resume()
+                sameLayer.resume()
+            }
+            1 -> {
+                webViews?.pause()
+                sameLayer.pause()
+            }
         }
     }
 

@@ -21,7 +21,21 @@ open class MiniSameLayerView {
 
     weak var host: SameLayerViews?
 
+    /// 框的设备像素尺寸（`sameLayerViews` 的 `box`；[onBox] 之前已更新）
+    public internal(set) var boxWidth = 0
+    public internal(set) var boxHeight = 0
     public init() {}
+    /// 框的设备像素尺寸变了（含第一次挂上，在 [onAttrs] 之前）
+    open func onBox(width: Int, height: Int) {}
+    /// 宿主进后台 / 回前台（相机要关掉再开）
+    open func onPause() {}
+    open func onResume() {}
+    /// 自己出帧（相机这类每帧都在变、在自己队列上读回的）：`w×h` RGBA，`stride` 字节一行，任何线程都可以调
+    public func pushFrame(_ data: UnsafePointer<UInt8>, width: Int, height: Int, stride: Int) {
+        host?.frame(self, data, width, height, stride)
+    }
+    /// 上下文对象的事件（`{context, contextId, event, data}`，逻辑层 `__dispatchContextEvent`）
+    public func dispatchContextEvent(_ payload: [String: Any]) { host?.contextEvent(payload) }
 
     /// 属性变了（含第一次挂上）。默认重画
     open func onAttrs(_ attrs: [String: Any]) { invalidate() }
@@ -52,7 +66,7 @@ open class MiniSameLayerView {
     /// 回传组件事件：派发给节点上的 `bind<name>`
     public func emit(_ name: String, _ detail: [String: Any] = [:]) { host?.emit(self, name, detail) }
 
-    /// 小程序里的路径 → 本地文件（`/images/a.png` 包根、`images/a.png` 当前页目录）。网络地址返回 nil
+    /// 小程序里的路径 → 本地文件（`/images/a.png` 包根、`images/a.png` 当前页目录、`wxfile://tmp/…` 临时文件）。网络地址返回 nil
     public func resolvePath(_ path: String) -> URL? { host?.resolve(path) }
 }
 
@@ -62,6 +76,8 @@ final class SameLayerViews {
     var factories: [String: () -> MiniSameLayerView] = [:]
     var appDir: URL?
     var route = ""
+    /// `wxfile://` 的真实根目录（`sameLayerViews` 事件的 `wxfileRoot`）
+    var wxfileRoot: URL?
     /// 在引擎线程上执行（EngineSession.run）
     private let run: (@escaping (OpaquePointer) -> Void) -> Void
     private let scale: () -> CGFloat
@@ -100,10 +116,18 @@ final class SameLayerViews {
     }
 
     func resolve(_ path: String) -> URL? {
-        guard let dir = appDir else { return nil }
         let p = path.trimmingCharacters(in: .whitespaces)
-        if p.isEmpty || p.contains("://") { return nil }
         let fm = FileManager.default
+        // 下载 / 选图得到的临时文件与用户文件（`wxfile://tmp/…`）：引擎报来的 wxfile 根目录下找，不许 `..` 跳出去
+        // （与引擎 wxfile::to_path 同一条）。引擎库太旧、没报根目录时找不到（图标不画）
+        if p.hasPrefix("wxfile://") {
+            let rel = String(p.dropFirst("wxfile://".count))
+            guard let root = wxfileRoot, !rel.isEmpty, !rel.split(separator: "/").contains(where: { $0 == ".." || $0 == "." }) else { return nil }
+            let u = root.appendingPathComponent(rel)
+            return fm.fileExists(atPath: u.path) ? u : nil
+        }
+        guard let dir = appDir else { return nil }
+        if p.isEmpty || p.contains("://") { return nil }
         if p.hasPrefix("/") {
             let u = dir.appendingPathComponent(String(p.drop(while: { $0 == "/" })))
             return fm.fileExists(atPath: u.path) ? u : nil
@@ -134,6 +158,7 @@ final class SameLayerViews {
 
     /// 主线程：`sameLayerViews` 事件
     func onViews(_ ev: [String: Any]) {
+        if let r = ev["wxfileRoot"] as? String, !r.isEmpty { wxfileRoot = URL(fileURLWithPath: r) }
         let list = ev["views"] as? [[String: Any]] ?? []
         var seen = Set<String>()
         for o in list {
@@ -152,11 +177,18 @@ final class SameLayerViews {
                 v.host = self
                 slot = Slot(v, w, h)
                 slots[key] = slot
+                v.boxWidth = w
+                v.boxHeight = h
+                v.onBox(width: w, height: h)
             }
             guard let s = slot else { continue }
             s.view.width = CGFloat((o["width"] as? NSNumber)?.doubleValue ?? 0)
             s.view.height = CGFloat((o["height"] as? NSNumber)?.doubleValue ?? 0)
-            let attrs = o["attrs"] as? [String: Any] ?? [:]
+            var attrs = o["attrs"] as? [String: Any] ?? [:]
+            // 地图的自定义气泡图（引擎离屏画好的 PNG，engine_map_callouts.rs）：并进属性（JSON 串），变了照样走 onAttrs
+            if let c = o["callouts"], let d = try? JSONSerialization.data(withJSONObject: c), let j = String(data: d, encoding: .utf8) {
+                attrs["__callouts"] = j
+            }
             if fresh || !NSDictionary(dictionary: attrs).isEqual(to: s.view.attrs) {
                 s.view.attrs = attrs
                 s.view.onAttrs(attrs)
@@ -164,6 +196,9 @@ final class SameLayerViews {
             if s.w != w || s.h != h {
                 s.w = w
                 s.h = h
+                s.view.boxWidth = w
+                s.view.boxHeight = h
+                s.view.onBox(width: w, height: h)
                 s.ctx = nil
                 s.view.invalidate()
             }
@@ -197,6 +232,19 @@ final class SameLayerViews {
         // 同一轮里多次 invalidate 只画一次
         DispatchQueue.main.async { [weak self] in self?.drawDirty() }
     }
+
+    /// 任何线程：相机这类自己出帧的
+    func frame(_ v: MiniSameLayerView, _ data: UnsafePointer<UInt8>, _ w: Int, _ h: Int, _ stride: Int) {
+        if mr_native_view_frame_rgba(v.key, UInt32(w), UInt32(h), UInt32(stride), data) == 1 { run { _ in } }
+    }
+
+    func contextEvent(_ payload: [String: Any]) {
+        let json = (try? JSONSerialization.data(withJSONObject: payload)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+        run { _ = mr_app_dispatch_event($0, "contextEvent", json) }
+    }
+
+    func pause() { slots.values.forEach { $0.view.onPause() } }
+    func resume() { slots.values.forEach { $0.view.onResume() } }
 
     func emit(_ v: MiniSameLayerView, _ name: String, _ detail: [String: Any]) {
         let key = v.key

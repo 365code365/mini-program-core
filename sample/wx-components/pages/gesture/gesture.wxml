@@ -1,0 +1,41 @@
+<view class="card">
+  <view class="h">pan-gesture-handler（worklet:ongesture）</view>
+  <view class="stage">
+    <vertical-drag-gesture-handler worklet:ongesture="onVDrag" tag="v">
+      <view class="lane">
+        <pan-gesture-handler worklet:ongesture="onPan" tag="pan">
+          <double-tap-gesture-handler worklet:ongesture="onDouble">
+            <view class="ball" style="transform: translate({{x}}px, {{y}}px)">拖我</view>
+          </double-tap-gesture-handler>
+        </pan-gesture-handler>
+      </view>
+    </vertical-drag-gesture-handler>
+  </view>
+  <text class="tip">横着拖：pan 动；竖着拖：外层 vertical-drag 先认出来，pan 报 CANCELLED。双击复位。</text>
+  <tap-gesture-handler worklet:ongesture="onTapG"><view class="btn">tap-gesture-handler（state 恒为 1）</view></tap-gesture-handler>
+</view>
+<view class="card">
+  <view class="h">draggable-sheet + 里面的列表</view>
+  <view class="row"><view class="btn" bindtap="toggleSheet">{{showSheet ? '收起' : '展开'}}面板</view>
+    <view class="btn gray" data-s="0.9" bindtap="sheetTo">scrollTo 0.9</view><view class="btn gray" data-s="0.3" bindtap="sheetTo">scrollTo 0.3</view></view>
+  <view class="sheet-host" wx:if="{{showSheet}}">
+    <draggable-sheet id="sheet" class="sheet" initial-child-size="0.5" min-child-size="0.2" max-child-size="0.9" snap snap-sizes="{{[0.5]}}" worklet:onsizeupdate="onSize">
+      <scroll-view scroll-y associative-container="draggable-sheet" class="sheet-list">
+        <view class="grab"></view>
+        <view wx:for="{{items}}" wx:key="*this" class="sheet-row">{{item}}</view>
+      </scroll-view>
+    </draggable-sheet>
+  </view>
+</view>
+<view class="card">
+  <view class="h">page-container</view>
+  <view class="btn" bindtap="openPc">打开（侧滑 / 返回键先关它，可下滑关闭）</view>
+</view>
+<page-container show="{{show}}" position="bottom" round close-on-slide-down bindafterenter="onPcEvent" bindafterleave="onPcEvent" bindclickoverlay="closePc" bindleave="closePc">
+  <view class="pc">
+    <view class="h">弹层内容</view>
+    <text class="tip">按住往下拉，跟手；拉过 1/5 屏高松手关闭。</text>
+    <view class="btn" bindtap="closePc">关闭</view>
+  </view>
+</page-container>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

@@ -37,9 +37,11 @@ internal class EngineHost(
     /** 插件自带的地图 / web-view（Dart 的 builtinMap / builtinWebView，见 NativeComponents.kt） */
     builtinMap: Boolean = false,
     builtinWebView: Boolean = false,
+    /** 插件自带的相机类组件（camera / live-pusher / voip-room，Dart 的 builtinCamera） */
+    builtinCamera: List<String> = emptyList(),
 ) {
     private val natives: NativeComponents =
-        NativeComponents(context, { b: (Long) -> Unit -> core.run(b); Unit }, builtinMap, builtinWebView && viewMode) { view?.overlay }
+        NativeComponents(context, { b: (Long) -> Unit -> core.run(b); Unit }, builtinMap, builtinWebView && viewMode, builtinCamera) { view?.overlay }
     private val core = EngineCore(
         context,
         object : EngineCore.Hooks {

@@ -49,24 +49,44 @@ class MiniProgramController {
     this.sameLayerViews = const [],
     this.builtinMap = true,
     this.builtinWebView = true,
+    this.builtinCamera = true,
   });
 
   /// 插件自带的 `<map>`（Android，默认开）：瓦片地图 + 标记 / 折线 / 圆 / 多边形，同层渲染进页面，拖动 / 捏合缩放、
   /// `bindmarkertap` / `bindregionchange`、`wx.createMapContext` 都由插件的原生实现处理（与原生 SDK 的 MiniMapView 同一份）。
   /// [nativeComponents] 或 [sameLayerViews] 里自己列了 `map`（用 [MiniProgramView.nativeViewBuilder] 造）时以宿主的为准。
-  /// iOS 上暂时没有（Flutter iOS 走纹理，map 画占位或交给 nativeViewBuilder）
+  /// iOS 上同一份（sdk/ios 的 MiniMapView，同层渲染进纹理）
   final bool builtinMap;
 
   /// 插件自带的 `<web-view>`（Android，默认开）：系统 WebView 盖在小程序画面上，网页里的 JSSDK、`bindmessage`、
   /// 网页标题、返回键先让网页后退都由插件处理。[nativeComponents] 里自己列了 `web-view` 时以宿主的为准；
-  /// 只在独立图层（[androidSurfaceView]，默认）时有。iOS 上暂时没有
+  /// Android 上只在独立图层（[androidSurfaceView]，默认）时有；iOS 上 WKWebView 盖在小程序画面那块矩形上（插件按 `viewRect` 摆）
   final bool builtinWebView;
 
+  /// 插件自带的 `<camera>` / `<live-pusher>` / `<voip-room>`（Android，默认开）：Camera2 画面同层渲染进页面，
+  /// CameraContext（拍照、录像、变焦）、live-pusher 的 RTMP 推流（H.264 + AAC）由插件的原生实现处理（与原生 SDK 同一份）。
+  /// 宿主 App 的清单要声明 `CAMERA`（推流 / 录像带声音再加 `RECORD_AUDIO`），插件在第一次用时申请。
+  /// [nativeComponents] 或 [sameLayerViews] 里自己列了同名标签时以宿主的为准。iOS 上是 AVCaptureSession 那一份
+  /// （宿主 Info.plist 要有 NSCameraUsageDescription / NSMicrophoneUsageDescription）
+  final bool builtinCamera;
+
+  bool get _builtinCamera => builtinCamera && _nativeHost;
+
+  /// 插件带着原生组件实现的平台（Android：Kotlin 源码编进插件；iOS：sdk/ios 的 Swift 源码软链进 pod）
+  static bool get _nativeHost => defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
+
+  /// 插件自带的相机类组件里，宿主没有自己接管的那几个
+  List<String> get _builtinCameraTags => _builtinCamera
+      ? [for (final t in const ['camera', 'live-pusher', 'voip-room']) if (!nativeComponents.contains(t) && !sameLayerViews.contains(t)) t]
+      : const [];
+
   bool get _builtinMap =>
-      builtinMap && defaultTargetPlatform == TargetPlatform.android && !nativeComponents.contains('map') && !sameLayerViews.contains('map');
+      builtinMap && _nativeHost && !nativeComponents.contains('map') && !sameLayerViews.contains('map');
 
   bool get _builtinWebView =>
-      builtinWebView && defaultTargetPlatform == TargetPlatform.android && androidSurfaceView && !nativeComponents.contains('web-view');
+      builtinWebView &&
+      (defaultTargetPlatform == TargetPlatform.iOS || (defaultTargetPlatform == TargetPlatform.android && androidSurfaceView)) &&
+      !nativeComponents.contains('web-view');
 
   /// [nativeComponents] 里哪些标签走**同层渲染**（Android）：[MiniProgramView.nativeViewBuilder] 造的控件不再盖在
   /// 画面上，而是离屏画成一帧交给引擎画进页面 —— 滚动时它就是页面里的一块像素，跟页面一起动，不会像盖上去的控件
@@ -92,11 +112,11 @@ class MiniProgramController {
   /// 封面、播放键、控制条由引擎画，点击与 `wx.createVideoContext` 的命令交给插件的播放器，
   /// `bindplay` / `bindtimeupdate` / `bindended` 等照常触发。这时 `video` 不再走 [MiniProgramView.nativeViewBuilder]。
   ///
-  /// false = 旧做法（宿主用 Flutter 控件盖在画面上，滑动时会与页面错开）。iOS 上暂时总是旧做法（插件还没带播放器）
+  /// false = 旧做法（宿主用 Flutter 控件盖在画面上，滑动时会与页面错开）。iOS 上是 AVPlayer 解码（sdk/ios 的 VideoHost）
   final bool sameLayerVideo;
 
   bool get _sameLayerVideo =>
-      sameLayerVideo && defaultTargetPlatform == TargetPlatform.android && nativeComponents.contains('video');
+      sameLayerVideo && _nativeHost && nativeComponents.contains('video');
 
   /// 解包后的小程序目录（含 `app.json`）
   final String appDir;
@@ -311,6 +331,8 @@ class MiniProgramController {
         'presentation': androidSurfaceView ? 'view' : 'texture',
         'builtinMap': _builtinMap,
         'builtinWebView': _builtinWebView,
+        'builtinCamera': _builtinCameraTags,
+        'sameLayerVideo': _sameLayerVideo,
       });
     } catch (_) {
       // 失败了要让出「唯一实例」的位置，宿主才能换个目录再建
@@ -436,6 +458,15 @@ class MiniProgramController {
     if (_disposed || !_created) return 0;
     final n = await _channel.invokeMethod<int>('dispatchEvent', {'name': name, 'payload': jsonEncode(payload)});
     return n ?? 0;
+  }
+
+  Rect? _sentRect;
+
+  /// 小程序画面在屏上的矩形（逻辑像素，[MiniProgramView] 布局完自动报）：iOS 上插件把 web-view 的容器摆在这里
+  Future<void> reportViewRect(Rect r) async {
+    if (defaultTargetPlatform != TargetPlatform.iOS || r == _sentRect) return;
+    _sentRect = r;
+    await _call('viewRect', {'x': r.left, 'y': r.top, 'width': r.width, 'height': r.height});
   }
 
   /// 进前台 / 进后台 / 内存告警（[MiniProgramView] 已自动转发）

@@ -229,7 +229,9 @@ impl PickerViewComponent {
     pub fn build(node: &WxmlNode, ctx: &mut ComponentContext) -> Option<RenderNode> {
         let (ts, ns) = build_base_style(node, ctx);
         let events = extract_events(node);
-        let attrs = node.attributes.clone();
+        let mut attrs = node.attributes.clone();
+        // 选中框 / 蒙层的样式与类：建树时解析一次写进属性，绘制只读（picker_view_style.rs）
+        super::picker_view_style::PickerDecor::resolve(&node.attributes, ctx.stylesheet, ctx.screen_width).write(&mut attrs);
         
         let tn = ctx.taffy.new_leaf(ts).unwrap();
         

@@ -132,7 +132,9 @@ fn node_fields(r: &WxmlRenderer, im: &InteractionManager, view: PageView, h: &Qu
         let info = r.scroll_views().iter().find(|s| s.component_id == h.component_id);
         let horizontal = info.map(|s| s.horizontal).unwrap_or(false);
         let (cw, ch) = info.map(|s| (s.content_width, s.content_height)).unwrap_or((h.rect.width, h.rect.height));
-        o.insert("scrollLeft".into(), json!(if horizontal { pos } else { 0.0 }));
+        // 双向的 scrollLeft 在横向控制器上（ui/interaction/scroll_2d.rs；不是双向的给 0）
+        let left = if horizontal { pos } else { im.scroll_x_of(&h.component_id) };
+        o.insert("scrollLeft".into(), json!(left));
         o.insert("scrollTop".into(), json!(if horizontal { 0.0 } else { pos }));
         o.insert("scrollWidth".into(), json!(cw.max(h.rect.width)));
         o.insert("scrollHeight".into(), json!(ch.max(h.rect.height)));
@@ -162,7 +164,11 @@ fn node_fields(r: &WxmlRenderer, im: &InteractionManager, view: PageView, h: &Qu
             }
             "scroll-view" => json!({ "kind": "scroll-view", "id": h.component_id }),
             // 引擎内置组件（builtin_components）的实例：DraggableSheetContext 等由组件实例自己提供
-            "draggable-sheet" | "snapshot" | "open-container" => json!({ "kind": h.tag, "id": h.id }),
+            // `inst` 是组件实例键：没写 id 的（`select('.sheet').node()`）按它找实例
+            "draggable-sheet" | "snapshot" | "open-container" => {
+                // `cid`：snapshot 截图按它找节点（host::snapshot）
+                json!({ "kind": h.tag, "id": h.id, "cid": h.component_id, "inst": h.attrs.get(crate::parser::template::COMPONENT_INSTANCE_ATTR) })
+            }
             _ => Value::Null,
         };
         if node.is_null() {
@@ -176,7 +182,7 @@ fn node_fields(r: &WxmlRenderer, im: &InteractionManager, view: PageView, h: &Qu
             "video" => json!({ "kind": "video", "id": h.id }),
             "canvas" => json!({ "kind": "canvas", "id": h.attrs.get("canvas-id").cloned().unwrap_or_default() }),
             // 官方 NodesRef.context 还支持这几个：EditorContext（内置组件）、MapContext / LivePlayerContext（宿主）
-            "editor" | "map" | "live-player" => json!({ "kind": h.tag, "id": h.id }),
+            "editor" | "map" | "live-player" | "camera" | "live-pusher" => json!({ "kind": h.tag, "id": h.id }),
             _ => Value::Null,
         };
         if ctx.is_null() {
@@ -229,12 +235,15 @@ fn scroll_view_op(r: &WxmlRenderer, im: &mut InteractionManager, op: &Value) -> 
     } else {
         0.0
     };
-    let target = match op.get("op").and_then(Value::as_str).unwrap_or("") {
+    // (主控制器的目标, 双向的横向目标)：横竖都能滚的两个轴各一个控制器（ui/interaction/scroll_2d.rs）
+    let (target, target_x): (Option<f32>, Option<f32>) = match op.get("op").and_then(Value::as_str).unwrap_or("") {
+        // 单向的按自己的方向取 top / left（另一个轴写了也不动）；双向的两个都认
         "scrollTo" => {
-            let k = if info.horizontal { "left" } else { "top" };
-            match op.get(k).and_then(Value::as_f64) {
-                Some(v) => v as f32,
-                None => return false,
+            let num = |k: &str| op.get(k).and_then(Value::as_f64).map(|v| v as f32);
+            if info.both {
+                (num("top"), num("left"))
+            } else {
+                (num(if info.horizontal { "left" } else { "top" }), None)
             }
         }
         "scrollIntoView" => {
@@ -245,18 +254,72 @@ fn scroll_view_op(r: &WxmlRenderer, im: &mut InteractionManager, op: &Value) -> 
             };
             let pos = im.get_scroll_controller(id).map(|c| c.get_position()).unwrap_or(0.0);
             let offset = op.get("offset").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+            let align = op.get("alignment").and_then(Value::as_str).unwrap_or("start");
             // query 给的子节点位置已经减过当前滚动量：加回来就是它在内容里的偏移
-            let rel = if info.horizontal { hit.rect.x - info.bounds.x } else { hit.rect.y - info.bounds.y };
-            rel + pos + offset
+            let (rel, size, view) = if info.horizontal {
+                (hit.rect.x - info.bounds.x, hit.rect.width, info.bounds.width)
+            } else {
+                (hit.rect.y - info.bounds.y, hit.rect.height, info.bounds.height)
+            };
+            let t = into_view_axis(rel, pos, size, view, align).map(|t| t + offset);
+            // 双向：横向也对齐过去（offset 只加在纵向上，与 scroll-into-view-offset 一样只有一个数）
+            let tx = info.both.then(|| into_view_axis(hit.rect.x - info.bounds.x, im.scroll_x_of(id), hit.rect.width, info.bounds.width, align)).flatten();
+            (t, tx)
         }
-        // triggerRefresh / closeRefresh：页面改 `refresher-triggered` 能做到同样的事（T14-8），
-        // 程序入口要接进 host::scroll_view 的刷新状态机，暂未做（G-4）
+        // ScrollViewContext 的可写属性（query.js 的 setter）：记下，渲染器下一次登记时生效（scroll_behavior.rs）
+        "set" => {
+            let key = op.get("key").and_then(Value::as_str).unwrap_or("");
+            let v = op.get("value").and_then(Value::as_bool).unwrap_or(true);
+            if !im.scroll_views.entry(id.to_string()).or_default().ctx.set(key, v) {
+                eprintln!("⚠️ ScrollViewContext.{key} 不认识");
+            }
+            return true;
+        }
+        // 下拉刷新：交给 host::scroll_view 的刷新状态机（与改 refresher-triggered 同一条路）
+        "triggerRefresh" | "closeRefresh" => {
+            if info.refresher.is_none() {
+                eprintln!("⚠️ ScrollViewContext 下拉刷新：scroll-view {id:?} 没开 refresher-enabled");
+                return false;
+            }
+            im.scroll_views.entry(id.to_string()).or_default().refresh_request = Some(op["op"] == "triggerRefresh");
+            return true;
+        }
+        // 下拉二级：同一个刷新状态机（host/scroll_two_level.rs）
+        "triggerTwoLevel" | "closeTwoLevel" => {
+            if !info.refresher.as_ref().is_some_and(|r| r.two_level.is_some()) {
+                eprintln!("⚠️ ScrollViewContext 下拉二级：scroll-view {id:?} 没开 refresher-enabled + refresher-two-level-enabled");
+                return false;
+            }
+            im.scroll_views.entry(id.to_string()).or_default().two_level_request = Some(op["op"] == "triggerTwoLevel");
+            return true;
+        }
         other => {
-            eprintln!("⚠️ ScrollViewContext.{other} 未实现（请改用 refresher-triggered 属性）");
+            eprintln!("⚠️ ScrollViewContext.{other} 不认识");
             return false;
         }
     };
-    let Some(c) = im.get_scroll_controller_mut(id) else { return false };
-    c.animate_to(target, dur);
-    true
+    let mut moved = false;
+    if let (Some(t), Some(c)) = (target, im.get_scroll_controller_mut(id)) {
+        c.animate_to(t, dur);
+        moved = true;
+    }
+    if let (Some(t), Some(c)) = (target_x, im.get_scroll_controller_mut(&crate::ui::interaction::scroll_x_key(id))) {
+        c.animate_to(t, dur);
+        moved = true;
+    }
+    moved
+}
+
+/// scrollIntoView 一个轴上的目标位置。`rel` 是目标离盒子起点多远（已减过当前滚动量 `pos`）。
+/// alignment（Skyline，默认 start）：start / center / end / nearest（已在视口里就不动 → None）
+fn into_view_axis(rel: f32, pos: f32, size: f32, view: f32, align: &str) -> Option<f32> {
+    let start = rel + pos;
+    Some(match align {
+        "center" => start - (view - size) / 2.0,
+        "end" => start - (view - size),
+        "nearest" if rel >= 0.0 && rel + size <= view => return None,
+        "nearest" if rel < 0.0 => start,
+        "nearest" => start - (view - size),
+        _ => start,
+    })
 }

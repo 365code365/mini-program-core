@@ -100,6 +100,9 @@ Component({
       this.triggerEvent('change', { x: this._x, y: this._y, source: source });
     },
     _stop: function () { if (this._timer) { clearTimeout(this._timer); this._timer = null; } },
+    // 官方：damping / friction「必须大于 0，否则会被设置成默认值」（20 / 2）
+    _damping: function () { var v = Number(this.properties.damping); return v > 0 ? v : 20; },
+    _friction: function () { var v = Number(this.properties.friction); return v > 0 ? v : 2; },
     // 移到 (x, y)（夹进范围）；anim 为真时按 damping 定时长缓动。source 为 null 时不发 change
     _goto: function (x, y, anim, source) {
       this._stop();
@@ -111,7 +114,7 @@ Component({
         return;
       }
       var self = this, fx = this._x, fy = this._y, t0 = Date.now();
-      var dur = Math.max(150, Math.min(600, 6000 / Math.max(1, this.properties.damping)));
+      var dur = Math.max(150, Math.min(600, 6000 / Math.max(1, this._damping())));
       var step = function () {
         var k = Math.min(1, (Date.now() - t0) / dur), e = 1 - Math.pow(1 - k, 3);
         self._place(fx + (tx - fx) * e, fy + (ty - fy) * e);
@@ -159,7 +162,7 @@ Component({
       var d = this.properties.direction;
       var vx = d === 'vertical' ? 0 : g.vx, vy = d === 'horizontal' ? 0 : g.vy;
       // 惯性滑行：每 16ms 按 friction 衰减速度，碰到边界停下
-      var self = this, decay = Math.pow(0.95, Math.max(0.1, this.properties.friction) / 2);
+      var self = this, decay = Math.pow(0.95, this._friction() / 2);
       var step = function () {
         vx *= decay; vy *= decay;
         var nx = self._clampX(self._x + vx * 16), ny = self._clampY(self._y + vy * 16);

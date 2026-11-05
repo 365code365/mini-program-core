@@ -39,6 +39,58 @@ impl Canvas2DContext {
         }
     }
 
+    /// `fillText(text, x, y, maxWidth)`：自然宽度不超过 maxWidth（或没给）时与 [`Self::fill_text`] 逐字节相同；
+    /// 超了按 HTML 横向压缩字形（字高不变，离屏光栅再贴回，text_raster.rs）。maxWidth ≤ 0 / NaN 什么也不画（标准）
+    pub fn fill_text_max(&mut self, text: &str, x: f32, y: f32, max_width: Option<f32>) {
+        match self.text_job_width(text, max_width) {
+            None => {}
+            Some((w, dw)) if dw < w && self.fx.trivial(false) => self.text_offscreen(text, x, y, w, dw, None),
+            Some(_) => self.fill_text(text, x, y),
+        }
+    }
+
+    /// `strokeText`：真描轮廓（宽 lineWidth 的环，text_raster.rs 的距离变换），maxWidth 同 fillText。
+    /// 描边色是渐变 / 图案、或有阴影 / 合成模式时退回旧的「用描边色填充」近似
+    pub fn stroke_text_max(&mut self, text: &str, x: f32, y: f32, max_width: Option<f32>) {
+        let Some((w, dw)) = self.text_job_width(text, max_width) else { return };
+        if self.fx.trivial(true) {
+            self.text_offscreen(text, x, y, w, dw, Some(self.line_width));
+        } else {
+            self.stroke_text(text, x, y);
+        }
+    }
+
+    /// (自然宽度, 要画成的宽度)，用户坐标。maxWidth 非法（≤0 / NaN）返回 None = 不画
+    fn text_job_width(&self, text: &str, max_width: Option<f32>) -> Option<(f32, f32)> {
+        let w = match CANVAS_FONT.as_ref() {
+            Some(tr) => tr.measure_text(text, self.font_size * self.avg_scale()) / self.avg_scale().max(1e-6),
+            None => return None,
+        };
+        match max_width {
+            Some(mw) if !(mw > 0.0) => None,
+            Some(mw) if mw.is_finite() && w > mw => Some((w, mw)),
+            _ => Some((w, w)),
+        }
+    }
+
+    /// 压缩 / 描边：按 fill_text 同一套对齐与基线（旧接口的近似基线）定左端与基线，交给离屏光栅
+    fn text_offscreen(&mut self, text: &str, x: f32, y: f32, w: f32, dw: f32, stroke: Option<f32>) {
+        let Some(tr) = CANVAS_FONT.as_ref() else { return };
+        let ax = match self.text_align {
+            TextAlign::Center => x - dw / 2.0,
+            TextAlign::Right => x - dw,
+            _ => x,
+        };
+        let ay = match self.text_baseline {
+            TextBaseline::Top | TextBaseline::Hanging => y + self.font_size * 0.8,
+            TextBaseline::Middle => y + self.font_size * 0.35,
+            _ => y,
+        };
+        let job = super::text_raster::TextJob { tr, text, size: self.font_size, bold: false, x: ax, y: ay, width: w, draw_width: dw, stroke };
+        let base = if stroke.is_some() { self.stroke_style } else { self.fill_style };
+        self.draw_text_offscreen(job, base);
+    }
+
     /// 描边文本（本实现以填充近似）
     pub fn stroke_text(&mut self, text: &str, x: f32, y: f32) {
         // 保存 fill，用 stroke 颜色画文本

@@ -18,13 +18,17 @@ import kotlin.math.pow
  * **同层渲染**（画进 [MiniSameLayerView] 的 Canvas，页面滚动时就是页面里的一块像素）。
  *
  * - 手势：按在地图上的整串触摸交给它（[wantsGestures]）：单指拖动、惯性、双指捏合缩放、双击放大；
- *   `enable-scroll` / `enable-zoom` 都关掉的地图不接手势（拖动滚页面，点击照样认）。
- * - 事件：`tap {latitude, longitude}`、`markertap` / `callouttap` / `labeltap {markerId}`、
+ *   `enable-scroll`（拖动）与 `enable-zoom`（捏合 / 双击）分开管：只关拖动时单指拖不动（页面也不滚）、捏合绕框中心缩放；
+ *   只关缩放时第二根手指与双击不缩放。两个都关的地图不接手势（拖动滚页面，点击照样认）。`setting` 里写了的盖过属性。
+ * - 事件：`tap {latitude, longitude}`、`markertap` / `callouttap` / `labeltap {markerId}`、`controltap {controlId}`、
+ *   `polylinetap {longitude, latitude}`（点在线上，按屏上距离判）、
  *   `regionchange`（`begin` / `end`，`causedBy` 是 gesture / drag / scale / update，end 带 scale、centerLocation、region）、`updated`。
+ * - show-location：宿主有定位权限才显示蓝点（[MapLocation]，SDK 不弹授权）；customCallout：内容由引擎画好交来（[customImages]）。
  * - MapContext：[contextMethods] 里那些（经 hostCall 交过来，见 [onContextCall]）。
- * - 没做：show-location 的定位蓝点（要定位权限，宿主自己接）、旋转 / 倾斜、路况、个性化样式、点聚合。
+ * - 没做：`poitap`（瓦片是栅格图，没有 POI 数据可点）、旋转 / 倾斜、路况、个性化样式、点聚合、marker 碰撞。
  *
- * 绘制在 `MapDraw.kt`，瓦片在 `MapTiles.kt`，数据与投影在 `MapGeo.kt`。iOS 同一套在 `MiniMapView.swift`。
+ * 绘制在 `MapDraw.kt` / `MapBubbles.kt`，瓦片在 `MapTiles.kt`，数据与投影在 `MapGeo.kt`，属性在 `MapAttrs.kt`。
+ * iOS 同一套在 `MiniMapView.swift`。
  */
 class MiniMapView : MiniSameLayerView() {
     // ── 视野（逻辑像素坐标系，缩放级别可以是小数）──
@@ -45,13 +49,22 @@ class MiniMapView : MiniSameLayerView() {
     internal var lines: List<MapLine> = emptyList()
     internal var circles: List<MapCircle> = emptyList()
     internal var polygons: List<MapPolygon> = emptyList()
+    internal var controls: List<MapControl> = emptyList()
+    /** 自定义气泡的图（markerId → 引擎画好的 PNG） */
+    internal var customImages: Map<Long, MapCalloutImage> = emptyMap()
     /** 点开了气泡的标记（BYCLICK） */
     internal val openCallouts = HashSet<Long>()
     /** 上一次绘制时各个可点的东西的位置（逻辑像素），点击按它判 */
     internal val hits = ArrayList<MapHit>()
 
-    private var gestures = true
-    private var prev = JSONObject()
+    internal var scrollEnabled = true
+    internal var zoomEnabled = true
+    internal var showLocation = false
+    internal var location: MapLocation? = null
+    private val gestures get() = scrollEnabled || zoomEnabled
+    internal var prev = JSONObject()
+    /** MapContextCalls（openMapApp / 定位）用 */
+    internal val hostContext get() = context
     private var tilesRef: MapTiles? = null
     internal val tiles: MapTiles?
         get() {
@@ -71,37 +84,21 @@ class MiniMapView : MiniSameLayerView() {
     override val contextClass get() = "MapContext"
     override val contextMethods get() = METHODS
 
-    override fun onAttrs(attrs: JSONObject) {
-        val changed = { k: String -> attrs.optString(k) != prev.optString(k) || !prev.has(k) }
-        minZoom = MapGeo.num(attrs, "min-scale")?.coerceIn(3.0, 20.0) ?: 3.0
-        maxZoom = MapGeo.num(attrs, "max-scale")?.coerceIn(minZoom, 20.0) ?: 20.0
-        // 官方：改了 latitude / longitude / scale 才挪视野；没改的属性不把用户拖过的视野拉回去
-        if (changed("latitude") || changed("longitude")) {
-            val lat = MapGeo.num(attrs, "latitude")
-            val lng = MapGeo.num(attrs, "longitude")
-            if (lat != null && lng != null && LatLng(lat, lng).valid) {
-                centerLat = lat
-                centerLng = lng
-            }
+    override fun onAttrs(attrs: JSONObject) = MapAttrs.apply(this, attrs)
+
+    /** show-location 开 / 关：开了才定位（有权限才真的开始），关了停掉 */
+    internal fun applyShowLocation(on: Boolean) {
+        val was = showLocation
+        showLocation = on
+        if (!on) {
+            if (was) location?.stop()
+            return
         }
-        if (changed("scale")) zoom = (MapGeo.num(attrs, "scale") ?: 16.0).coerceIn(minZoom, maxZoom)
-        zoom = zoom.coerceIn(minZoom, maxZoom)
-        satellite = MapGeo.flag(attrs, "enable-satellite", false)
-        showScale = MapGeo.flag(attrs, "show-scale", false)
-        gestures = MapGeo.flag(attrs, "enable-scroll", true) || MapGeo.flag(attrs, "enable-zoom", true)
-        if (changed("markers")) {
-            val a = MapGeo.array(attrs, "markers")
-            markers = (0 until a.length()).mapNotNull { a.optJSONObject(it)?.let(::MapMarker)?.takeIf { m -> m.pos.valid } }
-        }
-        if (changed("polyline")) lines = MapGeo.array(attrs, "polyline").let { a -> (0 until a.length()).mapNotNull { a.optJSONObject(it)?.let(::MapLine) } }
-        if (changed("circles")) circles = MapGeo.array(attrs, "circles").let { a -> (0 until a.length()).mapNotNull { a.optJSONObject(it)?.let(::MapCircle) } }
-        if (changed("polygons")) polygons = MapGeo.array(attrs, "polygons").let { a -> (0 until a.length()).mapNotNull { a.optJSONObject(it)?.let(::MapPolygon) } }
-        if (changed("include-points")) {
-            val pts = MapGeo.points(MapGeo.array(attrs, "include-points"))
-            if (pts.isNotEmpty()) fit(pts, FloatArray(4) { 30f }, animate = false)
-        }
-        prev = JSONObject(attrs.toString())
-        invalidate()
+        val c = context ?: return
+        val l = location ?: MapLocation(c) { invalidate() }.also { location = it }
+        // 幂等：已在定位就什么都不做；没权限时每次属性变化重试一次（用户可能刚在宿主里同意了）
+        l.start()
+        if (!was) android.util.Log.i("mini-render", "🗺 show-location：${if (MapLocation.granted(c)) "有定位权限，开始定位" else "没有定位权限，不显示蓝点"}")
     }
 
     private val main = android.os.Handler(android.os.Looper.getMainLooper())
@@ -120,6 +117,7 @@ class MiniMapView : MiniSameLayerView() {
 
     override fun onDetach() {
         anim?.cancel()
+        location?.stop()
     }
 
     // ───────────────────────── 投影 ─────────────────────────
@@ -181,24 +179,46 @@ class MiniMapView : MiniSameLayerView() {
         // 后画的在上面：倒着找
         val hit = hits.lastOrNull { it.rect.contains(x, y) }
         when (hit?.kind) {
+            MapHit.CONTROL -> emit("controltap", JSONObject().put("controlId", hit.id))
             MapHit.CALLOUT -> emit("callouttap", JSONObject().put("markerId", hit.id))
             MapHit.LABEL -> emit("labeltap", JSONObject().put("markerId", hit.id))
             MapHit.MARKER -> {
                 val m = (markers + extraMarkers).firstOrNull { it.id == hit.id }
-                if (m?.callout != null && !m.callout.always && !openCallouts.remove(m.id)) openCallouts += m.id
+                // BYCLICK 的气泡（callout / title / customCallout）点一下开、再点一下关
+                val byClick = m != null && (m.custom?.always == false || (m.custom == null && m.callout?.always == false))
+                if (byClick && !openCallouts.remove(m!!.id)) openCallouts += m.id
                 emit("markertap", JSONObject().put("markerId", hit.id))
                 invalidate()
             }
             else -> {
                 val p = fromScreen(x, y)
-                emit("tap", p.json())
+                // 点在折线上：polylinetap（官方 detail 只有点到的经纬度）；同时发不发 tap 官方没写，按不发（待验）
+                if (lines.any { onLine(it, x, y) }) emit("polylinetap", JSONObject().put("longitude", p.lng).put("latitude", p.lat))
+                else emit("tap", p.json())
             }
         }
     }
 
+    /** (x, y) 到折线的屏上距离 ≤ 半个线宽 + 边框（至少 8 逻辑像素，手指点得中） */
+    private fun onLine(l: MapLine, x: Float, y: Float): Boolean {
+        if (l.points.size < 2) return false
+        val tol = max(8f, l.width / 2 + l.borderWidth)
+        for (i in 0 until l.points.size - 1) {
+            val (ax, ay) = toScreen(l.points[i])
+            val (bx, by) = toScreen(l.points[i + 1])
+            val dx = bx - ax
+            val dy = by - ay
+            val len2 = dx * dx + dy * dy
+            val t = if (len2 > 0f) (((x - ax) * dx + (y - ay) * dy) / len2).coerceIn(0f, 1f) else 0f
+            if (hypot(x - (ax + dx * t), y - (ay + dy * t)) <= tol) return true
+        }
+        return false
+    }
+
     // ───────────────────────── 手势 ─────────────────────────
 
-    private enum class G { IDLE, PENDING, DRAG, PINCH }
+    /** HOLD：手指挪过了但不许拖（enable-scroll 关着）：这一串什么都不做，抬手也不算点击 */
+    private enum class G { IDLE, PENDING, DRAG, PINCH, HOLD }
     private var g = G.IDLE
     private var p0x = 0f
     private var p0y = 0f
@@ -234,8 +254,10 @@ class MiniMapView : MiniSameLayerView() {
             }
             "move" -> {
                 if (g == G.PENDING && hypot(x - downX, y - downY) > SLOP) {
-                    g = G.DRAG
-                    regionBegin("gesture")
+                    if (scrollEnabled) {
+                        g = G.DRAG
+                        regionBegin("gesture")
+                    } else g = G.HOLD
                 }
                 when (g) {
                     G.DRAG -> {
@@ -258,6 +280,7 @@ class MiniMapView : MiniSameLayerView() {
                     G.PENDING -> if (!pinched) tapOrDouble(x, y, t)
                     G.DRAG -> fling(t)
                     G.PINCH -> regionEnd("scale")
+                    G.HOLD -> if (pinched) regionEnd("scale")
                     G.IDLE -> {}
                 }
                 g = G.IDLE
@@ -272,7 +295,8 @@ class MiniMapView : MiniSameLayerView() {
     private fun onSecond(phase: String, x: Float, y: Float) {
         when (phase) {
             "start" -> {
-                if (g == G.IDLE) return
+                // enable-zoom 关着：第二根手指不缩放（第一根照常拖）
+                if (g == G.IDLE || !zoomEnabled) return
                 anim?.cancel()
                 p1x = x; p1y = y
                 g = G.PINCH
@@ -286,8 +310,8 @@ class MiniMapView : MiniSameLayerView() {
                 applyPinch()
             }
             else -> if (g == G.PINCH) {
-                // 第二根抬起：剩下那根接着拖
-                g = G.DRAG
+                // 第二根抬起：剩下那根接着拖（不许拖就停在这儿，抬手时收 regionchange end）
+                g = if (scrollEnabled) G.DRAG else G.HOLD
                 samples.clear()
             }
         }
@@ -295,14 +319,15 @@ class MiniMapView : MiniSameLayerView() {
 
     private fun applyPinch() {
         val d = hypot(p1x - p0x, p1y - p0y).coerceAtLeast(1f)
-        val mx = (p0x + p1x) / 2
-        val my = (p0y + p1y) / 2
+        // 不许拖时绕框的中心点缩放（视野中心不动），许拖时绕两指中点
+        val mx = if (scrollEnabled) (p0x + p1x) / 2 else width * offsetX.toFloat()
+        val my = if (scrollEnabled) (p0y + p1y) / 2 else height * offsetY.toFloat()
         zoomAround(pinchZoom + ln(d / pinchDist.toDouble()) / ln(2.0), mx, my)
         invalidate()
     }
 
     private fun tapOrDouble(x: Float, y: Float, t: Long) {
-        if (t - lastTapT < DOUBLE_TAP_MS && hypot(x - lastTapX, y - lastTapY) < 30f) {
+        if (zoomEnabled && t - lastTapT < DOUBLE_TAP_MS && hypot(x - lastTapX, y - lastTapY) < 30f) {
             lastTapT = -1000L
             regionBegin("scale")
             animate(300, onEnd = { regionEnd("scale") }) { f, from ->
@@ -425,5 +450,7 @@ internal class MapHit(val kind: Int, val id: Long, val rect: android.graphics.Re
         const val MARKER = 0
         const val CALLOUT = 1
         const val LABEL = 2
+        /** id 是 controlId */
+        const val CONTROL = 3
     }
 }

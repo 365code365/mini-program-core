@@ -114,6 +114,17 @@ pub(super) fn register(rt: &JsRuntime, queue: Queue) -> Result<(), String> {
             _ => "data:,".to_string(),
         }
     })?;
+    // isPointInPath / isPointInStroke：(key, json{x, y, stroke, rule, path, pre}) → "true" / "false"
+    let q = queue.clone();
+    rt.register_function("__native_canvas_hit", move |args| {
+        let a = |i: usize| args.get(i).cloned().unwrap_or_default();
+        flush_canvas(&q, &a(0));
+        crate::renderer::components::canvas_hit_test(&a(0), &a(1)).to_string()
+    })?;
+    // canvas.createImage 的加载：(src) → {width, height} | {err}（解出来的图进 drawImage 的缓存）
+    rt.register_function("__native_canvas_image", move |args| {
+        crate::renderer::components::canvas_image_info(args.first().map(|s| s.as_str()).unwrap_or(""))
+    })?;
     // canvasToTempFilePath：(key, json{x,y,width,height,destWidth,destHeight,fileType,quality,pre}) → {tempFilePath} | {err}
     let q = queue;
     rt.register_function("__native_canvas_save", move |args| {

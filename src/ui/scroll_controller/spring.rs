@@ -103,7 +103,8 @@ impl ScrollController {
     /// 惯性的一步：指数衰减速度并推进位置（**不夹边界**，边界交给
     /// [`Self::handoff_at_bounds`] 处理）
     pub(super) fn step_deceleration(&mut self, dt: f32) {
-        let deceleration = INERTIA_DECAY_PER_60HZ_FRAME.powf(dt * 60.0);
+        // 默认就是 INERTIA_DECAY_PER_60HZ_FRAME；scroll-view 开了 fast-deceleration 时更快（behavior.rs）
+        let deceleration = self.decay_per_frame().powf(dt * 60.0);
         self.velocity *= deceleration;
         self.position += self.velocity * dt;
     }
@@ -122,7 +123,8 @@ impl ScrollController {
         }
         let v = self.velocity;
         self.position = if over_bottom { self.max_scroll } else { min_bound };
-        if v.abs() > FLING_HANDOFF_MIN_V {
+        // `bounces=false`（scroll-view 属性 / ScrollViewContext）：惯性撞边界当场停，不冲出去
+        if v.abs() > FLING_HANDOFF_MIN_V && self.bounces {
             let target = self.position;
             self.begin_spring(target, v);
         } else {

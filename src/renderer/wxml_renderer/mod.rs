@@ -116,6 +116,9 @@ pub struct PickerBinding {
     pub cancel_handler: Option<String>,
     /// `header-text`：面板头部「取消」「确定」之间的标题（官方 component/picker.html）
     pub header_text: String,
+    /// region 的 `custom-item`（每列顶部的自定义项）与 `level`（province / city / region / sub-district）
+    pub custom_item: String,
+    pub level: String,
     pub disabled: bool,
     pub is_fixed: bool,
 }
@@ -263,6 +266,10 @@ pub struct WxmlRenderer {
     record_touch: std::cell::Cell<bool>,
     /// 上一次重建留下了几个子树、重建了几个节点（诊断与测试，见 `last_reuse`）
     reuse_stats: (usize, usize),
+    /// `position: sticky` / `<sticky-header>` 的索引与跨帧状态（sticky.rs）
+    sticky: sticky::StickyIndex,
+    /// 正在画 `type="nested"` 外层的内容：里层不走分块缓存（scroll_live.rs；外层带着它按小数偏移动，分块对不齐）
+    in_nested_outer: bool,
 }
 
 
@@ -283,6 +290,8 @@ mod host_regions;
 pub use host_regions::{InputRegion, NativeRegion};
 /// `<scroll-view>` 的属性、受控位置与下拉刷新配置
 pub mod scroll_views;
+/// 横竖两个方向同时滚的 scroll-view：横向受控位置与绘制偏移
+mod scroll_2d_attrs;
 /// scroll-view 下拉刷新的默认样式（背景 + 三个点）
 mod refresher;
 /// 按选择器找节点与位置（`wx.pageScrollTo({selector})`、SelectorQuery）
@@ -297,16 +306,31 @@ pub use form::{FormAction, FormControl, FormField, FormHit};
 /// `<navigator>` 的跳转与 `<label>` 的控件转发（点击命中，走布局树）
 mod builtin_hits;
 pub use builtin_hits::NavigatorHit;
+/// `<snapshot>` 子树离屏画成 RGBA（Snapshot.takeSnapshot，host::snapshot）
+mod snapshot;
+/// `<map>` 的自定义气泡（slot="callout"）：布局时挪出画面、按 marker-id 离屏出图交给宿主
+mod map_callout;
+/// list-builder / grid-builder 的可见窗（宿主按它派发 itembuild / itemdispose）
+mod builder_window;
+pub use builder_window::BuilderWindow;
 /// swiper 的分页绘制（三条绘制路径共用）与手势候选登记
 mod swiper_draw;
 /// `<picker-view>` 的分列偏移绘制、遮罩与指示条、列的手势候选
 mod picker_view_draw;
+/// button loading 转圈与 progress active 的组件自带动画（只重画自己的盒子）
+mod self_anim;
 pub use swiper_draw::SwiperRegion;
 /// 有 swiper 的顶层 scroll-view 不走离屏缓存
 mod scroll_live;
 // 嵌在容器里的纵向 scroll-view：内容按固定行数分块缓存，滚动只贴块（不逐帧重画可见子节点）
 mod scroll_tiles;
-pub use scroll_views::{RefresherConfig, ScrollViewInfo};
+/// `position: sticky` 与 sticky-header：吸住、被推走、只重画自己那一块
+mod sticky;
+/// scroll-view 的手感属性（bounces / paging / fast-deceleration / scroll-anchoring / reverse / back-to-top）
+mod scroll_behavior;
+/// scroll-view 的滚动条（enhanced + show-scrollbar），停下渐隐只重画那一条
+mod scrollbar;
+pub use scroll_views::{RefresherConfig, ScrollViewInfo, TwoLevelConfig};
 mod interactions;
 /// 有状态组件的状态落地与带交互的绘制（唯一一份，三条绘制路径共用）
 mod interactive;
@@ -376,6 +400,8 @@ impl WxmlRenderer {
             layout_touched: Default::default(),
             record_touch: Default::default(),
             reuse_stats: (0, 0),
+            sticky: Default::default(),
+            in_nested_outer: false,
             damage_clip: None,
             js_animations: HashMap::new(),
             registering_fixed: false,

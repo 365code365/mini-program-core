@@ -33,7 +33,9 @@
     "pages/map/map",
     "pages/webview/webview",
     "pages/webview/web",
-    "pages/live/live"
+    "pages/live/live",
+    "pages/camera/camera",
+    "pages/pusher/pusher"
   ],
   "workers": "workers",
   "window": {

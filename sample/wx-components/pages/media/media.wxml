@@ -1,0 +1,22 @@
+<view class="card">
+  <view class="h">canvas type="2d"</view>
+  <canvas id="cv" type="2d" class="cv" bindtouchstart="onCvTap"></canvas>
+  <text class="tip">9 参数裁源 · 3 参数按原图尺寸 · roundRect · fill('evenodd') · maxWidth · strokeText；点绿块试 isPointInPath。</text>
+</view>
+<view class="card">
+  <view class="h">image</view>
+  <view class="row">
+    <image class="im" src="/images/star.svg" bindload="onImgLoad"></image>
+    <image class="im" src="/images/photo.jpg" mode="aspectFill" fade-in show-menu-by-longpress></image>
+    <image class="im" src="cloud://env/x.png" binderror="onImgErr"></image>
+  </view>
+  <text class="tip">SVG 解码成位图（bindload {{imgInfo}}）· fade-in 渐显 · 长按出菜单 · cloud:// 走 binderror</text>
+</view>
+<view class="card">
+  <view class="h">video 的子节点</view>
+  <video class="vd" controls="{{false}}" show-center-play-btn="{{false}}" enable-play-gesture>
+    <cover-view class="cover" bindtap="onCover">cover-view 控件</cover-view>
+  </video>
+  <text class="tip">子节点画在视频上，点它不切控制条；圆角只认 CSS。</text>
+</view>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

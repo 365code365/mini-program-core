@@ -67,14 +67,49 @@
                     // 同步量宽：按当前字号（setFontSize / font），与画出来的字同一套字体度量
                     measureText: function(text) { return { width: Number(__native_measure_text(String(this._fontSize || 10), String(text == null ? '' : text))) }; },
                     setFont: function(f) { var m = /(\d+(?:\.\d+)?)px/.exec(String(f || '')); if (m) { this._fontSize = Number(m[1]); this._commands.push({ type: 'setFontSize', size: this._fontSize }); } return this; },
+                    // 官方 CanvasContext.draw：每次 draw 都把队列交出去并清空（reserve 只决定画布清不清）；
+                    // 原生按 `__draw` 头复位状态（两种 reserve 都回到默认样式，见官方示例）、false 时先清屏（canvas/manager.rs）。
+                    // 回调在原生画完之后：指令排在桥上要到下一次 update 才执行，回调的定时器可能先到 ——
+                    // 回调前先读一次 0×0 像素，`__native_canvas_read` 会把这块画布排着的指令先执行掉（js/bridge_io.rs）
                     draw: function(reserve, callback) {
+                        if (typeof reserve === 'function') { callback = reserve; reserve = false; }
+                        var id = this._canvasId;
+                        var cmds = [{ type: '__draw', reserve: !!reserve }].concat(this._commands);
+                        this._commands = [];
+                        if (this._resetProps) this._resetProps();
                         if (typeof __native_canvas_draw === 'function') {
-                            __native_canvas_draw(this._canvasId, JSON.stringify(this._commands));
+                            __native_canvas_draw(id, JSON.stringify(cmds));
                         }
-                        if (!reserve) { this._commands = []; }
-                        if (typeof callback === 'function') { setTimeout(callback, 0); }
+                        if (typeof callback === 'function') {
+                            setTimeout(function() {
+                                if (typeof __native_canvas_read === 'function') __native_canvas_read(String(id), '0', '0', '0', '0', '[1,1]');
+                                callback();
+                            }, 0);
+                        }
                     }
                 };
+                // 属性式写法（官方 CanvasContext 的属性，基础库 1.9.90）：赋值 = 调对应的 setXxx，读回最后一次赋的值
+                var oldSt;
+                ctx._resetProps = function() {
+                    oldSt = { fillStyle: '#000000', strokeStyle: '#000000', shadowOffsetX: 0, shadowOffsetY: 0, shadowColor: 'rgba(0,0,0,0)',
+                              shadowBlur: 0, lineWidth: 1, lineCap: 'butt', lineJoin: 'miter', miterLimit: 10, lineDashOffset: 0,
+                              font: '10px sans-serif', globalAlpha: 1, globalCompositeOperation: 'source-over' };
+                    ctx._fontSize = 10;
+                };
+                ctx._resetProps();
+                var oldShadow = function() { ctx.setShadow(oldSt.shadowOffsetX, oldSt.shadowOffsetY, oldSt.shadowBlur, oldSt.shadowColor); };
+                var oldProps = {
+                    fillStyle: function(v) { ctx.setFillStyle(v); }, strokeStyle: function(v) { ctx.setStrokeStyle(v); },
+                    shadowOffsetX: oldShadow, shadowOffsetY: oldShadow, shadowColor: oldShadow, shadowBlur: oldShadow,
+                    lineWidth: function(v) { ctx.setLineWidth(Number(v)); }, lineCap: function(v) { ctx.setLineCap(String(v)); },
+                    lineJoin: function(v) { ctx.setLineJoin(String(v)); }, miterLimit: function(v) { ctx.setMiterLimit(v); },
+                    lineDashOffset: function(v) { ctx._commands.push({ type: 'setLineDashOffset', offset: Number(v) || 0 }); },
+                    font: function(v) { ctx.setFont(v); }, globalAlpha: function(v) { ctx.setGlobalAlpha(Number(v)); },
+                    globalCompositeOperation: function(v) { ctx.setGlobalCompositeOperation(v); }
+                };
+                Object.keys(oldProps).forEach(function(k) {
+                    Object.defineProperty(ctx, k, { enumerable: true, get: function() { return oldSt[k]; }, set: function(v) { oldSt[k] = v; oldProps[k](v); } });
+                });
                 __canvasContexts[canvasId] = ctx;
                 return ctx;
             };

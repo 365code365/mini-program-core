@@ -325,7 +325,7 @@ pub fn dispatch_chain_to_js(
             offset_left: b.bounds.x,
             offset_top: b.bounds.y,
         };
-        let json = event_json(
+        let mut json = event_json(
             event_type,
             &target,
             &current,
@@ -334,6 +334,10 @@ pub fn dispatch_chain_to_js(
             time_ms,
             detail.clone(),
         );
+        // canvas 自己的触摸事件：触点另带画布内坐标 x / y（官方 canvas 组件的 CanvasTouch {identifier, x, y}）
+        if b.tag == "canvas" && event_type.starts_with("touch") {
+            json = canvas_touch_xy(&json, (point.0 - b.bounds.x, point.1 - b.bounds.y));
+        }
         let handler = serde_json::to_string(&b.handler).unwrap_or_else(|_| "''".into());
         // 第三个实参是「声明这条绑定的组件标签」：组件模板里的绑定要送给组件实例，
         // 不能因为页面上恰好有同名方法就打到页面上
@@ -343,9 +347,33 @@ pub fn dispatch_chain_to_js(
     true
 }
 
+/// 给事件对象里每个触点补上画布内坐标（pageX 等照留）。只有 canvas 的触摸事件走这里
+fn canvas_touch_xy(json: &str, xy: (f32, f32)) -> String {
+    let Ok(mut v) = serde_json::from_str::<serde_json::Value>(json) else { return json.to_string() };
+    for list in ["touches", "changedTouches"] {
+        if let Some(a) = v.get_mut(list).and_then(|t| t.as_array_mut()) {
+            for t in a {
+                t["x"] = serde_json::json!(xy.0);
+                t["y"] = serde_json::json!(xy.1);
+            }
+        }
+    }
+    v.to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn canvas_触点带画布内坐标() {
+        let n = NodeInfo { id: "c", dataset: &HashMap::new(), offset_left: 20.0, offset_top: 30.0 };
+        let j = canvas_touch_xy(&event_json("touchmove", &n, &n, (25.0, 41.0), 0, 1, serde_json::json!({})), (5.0, 11.0));
+        let v: serde_json::Value = serde_json::from_str(&j).unwrap();
+        assert_eq!((v["touches"][0]["x"].as_f64(), v["touches"][0]["y"].as_f64()), (Some(5.0), Some(11.0)));
+        assert_eq!(v["changedTouches"][0]["x"], 5.0);
+        assert_eq!(v["changedTouches"][0]["pageX"], 25.0, "pageX 照留");
+    }
 
     fn names(out: Vec<TouchOut>) -> Vec<&'static str> {
         out.iter().map(|o| o.event_name()).collect()

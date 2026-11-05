@@ -229,6 +229,14 @@ impl WxmlRenderer {
                     }
                 }
                 return;
+            } else if new.tag == "scroll-view" && !moved && old.text == new.text && super::scroll_views::clips(&new.attrs)
+                && super::scroll_views::clips(&old.attrs)
+            {
+                // scroll-view 自己的属性变了、盒子没动（下拉刷新回调里 setData `refresher-triggered`、改 scroll-top 这类）：
+                // 里面的东西都画在盒子里（裁到盒子），重画整个盒子就够。从前整帧：拉着刷新时一次 setData 一帧 15ms（一加 PLY110）
+                ctx.add(super::invalidate_grow::inflate(old_rect, &old.style));
+                ctx.add(super::invalidate_grow::inflate(new_rect, &new.style));
+                return;
             } else if opaque_subtree {
                 ctx.bail = true;
                 ctx.bail_why = format!(
@@ -261,6 +269,17 @@ impl WxmlRenderer {
         if matches!(new.tag.as_str(), "scroll-view" | "swiper") && can_scroll {
             let differs = old.children.len() != new.children.len()
                 || old.children.iter().zip(&new.children).any(|(a, b)| Self::subtree_differs(old_t, new_t, a, b, (ox, oy), (nx, ny), ctx.moved));
+            // clip=false（scroll-view / swiper）：盒子外也画着内容，只重画盒子会在外面留旧像素 —— 整帧
+            let unclipped = if new.tag == "swiper" {
+                !crate::renderer::components::SwiperComponent::clips(new)
+            } else {
+                !super::scroll_views::clips(&new.attrs)
+            };
+            if differs && unclipped && !in_fixed {
+                ctx.bail = true;
+                ctx.bail_why = format!("<{} clip=false> 盒子外的内容变了", new.tag);
+                return;
+            }
             if differs {
                 if in_fixed {
                     ctx.fixed_changed = true;

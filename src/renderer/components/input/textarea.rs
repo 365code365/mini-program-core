@@ -164,13 +164,25 @@ impl InputComponent {
         // ── 文字：只画露在盒子里的行 ──
         let color = style.text_color.unwrap_or(Color::BLACK);
         let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill);
+        // 占位符可以有自己的字号 / 字重（placeholder.rs）：按它的字号重新折行，首行基线跟着字号走
+        let (ph_fs, ph_bold) = if ph { super::placeholder::placeholder_font(node, sf) } else { (fs, false) };
+        let ph_own = ph && (ph_fs != fs || ph_bold);
+        let shown_lines = if ph_own {
+            layout_textarea_lines(&shown, content_w, |c| advance(tr, c, ph_fs), style.text_align)
+        } else {
+            shown_lines
+        };
         for (i, l) in shown_lines.iter().enumerate() {
-            let b = baseline(i);
+            let b = if ph_own { cy + ph_fs + i as f32 * line_h } else { baseline(i) };
             if b - fs > y + h || b + line_h < y || l.start == l.end {
                 continue;
             }
             let text: String = shown[l.start..l.end].iter().map(|&c| if c.is_control() { ' ' } else { c }).collect();
-            tr.draw_text(canvas, &text, cx + l.x0, b, fs, &paint);
+            if ph_own {
+                tr.draw_text_weighted(canvas, &text, cx + l.x0, b, ph_fs, 0.0, ph_bold, &paint);
+            } else {
+                tr.draw_text(canvas, &text, cx + l.x0, b, fs, &paint);
+            }
         }
 
         // ── 光标：几何与单行输入框相同（2 逻辑像素宽、1.15em 高），竖直位置跟着所在行 ──
@@ -182,7 +194,7 @@ impl InputComponent {
             set_last_caret_rect(Some((caret_x, caret_y, caret_w, caret_h)));
             if should_show_cursor() {
                 let paint = Paint::new()
-                    .with_color(Color::from_hex(0x07C160))
+                    .with_color(super::caret_color(node))
                     .with_style(PaintStyle::Fill)
                     .with_anti_alias(true);
                 let mut path = Path::new();

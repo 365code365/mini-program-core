@@ -45,6 +45,56 @@ impl Canvas2DContext {
         self.current_path.push(PathCommand::Rect(x, y, width, height));
     }
 
+    /// `roundRect(x, y, w, h, radii)`（HTML 标准）：`radii` 是 [左上, 右上, 右下, 左下]（JS 侧已把 1~4 个值展开）。
+    /// 负宽高按标准翻转（圆角跟着左右 / 上下互换）；相邻两角之和超过边长时四个角按同一比例缩小；
+    /// 画完以 (x, y) 开一条新子路径。四分之一圆用三次贝塞尔（k = 0.5523），控制点过矩阵 —— 斜切 / 不等比缩放也对
+    pub fn round_rect(&mut self, x: f32, y: f32, w: f32, h: f32, radii: [f32; 4]) {
+        if !(x.is_finite() && y.is_finite() && w.is_finite() && h.is_finite()) {
+            return;
+        }
+        let [mut tl, mut tr, mut br, mut bl] = radii.map(|r| if r.is_finite() { r.max(0.0) } else { 0.0 });
+        let (mut x0, mut y0, mut w, mut h) = (x, y, w, h);
+        if w < 0.0 {
+            x0 += w;
+            w = -w;
+            (tl, tr, br, bl) = (tr, tl, bl, br);
+        }
+        if h < 0.0 {
+            y0 += h;
+            h = -h;
+            (tl, tr, br, bl) = (bl, br, tr, tl);
+        }
+        let mut s = 1.0f32;
+        for (sum, side) in [(tl + tr, w), (tr + br, h), (br + bl, w), (bl + tl, h)] {
+            if sum > side && sum > 0.0 {
+                s = s.min(side / sum);
+            }
+        }
+        let [tl, tr, br, bl] = [tl, tr, br, bl].map(|r| r * s);
+        const K: f32 = 0.552_284_8;
+        let (x1, y1) = (x0 + w, y0 + h);
+        let p = &mut self.current_path;
+        p.push(PathCommand::MoveTo(x0 + tl, y0));
+        p.push(PathCommand::LineTo(x1 - tr, y0));
+        if tr > 0.0 {
+            p.push(PathCommand::BezierCurveTo(x1 - tr + tr * K, y0, x1, y0 + tr - tr * K, x1, y0 + tr));
+        }
+        p.push(PathCommand::LineTo(x1, y1 - br));
+        if br > 0.0 {
+            p.push(PathCommand::BezierCurveTo(x1, y1 - br + br * K, x1 - br + br * K, y1, x1 - br, y1));
+        }
+        p.push(PathCommand::LineTo(x0 + bl, y1));
+        if bl > 0.0 {
+            p.push(PathCommand::BezierCurveTo(x0 + bl - bl * K, y1, x0, y1 - bl + bl * K, x0, y1 - bl));
+        }
+        p.push(PathCommand::LineTo(x0, y0 + tl));
+        if tl > 0.0 {
+            p.push(PathCommand::BezierCurveTo(x0, y0 + tl - tl * K, x0 + tl - tl * K, y0, x0 + tl, y0));
+        }
+        p.push(PathCommand::ClosePath);
+        p.push(PathCommand::MoveTo(x, y));
+    }
+
     /// 构建 Path 对象（所有坐标经当前仿射矩阵变换）
     pub(super) fn build_path(&self) -> Path {
         let mut path = Path::new();

@@ -1,0 +1,23 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/sticky/sticky",
+    "pages/text/text",
+    "pages/list/list",
+    "pages/form/form",
+    "pages/picker/picker",
+    "pages/scroll/scroll",
+    "pages/gesture/gesture",
+    "pages/media/media",
+    "pages/open/open"
+  ],
+  "window": {
+    "navigationBarTitleText": "组件实验室",
+    "navigationBarBackgroundColor": "#07c160",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f4f5f7"
+  },
+  "renderer": "skyline",
+  "componentFramework": "glass-easel",
+  "lazyCodeLoading": "requiredComponents"
+}

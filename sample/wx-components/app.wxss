@@ -1,0 +1,9 @@
+page { background: #f4f5f7; color: #1f2329; font-size: 28rpx; }
+.card { margin: 24rpx; padding: 24rpx; background: #fff; border-radius: 20rpx; }
+.h { font-size: 32rpx; font-weight: bold; margin-bottom: 16rpx; }
+.tip { color: #8a8f99; font-size: 24rpx; margin-top: 8rpx; }
+.row { display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; }
+.btn { margin: 8rpx; padding: 12rpx 24rpx; background: #07c160; color: #fff; border-radius: 12rpx; font-size: 26rpx; }
+.btn.gray { background: #e7e9ee; color: #1f2329; }
+.log { margin: 24rpx; padding: 16rpx 24rpx; background: #1f2329; color: #9fe6b8; border-radius: 16rpx; font-size: 22rpx; }
+.log-line { line-height: 36rpx; }

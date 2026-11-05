@@ -38,7 +38,8 @@
             };
             wx.getApiCategory = function() { return { apiCategory: 'default' }; };
             wx.setEnableDebug = function(o) { return __asyncOk(o, 'setEnableDebug'); };
-            wx.checkIsPictureInPictureActive = function() { return false; };
+            // live-pusher 的小窗（引擎画的，host/engine_pip.rs 开 / 关之后的下一帧写 __pipActive）
+            wx.checkIsPictureInPictureActive = function() { return !!globalThis.__pipActive; };
             wx.getShowSplashAdStatus = function(o) { return __asyncOk(o, 'getShowSplashAdStatus', { status: 'invalid' }); };
             wx.getExptInfoSync = function() { return {}; };
             wx.isVKSupport = function() { return false; };

@@ -481,11 +481,13 @@ public final class MiniProgramView: UIView, EngineSessionUI {
 
     @objc private func onForeground() {
         session.foreground()
+        sameLayer.resume()
     }
 
     /// 进后台：派发 `App.onHide` 并**停掉 DisplayLink**（继续出帧纯属耗电，Metal 在后台提交还会被杀进程）
     @objc private func onBackground() {
         videoHost.pauseAll()
+        sameLayer.pause()
         session.background()
     }
 

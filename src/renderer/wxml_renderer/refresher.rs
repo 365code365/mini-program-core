@@ -36,6 +36,18 @@ impl WxmlRenderer {
             let paint = Paint::new().with_color(bg).with_style(PaintStyle::Fill);
             canvas.draw_rect(&GeoRect::new(x, y, w, gap), &paint);
         }
+        // 下拉二级：露出的空白过了二级阈值（拉到「松手进二楼」、二级打开着）只铺背景，整块交给 slot="refresher" 的内容。
+        // 按露出的高度判、不看刷新状态：状态在出帧之后才变，位置没动的那一帧局部重画不会重画这块（damage 用例抓到的）
+        if super::scroll_views::bool_attr(&node.attrs, "refresher-two-level-enabled") {
+            let tl = node
+                .attrs
+                .get("refresher-two-level-threshold")
+                .and_then(|v| super::scroll_views::parse_len(v, self.screen_width))
+                .unwrap_or(150.0);
+            if gap / self.scale_factor >= tl {
+                return;
+            }
+        }
         let style = node.attrs.get("refresher-default-style").map(|s| s.trim()).unwrap_or("black");
         let base = match style {
             "none" => return,
@@ -58,6 +70,11 @@ impl WxmlRenderer {
         let t = self.animation_time();
         if refreshing {
             self.mark_animating();
+            // 记下露出的这段（与 self_anim / swiper 同一条规则）：宿主只重画它。不记的话页面上别的动画
+            // 记了包围盒（比如 enhanced 的滚动条渐隐）时，宿主只重画那些，三个点停在半路（WP-D 的用例抓到的）
+            if !self.drawing_offscreen {
+                self.animated_bounds.push(GeoRect::new(x - 1.0, y - 1.0, w + 2.0, gap + 2.0));
+            }
         }
         let cy = y + gap - threshold.min(gap / sf) * sf / 2.0;
         for i in 0..3 {

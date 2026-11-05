@@ -250,3 +250,205 @@ fn 地图自己的手势_整串触摸交给宿主_页面不滚_数组属性是�
     assert!(e.scroll_position() > 50.0, "按在不接手势的地图上拖：页面照滚 {}", e.scroll_position());
     host_view::retain(&[]);
 }
+
+/// WP-F1 map：自定义气泡（`slot="callout"` 里带 marker-id 的 cover-view）与 `setting`：
+/// 1. 气泡离屏出图交给宿主：`sameLayerViews` 里这张地图带 `callouts [{markerId, path, width, height}]`，
+///    path 是 PNG（宽高 = 逻辑宽高 × dpr），内容不变时路径不变；事件带 `wxfileRoot`；
+/// 2. slot 不占流、不画在页面上（地图框里那块还是地图的底色，不是气泡的红底）；
+/// 3. `setting {enableScroll:false, enableZoom:false}` 盖过属性：这张地图不接手势，拖动照滚页面。
+#[test]
+fn f1_自定义气泡出图交给宿主_slot_不画在页面上_setting_盖过属性() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = fixture("callout");
+    std::fs::write(
+        root.join("pages/p/p.wxml"),
+        r#"<view class="hd">卡片标题</view>
+<map id="map1" class="map" latitude="22.54" longitude="114.05" setting="{{setting}}">
+  <cover-view slot="callout">
+    <cover-view marker-id="1" class="bubble">气泡一</cover-view>
+    <cover-view marker-id="2" class="bubble wide">第二个气泡更宽</cover-view>
+  </cover-view>
+</map>
+<view wx:for="{{rows}}" wx:key="*this" class="row">第 {{item}} 行</view>"#,
+    )
+    .unwrap();
+    std::fs::write(
+        root.join("pages/p/p.wxss"),
+        "page { background-color: #ffffff; }
+.hd { height: 120px; background-color: #f0f0f0; }
+.map { margin-left: 20px; width: 335px; height: 200px; background-color: #e8eef5; }
+.bubble { width: 80px; height: 30px; background-color: #ff0000; color: #ffffff; }
+.wide { width: 120px; }
+.row { height: 60px; }",
+    )
+    .unwrap();
+    std::fs::write(
+        root.join("pages/p/p.js"),
+        "Page({ data: { rows: Array.from({length: 30}, (_, i) => i + 1), setting: { enableScroll: false, enableZoom: false } } });",
+    )
+    .unwrap();
+    let opts = EngineOptions {
+        same_layer: vec!["map".into()],
+        same_layer_gestures: vec!["map".into()],
+        ..Default::default()
+    };
+    let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), Some(&root.join("_data").to_string_lossy()), W, H, DPR, HostEnv::default(), opts)
+        .expect("创建引擎");
+    e.set_animation_clock(0.0);
+    e.launch(None).expect("打开首页");
+    e.pump_ex(1000);
+    let evs = events(&mut e);
+    let ev = evs.iter().find(|v| v["type"] == "sameLayerViews").expect("sameLayerViews");
+    assert!(ev["wxfileRoot"].as_str().is_some_and(|s| s.contains("wxfile")), "{ev}");
+    let m = &ev["views"][0];
+    let cs = m["callouts"].as_array().unwrap_or_else(|| panic!("要带 callouts：{m}"));
+    assert_eq!(cs.len(), 2, "{m}");
+    assert_eq!(cs[0]["markerId"], 1, "markerId 是 number");
+    assert_eq!((cs[0]["width"].as_f64(), cs[0]["height"].as_f64()), (Some(80.0), Some(30.0)), "{cs:?}");
+    assert_eq!(cs[1]["markerId"], 2);
+    assert_eq!(cs[1]["width"].as_f64(), Some(120.0), "每个气泡按自己的宽：{cs:?}");
+    let png = image::open(cs[0]["path"].as_str().unwrap()).expect("PNG").to_rgba8();
+    assert_eq!((png.width(), png.height()), (160, 60), "物理像素 = 逻辑 × dpr");
+    let p = png.get_pixel(4, 50);
+    assert_eq!((p[0], p[1], p[2], p[3]), (255, 0, 0, 255), "气泡的红底画进了图");
+    // slot 不画在页面上：地图框左上那块仍是地图底色
+    assert_eq!(px(&mut e, MX + 10.0, MY + 10.0), [0xe8, 0xee, 0xf5], "slot=callout 不该画在页面上");
+
+    // setting 关了拖动与缩放：不接手势，页面照滚
+    let (gx, gy) = (MX + 100.0, MY + 150.0);
+    e.pointer_down(gx, gy);
+    e.pump_ex(1500);
+    for i in 1..=8 {
+        e.pointer_move(gx, gy - 25.0 * i as f32);
+        e.pump_ex(1500 + 16 * i);
+    }
+    e.pointer_up(gx, gy - 200.0);
+    e.pump_ex(1700);
+    assert!(!events(&mut e).iter().any(|v| v["type"] == "nativeViewTouch"), "setting 关掉的地图不接手势");
+    assert!(e.scroll_position() > 50.0, "页面照滚：{}", e.scroll_position());
+    host_view::retain(&[]);
+}
+
+/// F2 camera / voip-room（同层渲染，`sameLayer: ["camera", "voip-room"]`）：
+/// 1. camera 进 `sameLayerViews`（宿主据此开相机），默认 100% × 300px；
+/// 2. `onCameraFrame` 由引擎从宿主交来的预览里取：`frame-size="small"` 长边 360，`data` 是 `ArrayBuffer`、长度 = 宽 × 高 × 4；
+/// 3. `mode="scanCode"`：预览里有二维码 → `bindscancode`（result 是码里的字），同一个码不重复发；条形码（EAN-13）也认；
+/// 4. voip-room `mode="video"`：进不了房，`binderror` 只派一次（errCode 是 number）；
+/// 5. canIUse：宿主接了的 camera / voip-room 为 true，没接的 live-pusher 为 false。
+#[test]
+fn f2_相机帧走引擎_扫码_voip_room_进不了房() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = fixture("camera");
+    std::fs::write(
+        root.join("pages/p/p.wxml"),
+        r#"<camera id="cam" mode="scanCode" frame-size="small" bindscancode="onScan"></camera>
+<voip-room openid="o1" mode="video" binderror="onVoip"></voip-room>"#,
+    )
+    .unwrap();
+    std::fs::write(root.join("pages/p/p.wxss"), "page { background-color: #ffffff; }").unwrap();
+    std::fs::write(
+        root.join("pages/p/p.js"),
+        r#"Page({ data: { frames: [], scans: [], voip: [], started: false },
+  onLoad() {
+    const ctx = wx.createCameraContext();
+    this.listener = ctx.onCameraFrame(f => this.data.frames.push([f.width, f.height, f.data.byteLength, f.data instanceof ArrayBuffer]));
+    this.listener.start({ success: () => { this.data.started = true; } });
+  },
+  onScan(e) { this.data.scans.push(e.detail.result + '|' + e.detail.type); },
+  onVoip(e) { this.data.voip.push(typeof e.detail.errCode); } });"#,
+    )
+    .unwrap();
+    let opts = EngineOptions { same_layer: vec!["camera".into(), "voip-room".into()], ..Default::default() };
+    let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), Some(&root.join("_data").to_string_lossy()), W, H, DPR, HostEnv::default(), opts)
+        .expect("创建引擎");
+    e.set_animation_clock(0.0);
+    e.launch(None).expect("打开首页");
+    let mut t = 1000u64;
+    e.pump_ex(t);
+    let evs = events(&mut e);
+    let views = evs.iter().find(|v| v["type"] == "sameLayerViews").expect("sameLayerViews");
+    let cam = views["views"].as_array().unwrap().iter().find(|v| v["tag"] == "camera").expect("camera 交给宿主");
+    assert_eq!(cam["key"], "cam");
+    assert_eq!(cam["box"], serde_json::json!([W as f32 * DPR, 300.0 * DPR]), "默认 100% × 300px：{cam}");
+    assert_eq!(e.eval("String(getCurrentPages()[0].data.started)").unwrap(), "true", "listener.start 成功");
+    assert_eq!(e.eval("String(wx.canIUse('camera')) + wx.canIUse('voip-room') + wx.canIUse('live-pusher')").unwrap(), "truetruefalse");
+
+    // 宿主交一帧预览：白底上一个二维码
+    let (bw, bh) = ((W as f32 * DPR) as usize, (300.0 * DPR) as usize);
+    let code = qrcode::QrCode::new(b"https://example.com/f2").unwrap();
+    let mods = code.width();
+    let colors = code.to_colors();
+    let scale = 400 / (mods + 8);
+    let (ox, oy) = ((bw - mods * scale) / 2, (bh - mods * scale) / 2);
+    let mut px = vec![255u8; bw * bh * 4];
+    for my in 0..mods {
+        for mx in 0..mods {
+            if colors[my * mods + mx] == qrcode::Color::Dark {
+                for y in oy + my * scale..oy + (my + 1) * scale {
+                    for x in ox + mx * scale..ox + (mx + 1) * scale {
+                        px[(y * bw + x) * 4..(y * bw + x) * 4 + 3].copy_from_slice(&[0, 0, 0]);
+                    }
+                }
+            }
+        }
+    }
+    let started = std::time::Instant::now();
+    let mut pushes = 0;
+    // 解码在后台线程：按墙上时钟等，最多 5 秒
+    while started.elapsed().as_secs() < 5 {
+        if pushes < 3 {
+            assert!(host_view::push_rgba("cam", bw as u32, bh as u32, bw * 4, &px));
+            pushes += 1;
+        }
+        t += 300;
+        e.pump_ex(t);
+        if e.eval("String(getCurrentPages()[0].data.scans.length)").unwrap() != "0" && pushes >= 3 {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(30));
+    }
+    // 再给两轮：同一个码在 2 秒内不重复发
+    for _ in 0..3 {
+        assert!(host_view::push_rgba("cam", bw as u32, bh as u32, bw * 4, &px));
+        t += 300;
+        e.pump_ex(t);
+        std::thread::sleep(std::time::Duration::from_millis(60));
+        e.pump_ex(t + 1);
+    }
+    assert_eq!(e.eval("JSON.stringify(getCurrentPages()[0].data.scans)").unwrap(), r#"["https://example.com/f2|QR_CODE"]"#);
+    // 条形码（EAN-13）：同一个相机、换一帧画面
+    let bars = {
+        use rxing::Writer;
+        rxing::MultiFormatWriter.encode("6901234567892", &rxing::BarcodeFormat::EAN_13, 600, 200).expect("编条形码")
+    };
+    let mut px2 = vec![255u8; bw * bh * 4];
+    let (ox2, oy2) = ((bw - bars.getWidth() as usize) / 2, (bh - bars.getHeight() as usize) / 2);
+    for yy in 0..bars.getHeight() {
+        for xx in 0..bars.getWidth() {
+            if bars.get(xx, yy) {
+                let i = ((oy2 + yy as usize) * bw + ox2 + xx as usize) * 4;
+                px2[i..i + 3].copy_from_slice(&[0, 0, 0]);
+            }
+        }
+    }
+    let started = std::time::Instant::now();
+    while started.elapsed().as_secs() < 5 {
+        assert!(host_view::push_rgba("cam", bw as u32, bh as u32, bw * 4, &px2));
+        t += 300;
+        e.pump_ex(t);
+        std::thread::sleep(std::time::Duration::from_millis(40));
+        e.pump_ex(t + 1);
+        if e.eval("String(getCurrentPages()[0].data.scans.length)").unwrap() == "2" {
+            break;
+        }
+    }
+    assert_eq!(
+        e.eval("JSON.stringify(getCurrentPages()[0].data.scans[1])").unwrap(),
+        r#""6901234567892|EAN_13""#,
+        "条形码也认，码制名与 wx.scanCode 的 scanType 一样"
+    );
+    let frames = e.eval("JSON.stringify(getCurrentPages()[0].data.frames[0])").unwrap();
+    assert_eq!(frames, "[360,288,414720,true]", "small：长边 360，RGBA 的 ArrayBuffer");
+    assert_eq!(e.eval("JSON.stringify(getCurrentPages()[0].data.voip)").unwrap(), r#"["number"]"#, "voip-room 只报一次错");
+    host_view::retain(&[]);
+}

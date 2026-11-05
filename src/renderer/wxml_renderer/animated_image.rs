@@ -59,7 +59,8 @@ impl AnimatedImageMark {
             // 帧 / 播放状态 + 控制条的显隐与拖动（全屏中的那个冻住）
             crate::renderer::components::video_ui::mark_seq(&self.src)
         } else {
-            crate::renderer::components::animated_frame(&self.src)
+            // `<image fade-in>` 渐显中也按「换帧」报（components/image/fade.rs，没有渐显中的图时只读一个原子数）
+            crate::renderer::components::animated_frame(&self.src).or_else(|| crate::renderer::components::image::fade::frame(&self.src))
         }
     }
 }
@@ -104,7 +105,7 @@ impl WxmlRenderer {
                 .attrs
                 .get("src")
                 .filter(|s| !s.is_empty())
-                .and_then(|s| crate::renderer::components::animated_frame(s)),
+                .and_then(|s| crate::renderer::components::animated_frame(s).or_else(|| crate::renderer::components::image::fade::frame(s))),
             "video" => crate::renderer::components::video_ui::mark_seq(&crate::renderer::components::host_feed::video_key(&node.attrs)),
             "live-player" if crate::renderer::components::host_feed::host_feeds_live() => {
                 crate::renderer::components::video_ui::mark_seq(&crate::renderer::components::host_feed::video_key(&node.attrs))

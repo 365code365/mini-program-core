@@ -153,6 +153,9 @@ impl crate::MiniAppWindow {
                 self.page_stack.len(),
                 self.edge_back.is_some(),
             ));
+            // 手势组件代理 scroll-view / swiper（native-view）：这串触摸不补 touchcancel（与 SDK 同一份）
+            let hy = if on_fixed_layer { y } else { y + self.scroll.get_position() };
+            mini_render::host::gesture_native::begin(self.renderer.as_ref(), x, hy);
     }
 
     /// 指针抬起
@@ -198,6 +201,7 @@ impl crate::MiniAppWindow {
             let outs = self.touch.release(x, y, clock);
             self.touch.finish();
             self.dispatch_touch_events(&outs, x, y);
+            mini_render::host::gesture_native::end();
             let stopped_fling = std::mem::take(&mut self.tap_stops_fling);
             if outs.contains(&app_window::touch::TouchOut::Tap) && !stopped_fling && !slider_dragged && !seek_dragged {
                 self.handle_click(x, y);
@@ -227,14 +231,17 @@ impl crate::MiniAppWindow {
         ) {
             self.needs_redraw = true;
         }
-        self.apply_gesture_move(x, y);
+        // 代理容器的手势组件拦了（桌面先推手势再派 touchmove：按上一下的结论）
+        if !mini_render::host::gesture_native::move_blocked(&self.app) {
+            self.apply_gesture_move(x, y);
+        }
         // 触摸序列：先 `touchmove`，如果这一下已经被滚动接管，再补一次
         // `touchcancel`（手势竞争的失败方要收到 cancel，页面自己的拖拽才知道收尾）
         if self.touch.is_active() {
             let clock = self.touch_clock_ms();
             let outs = self.touch.move_to(x, y, clock);
             self.dispatch_touch_events(&outs, x, y);
-            if self.scroll_took_over() {
+            if self.scroll_took_over() && !mini_render::host::gesture_native::keeps_touch() {
                 let outs = self.touch.cancel();
                 self.dispatch_touch_events(&outs, x, y);
             }

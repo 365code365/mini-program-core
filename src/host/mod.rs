@@ -35,12 +35,20 @@ mod engine_wants;
 pub mod engine_video_feed;
 /// 同层渲染的通用组件（`<map>` 这类）与宿主的约定（`sameLayerViews` / `nativeViewTap` 事件、回传事件）
 mod engine_host_views;
+/// 同层 `<map>` 的自定义气泡（slot="callout"）出图交给宿主
+mod engine_map_callouts;
 /// 同层渲染组件自己的手势（地图平移 / 捏合）：这串触摸整串交给宿主（`nativeViewTouch` 事件）
 mod engine_native_touch;
 /// `<web-view>`：网页与小程序之间的消息、跳转、加载事件（宿主盖 WebView，见 engine_webview.rs）
 mod engine_webview;
 /// `<live-player>`：走同层渲染视频那一套（宿主播放器解码、引擎画），状态码与 LivePlayerContext
 mod engine_live_player;
+/// `<camera>` / `<live-pusher>` / `<voip-room>`：相机帧（onCameraFrame）、扫码、voip-room 进不了房（宿主画画面）
+mod engine_camera;
+/// 小窗（picture-in-picture-mode）：离开页面时 live-pusher 缩成右下角浮窗
+mod engine_pip;
+/// `<canvas binderror>`：同一页面里 canvas-id 重复
+mod engine_canvas_check;
 mod frame_laps;
 mod engine_damage_rects;
 /// 这一帧重画多少（只合成 / 局部 / 补条带 / 整帧）与整帧归因
@@ -111,6 +119,10 @@ pub mod config;
 pub mod cpu_affinity;
 pub mod edge_back;
 pub mod gesture;
+/// 手势组件代理原生容器（native-view）：这串触摸不补 touchcancel、逻辑层可拦（SDK 与桌面共用）
+pub mod gesture_native;
+/// `<snapshot>` 的 takeSnapshot：子树离屏画成 PNG / RGBA（SDK 与桌面共用）
+pub mod snapshot;
 /// 指针输入的平台无关核心（触摸派发 / 手势仲裁 / 惯性收尾），窗体与 SDK 共用
 pub mod input;
 /// `mr_app_touch`：每根指针一次的触摸 → 小程序的单指状态机 + 第二指（G3.2）
@@ -135,15 +147,23 @@ pub mod tabbar;
 pub mod tabbar_api;
 /// 点击命中与事件派发（tap / change 的链路）
 pub mod tap;
+/// 输入框聚焦参数与 `focus` / `auto-focus` 属性的聚焦请求
+pub mod input_focus;
 pub mod touch;
 /// scroll-view 事件、`wx.pageScrollTo`、`onPageScroll`（SDK 与桌面共用）
 pub mod scroll_view;
+/// 每帧的 scroll-view 事件 / pageScrollTo / onPageScroll（`MiniEngine` 那一片，从 scroll_view.rs 搬出）
+mod engine_scroll_tick;
 /// swiper 的 change / transition / animationfinish 派发（SDK 与桌面共用）
 pub mod swiper;
 /// slider 拖动的 changing / change 派发（SDK 与桌面共用）
 pub mod slider_input;
 /// 组件自己的事件（不冒泡）派发给逻辑层
 mod own_events;
+/// `<scroll-view type="nested">` 的里外层衔接（手势换手）
+mod nested_scroll;
+/// scroll-view 下拉二级（refresher-two-level-*）的开关判定
+mod scroll_two_level;
 /// `<form>` 的提交与重置（form-type 按钮）
 pub mod form;
 /// 点击之后内置组件的行为：form 提交 / 重置、navigator 跳转、label 转发
@@ -154,6 +174,8 @@ pub mod video;
 pub mod selector_query;
 /// `wx.createIntersectionObserver`（SDK 与桌面共用）
 pub mod observers;
+/// list-builder / grid-builder 的 itembuild / itemdispose（挂在 observers::tick 里）
+pub mod builder_events;
 pub mod ui_overlay;
 /// wx.setBackgroundColor（帧底色）与 wx.hideKeyboard（输入框失焦）
 pub mod window_api;

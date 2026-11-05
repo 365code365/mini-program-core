@@ -14,6 +14,7 @@ impl FocusedInput {
         let cursor_pos = value.chars().count();
         Self {
             id,
+            value_at_focus: value.clone(),
             value,
             cursor_pos,
             selection_start: None,
@@ -27,6 +28,7 @@ impl FocusedInput {
             multiline: false,
             confirm_type: "done".to_string(),
             confirm_hold: false,
+            hold_keyboard: false,
             caret_upstream: false,
             goal_x: None,
             history: EditHistory::default(),

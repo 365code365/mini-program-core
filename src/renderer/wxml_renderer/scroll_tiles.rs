@@ -23,7 +23,10 @@ use crate::ui::scroll_cache::{TileSet, TILE_ROWS};
 impl WxmlRenderer {
     /// 这个 scroll-view 能不能走分块缓存（只看子树结构；按没按着、底色是不是纯色另判）
     pub(super) fn tile_eligible(&self, node: &RenderNode) -> bool {
-        if std::env::var_os("MINI_NO_SCROLL_TILES").is_some() || self.drawing_offscreen {
+        // clip=false：块只有盒子那么宽，盒子外的画不进去
+        if std::env::var_os("MINI_NO_SCROLL_TILES").is_some() || self.drawing_offscreen || self.in_nested_outer
+            || !super::scroll_views::clips(&node.attrs)
+        {
             return false;
         }
         fn ok(n: &RenderNode) -> bool {

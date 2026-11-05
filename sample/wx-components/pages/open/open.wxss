@@ -1,0 +1,5 @@
+.avatar { width: 80rpx; height: 80rpx; border-radius: 40rpx; overflow: hidden; margin-right: 16rpx; }
+.nick { font-size: 30rpx; }
+.poster { padding: 24rpx; background: linear-gradient(135deg, #07c160, #10aeff); color: #fff; border-radius: 16rpx; }
+.poster-t { font-size: 40rpx; font-weight: bold; }
+.shot { width: 240rpx; height: 120rpx; margin-left: 16rpx; border: 1rpx solid #ddd; }

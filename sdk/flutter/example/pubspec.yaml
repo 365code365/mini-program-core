@@ -85,6 +85,8 @@ flutter:
     - assets/demo/pages/host/
     - assets/demo/pages/index/
     - assets/demo/pages/live/
+    - assets/demo/pages/camera/
+    - assets/demo/pages/pusher/
     - assets/demo/pages/map/
     - assets/demo/pages/media/
     - assets/demo/pages/navcustom/

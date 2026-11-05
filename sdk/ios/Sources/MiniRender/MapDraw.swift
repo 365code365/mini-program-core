@@ -3,7 +3,8 @@ import Foundation
 import UIKit
 
 /// [MiniMapView] 画一帧（与 Android `MapDraw.kt` 同一个顺序）：底色 → 瓦片（缺的拿上一级顶着）→ 多边形 → 圆 → 折线 →
-/// 标记 → 标签 → 气泡 → 比例尺 → 版权。上下文已是 UIKit 坐标（左上原点）并按 dpr 缩放，下面用逻辑像素。
+/// 定位蓝点 → 标记 → 标签 → 气泡（callout / title / customCallout）→ 控件 → 比例尺 → 版权（小块在 `MapBubbles.swift`）。
+/// 上下文已是 UIKit 坐标（左上原点）并按 dpr 缩放，下面用逻辑像素。
 enum MapDraw {
     /// 瓦片没到时的底色（tools/android-native-align.py 认地图也认这个色）
     static let background = UIColor(red: 0xE8 / 255.0, green: 0xEE / 255.0, blue: 0xF5 / 255.0, alpha: 1)
@@ -17,13 +18,23 @@ enum MapDraw {
         ctx.interpolationQuality = moving ? .low : .medium
         tiles(m, ctx, scale)
         m.hits.removeAll()
+        // polygons 在解析时已按 zIndex 排好（稳定排序，同值按数组顺序）
         for p in m.polygons { polygon(m, ctx, p) }
         for c in m.circles { circle(m, ctx, c) }
         for l in m.lines { line(m, ctx, l) }
+        if m.showLocation { MapBubbles.location(m, ctx) }
         let all = (m.markers + m.extraMarkers).sorted { $0.zIndex < $1.zIndex }
         for mk in all { marker(m, ctx, mk) }
-        for mk in all { if let b = mk.label { label(m, ctx, mk, b) } }
-        for mk in all { if let b = mk.callout, b.always || m.openCallouts.contains(mk.id) { callout(m, ctx, mk, b) } }
+        for mk in all { if let b = mk.label { MapBubbles.label(m, mk, b, scale) } }
+        for mk in all {
+            if let cc = mk.custom {
+                if cc.always || m.openCallouts.contains(mk.id) { MapBubbles.custom(m, mk, cc) }
+            } else if let b = mk.callout, b.always || m.openCallouts.contains(mk.id) {
+                MapBubbles.callout(m, mk, b, scale)
+            }
+        }
+        // 控件不随地图动、画在最上面（点击也最先判）
+        MapBubbles.controls(m)
         if m.showScale { scaleBar(m, ctx) }
         attribution(m, ctx)
         return moving
@@ -73,7 +84,12 @@ enum MapDraw {
         guard g.points.count >= 3 else { return }
         let p = path(m, g.points, close: true)
         c.addPath(p); c.setFillColor(g.fill.cgColor); c.fillPath()
-        if g.stroke > 0 { c.addPath(p); c.setStrokeColor(g.strokeColor.cgColor); c.setLineWidth(g.stroke); c.strokePath() }
+        if g.stroke > 0 {
+            c.addPath(p); c.setStrokeColor(g.strokeColor.cgColor); c.setLineWidth(g.stroke)
+            if !g.dash.isEmpty { c.setLineDash(phase: 0, lengths: g.dash) }
+            c.strokePath()
+            c.setLineDash(phase: 0, lengths: [])
+        }
     }
 
     private static func circle(_ m: MiniMapView, _ c: CGContext, _ k: MapCircle) {
@@ -92,11 +108,24 @@ enum MapDraw {
         if l.borderWidth > 0 {
             c.addPath(p); c.setStrokeColor(l.borderColor.cgColor); c.setLineWidth(l.width + l.borderWidth * 2); c.strokePath()
         }
-        c.addPath(p); c.setStrokeColor(l.color.cgColor); c.setLineWidth(l.width)
+        c.setLineWidth(l.width)
         if l.dotted { c.setLineDash(phase: 0, lengths: [l.width * 1.5, l.width * 1.5]) }
-        c.strokePath()
+        if l.colorList.isEmpty {
+            c.addPath(p); c.setStrokeColor(l.color.cgColor); c.strokePath()
+        } else {
+            // 彩虹线：一段一个颜色，不够的段用最后一个（官方）
+            for i in 0..<(l.points.count - 1) {
+                let a = m.toScreen(l.points[i]), b = m.toScreen(l.points[i + 1])
+                c.setStrokeColor(l.colorList[min(i, l.colorList.count - 1)].cgColor)
+                c.move(to: a); c.addLine(to: b); c.strokePath()
+            }
+        }
         c.setLineDash(phase: 0, lengths: [])
         guard l.arrow else { return }
+        if !l.arrowIconPath.isEmpty,
+           let icon = MapTiles.icon(l.arrowIconPath, file: m.resolvePath(l.arrowIconPath), done: { [weak m] in m?.invalidate() }) {
+            return arrowIcons(m, c, l, icon)
+        }
         c.setStrokeColor(UIColor.white.cgColor)
         c.setLineWidth(max(1.2, l.width / 3))
         let s = l.width * 0.6
@@ -146,57 +175,24 @@ enum MapDraw {
         c.fillEllipse(in: CGRect(x: cx - rad * 0.38, y: r.minY + rad * 0.62, width: rad * 0.76, height: rad * 0.76))
     }
 
-    private static func bubbleSize(_ b: MapBubble) -> (CGSize, [String], [NSAttributedString.Key: Any]) {
-        let attrs: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: b.fontSize), .foregroundColor: b.color]
-        let lines = b.content.components(separatedBy: "\n")
-        let tw = lines.map { ($0 as NSString).size(withAttributes: attrs).width }.max() ?? 0
-        let pad = max(b.padding, 4)
-        return (CGSize(width: tw + pad * 2, height: b.fontSize * 1.3 * CGFloat(lines.count) + pad * 2), lines, attrs)
-    }
-
-    private static func bubble(_ c: CGContext, _ b: MapBubble, _ r: CGRect, _ lines: [String], _ attrs: [NSAttributedString.Key: Any], tail: Bool) {
-        c.saveGState()
-        c.setShadow(offset: CGSize(width: 0, height: 1), blur: 3, color: UIColor(white: 0, alpha: 0.2).cgColor)
-        let shape = UIBezierPath(roundedRect: r, cornerRadius: b.radius)
-        if tail {
-            shape.move(to: CGPoint(x: r.midX - 6, y: r.maxY - 0.5))
-            shape.addLine(to: CGPoint(x: r.midX, y: r.maxY + 6))
-            shape.addLine(to: CGPoint(x: r.midX + 6, y: r.maxY - 0.5))
-            shape.close()
+    /// arrowIconPath：图标朝走向、每隔 60 逻辑像素一个，高度跟线宽（至少 8）
+    private static func arrowIcons(_ m: MiniMapView, _ c: CGContext, _ l: MapLine, _ icon: UIImage) {
+        let s = max(8, l.width)
+        let w = s * icon.size.width / max(icon.size.height, 1)
+        for (a, b) in zip(l.points, l.points.dropFirst()) {
+            let pa = m.toScreen(a), pb = m.toScreen(b)
+            let len = hypot(pb.x - pa.x, pb.y - pa.y)
+            let ang = atan2(pb.y - pa.y, pb.x - pa.x)
+            var d: CGFloat = 30
+            while d < len {
+                c.saveGState()
+                c.translateBy(x: pa.x + (pb.x - pa.x) * d / len, y: pa.y + (pb.y - pa.y) * d / len)
+                c.rotate(by: ang)
+                icon.draw(in: CGRect(x: -w / 2, y: -s / 2, width: w, height: s))
+                c.restoreGState()
+                d += 60
+            }
         }
-        b.bg.setFill()
-        shape.fill()
-        c.restoreGState()
-        if b.borderWidth > 0 {
-            b.borderColor.setStroke()
-            let e = UIBezierPath(roundedRect: r, cornerRadius: b.radius)
-            e.lineWidth = b.borderWidth
-            e.stroke()
-        }
-        let pad = max(b.padding, 4)
-        for (i, s) in lines.enumerated() {
-            (s as NSString).draw(at: CGPoint(x: r.minX + pad, y: r.minY + pad + b.fontSize * 1.3 * CGFloat(i)), withAttributes: attrs)
-        }
-    }
-
-    private static func callout(_ m: MiniMapView, _ c: CGContext, _ mk: MapMarker, _ b: MapBubble) {
-        guard !b.content.isEmpty else { return }
-        let s = m.toScreen(mk.pos)
-        let h = mk.height ?? 36
-        let (size, lines, attrs) = bubbleSize(b)
-        let r = CGRect(x: s.x - size.width / 2, y: s.y - h * mk.anchorY - 8 - size.height, width: size.width, height: size.height)
-        bubble(c, b, r, lines, attrs, tail: true)
-        m.hits.append(MapHit(kind: .callout, id: mk.id, rect: r))
-    }
-
-    private static func label(_ m: MiniMapView, _ c: CGContext, _ mk: MapMarker, _ b: MapBubble) {
-        guard !b.content.isEmpty else { return }
-        let s = m.toScreen(mk.pos)
-        let (size, lines, attrs) = bubbleSize(b)
-        // 官方：anchorX / anchorY 是标签左上角相对标记锚点的偏移
-        let r = CGRect(x: s.x + b.anchorX, y: s.y + b.anchorY, width: size.width, height: size.height)
-        bubble(c, b, r, lines, attrs, tail: false)
-        m.hits.append(MapHit(kind: .label, id: mk.id, rect: r))
     }
 
     private static let nice: [Double] = [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000]

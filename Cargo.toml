@@ -22,7 +22,9 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 [features]
 # 默认同时编进 CPU 与 GPU 两个后端，运行时选（交互窗体 auto；无头与回归脚本 cpu）。
 # 只要 CPU：`cargo build --release --no-default-features --features desktop,audio,h264`
-default = ["desktop", "audio", "h264", "gpu", "game", "game-audio", "webgl", "wasm"]
+default = ["desktop", "audio", "h264", "gpu", "game", "game-audio", "webgl", "wasm", "svg"]
+# SVG 图片（resvg，见 [dependencies]）。关掉时 .svg 的 <image> 走 binderror、canvas 画不出，其余不变
+svg = ["dep:resvg"]
 # 桌面宿主（自带窗口、上屏、剪贴板）
 desktop = ["winit", "softbuffer", "arboard", "dep:rfd"]
 # 内置音频播放（video 组件的声音）
@@ -71,6 +73,9 @@ rustls = { version = "=0.23.42", default-features = false, features = ["ring", "
 webpki-roots = "=1.0.9"
 # 桥上只有字符串：二进制（WebSocket 帧、文件内容、音频）按 base64 过桥。与 ureq 用的是同一份
 base64 = "=0.22.1"
+# <camera mode="scanCode"> 在宿主交来的预览画面上解二维码与条形码（host/engine_camera.rs）：ZXing 的纯 Rust 移植，
+# 不带 image / 编码器 / 客户端解析（只要从灰度图解码）
+rxing = { version = "0.9", default-features = false, features = ["decoders", "multi_barcode_readers", "full_barcode_format_support", "encoding_rs"] }
 # wx.encode / wx.decode 的 gbk（官方合法值之一）。0.8.35 已经是 Cargo.lock 里的传递依赖，直接声明不多下载任何东西
 encoding_rs = "=0.8.35"
 # FileSystemManager.unzip 的 deflate 解压（ureq 的 gzip 用的就是它，不多编一份）
@@ -90,6 +95,11 @@ khronos-egl = { version = "=6.0.0", optional = true, default-features = false, f
 wasmi = { version = "=2.0.0", optional = true, default-features = false, features = ["std", "simd", "validate"] }
 # H.264 解码 (纯 Rust，可选)
 openh264 = { version = "0.9", optional = true }
+# SVG 解码（feature `svg`，`<image src="*.svg">` 与 canvas drawImage）：只在第一次解码时栅格化成位图进图片缓存。
+# 不开 text（SVG 里的 <text> 不画，免得再编一套字体栈）与 raster-images（SVG 里嵌的位图不画）。
+# 多出 17 个纯 Rust 的小 crate（usvg / tiny-skia / roxmltree / svgtypes / kurbo …）；桌面 release（不开 LTO）的
+# cdylib 大约 +995KB（56.05MB → 57.07MB，2026-11-05 WP-E 同一份源码、都不开增量量的）
+resvg = { version = "=0.45.1", optional = true, default-features = false }
 
 # ── 桌面专用（可选）──
 winit = { version = "0.30", optional = true }
@@ -177,6 +187,10 @@ required-features = ["desktop"]
 cpal = { version = "=0.17.3", optional = true }
 
 [dev-dependencies]
+# 测试里生成二维码（camera scanCode 的用例，tests/same_layer_view_e2e.rs）
+qrcode = { version = "0.14", default-features = false }
+# 同上：测试里生成条形码（只在测试里打开编码器）
+rxing = { version = "0.9", default-features = false, features = ["encoders", "decoders", "multi_barcode_readers", "full_barcode_format_support", "encoding_rs"] }
 # 上游 fontdue（预展开全部字形）：tests/font_lazy_e2e.rs 拿它对照 vendor/fontdue 的惰性展开逐位一致
 fontdue_upstream = { package = "fontdue", version = "=0.9.3" }
 # 只给 examples/_font_probe.rs 用：量「惰性解析字体」的内存基线

@@ -1,0 +1,5 @@
+.box { height: 560rpx; background: #fafafa; border-radius: 12rpx; margin-top: 16rpx; }
+.box.small { height: 420rpx; }
+.lrow { height: 44px; line-height: 44px; padding: 0 24rpx; border-bottom: 1rpx solid #eee; }
+.cell { height: 120rpx; border-radius: 12rpx; display: flex; align-items: center; justify-content: center; }
+.mcell { border-radius: 12rpx; display: flex; align-items: center; justify-content: center; }

@@ -6,6 +6,7 @@
 //! 改值统一落到 `FocusedInput::replace_range`（见 focused_edit.rs）。从前每个键一个分支、
 //! 各自拼字符串，于是 textarea 的回车只能「确认并失焦」、`\n` 原样塞进值里画成豆腐块，
 //! ↑↓、按词移动、撤销这些常用快捷键一个都没有。
+use super::edit_note::{note_input_blur, note_input_edit};
 use super::text_lines::{self, TextLine};
 use super::*;
 
@@ -143,6 +144,7 @@ impl InteractionManager {
             _ => {}
         }
         let lines = lines_for(&self.text_layouts, focused);
+        let key_code = super::edit_note::key_code_of(&key);
         let input = self.focused_input.as_mut()?;
 
         if let Some((m, extend)) = motion_of(&key) {
@@ -199,6 +201,7 @@ impl InteractionManager {
                 let text: String = input.value.chars().skip(s).take(e - s).collect();
                 input.delete_range(s, e, EditKind::Other);
                 self.states.insert(input.id.clone(), ComponentState { checked: false, value: input.value.clone() });
+                note_input_edit(input, 0);
                 return Some(InteractionResult::CutText { text, id: input.id.clone(), value: input.value.clone() });
             }
             // 移动类在上面已经处理；Escape / 确认类回车也已返回
@@ -208,6 +211,7 @@ impl InteractionManager {
             return None;
         }
         self.states.insert(input.id.clone(), ComponentState { checked: false, value: input.value.clone() });
+        note_input_edit(input, key_code);
         Some(InteractionResult::InputChange { id: input.id.clone(), value: input.value.clone() })
     }
 
@@ -235,12 +239,14 @@ impl InteractionManager {
         out
     }
 
-    /// 回车确认：`confirm-hold` 时保持聚焦，否则失焦（键盘收起）
+    /// 回车确认：`confirm-hold` 时保持聚焦，否则失焦（键盘收起；宿主在 confirm 之后补发 blur）
     fn confirm_input(&mut self) -> Option<InteractionResult> {
         let input = self.focused_input.as_ref()?;
         let (id, value, hold) = (input.id.clone(), input.value.clone(), input.confirm_hold);
         if !hold {
-            self.focused_input = None;
+            if let Some(f) = self.focused_input.take() {
+                note_input_blur(&f);
+            }
         }
         Some(InteractionResult::InputConfirm { id, value, keep_focus: hold })
     }
@@ -248,6 +254,7 @@ impl InteractionManager {
     /// 取消输入框聚焦
     pub fn blur_input(&mut self) -> Option<InteractionResult> {
         if let Some(input) = self.focused_input.take() {
+            note_input_blur(&input);
             return Some(InteractionResult::InputBlur {
                 id: input.id,
                 value: input.value,

@@ -273,7 +273,7 @@ impl MiniEngine {
             return (FrameKind::Full(FullReason::Structural), RenderScope::FULL);
         }
         let sv_moved = !matches!(self.scroll_area_damage(), AreaDamage::Nothing);
-        let gif = !self.animated_images_due().is_empty();
+        let gif = !self.animated_images_due().is_empty() || !self.sticky_due().is_empty();
         let press = self.dmg.extra.take().is_some() | std::mem::take(&mut self.dmg.press_fixed);
         if other_work || press || self.page_data_dirty || self.dmg.page_animates || self.dmg.fixed_layer_animates || sv_moved || gif {
             return full;
@@ -387,6 +387,9 @@ impl MiniEngine {
             let data = r == FullReason::Data;
             return full(r, fixed || data || r == FullReason::ScrollView, tabbar || data);
         }
+        // 吸附元素：页面滚动时只重画它上次与这次画的那两块（engine_damage_area.rs `sticky_due`）
+        let sticky = self.sticky_due();
+        page_work |= !sticky.is_empty();
         let inside = self.viewport_inside_drawn_band();
         // 裁剪窗里还有多少行没画（条带边到窗边）。攒到视口真滑出条带才补，一补就是 400 多行
         // 加整窗走一遍节点树，手机上一帧二十毫秒往上；提前在它攒够一小截时就补，尖峰削平
@@ -453,6 +456,7 @@ impl MiniEngine {
         let anim_complete = strip || !anim_in.is_empty();
         rects.extend(anim_in);
         rects.extend(gifs);
+        rects.extend(sticky.into_iter().filter_map(clip));
         let rects = merge_rects(rects);
         let area: f32 = rects.iter().map(|r| r.width * r.height).sum();
         // 只有一块时不换整条带：一块矩形本来就只走一趟节点树，换成整条带只是把块外的东西白画一遍。

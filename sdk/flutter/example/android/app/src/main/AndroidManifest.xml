@@ -3,6 +3,10 @@
     <!-- 小程序的 wx.request / 远程图片 / 宿主承载的 <video> 都要联网。
          debug 清单里那条只管 debug 包，release 包少了它就全部断网 -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- <camera> / <live-pusher> / <voip-room>：SDK 自带的相机（CameraPipe），第一次用时申请；录像、推流要麦克风 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application
         android:label="灵犀"
         android:name="${applicationName}"

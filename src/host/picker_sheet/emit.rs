@@ -16,7 +16,13 @@ use crate::runtime::MiniApp;
 
 /// `bindchange` 的 detail：`{value}`（selector 是下标 number、multiSelector / region 是数组、time / date 是字符串，
 /// 见 [`PickerSheetState::change_value`]）
-pub(super) fn change_detail(_sheet: &PickerSheetState, value: serde_json::Value) -> serde_json::Value {
+///
+/// region 另带 `code`（官方：「code 是统计用区划代码」，6 位，见 region_data.rs）；`postcode`（邮政编码）
+/// 没有可信的公开数据，不给（页面读到 undefined）
+pub(super) fn change_detail(sheet: &PickerSheetState, value: serde_json::Value) -> serde_json::Value {
+    if sheet.mode == super::SheetMode::Region {
+        return serde_json::json!({ "value": value, "code": super::region::region_codes(sheet) });
+    }
     serde_json::json!({ "value": value })
 }
 

@@ -1,0 +1,9 @@
+.stage { height: 360rpx; background: #f4f5f7; border-radius: 12rpx; overflow: hidden; }
+.lane { height: 360rpx; display: flex; align-items: center; justify-content: center; }
+.ball { width: 140rpx; height: 140rpx; border-radius: 70rpx; background: #07c160; color: #fff; display: flex; align-items: center; justify-content: center; }
+.sheet-host { height: 700rpx; position: relative; background: #e9ebf0; border-radius: 12rpx; overflow: hidden; margin-top: 16rpx; }
+.sheet { height: 100%; }
+.sheet-list { height: 100%; background: #fff; border-radius: 24rpx 24rpx 0 0; }
+.grab { width: 80rpx; height: 10rpx; border-radius: 5rpx; background: #d0d3da; margin: 16rpx auto; }
+.sheet-row { padding: 24rpx; border-bottom: 1rpx solid #f0f0f0; }
+.pc { padding: 40rpx; height: 500rpx; background: #fff; }

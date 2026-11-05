@@ -78,6 +78,8 @@ impl WxmlRenderer {
             fields: node.attrs.get("fields").cloned().unwrap_or_default(),
             start: node.attrs.get("start").cloned().unwrap_or_default(),
             end: node.attrs.get("end").cloned().unwrap_or_default(),
+            custom_item: node.attrs.get("custom-item").cloned().unwrap_or_default(),
+            level: node.attrs.get("level").map(|s| s.trim().to_string()).unwrap_or_default(),
             change_handler,
             disabled,
             is_fixed,
@@ -144,6 +146,15 @@ impl WxmlRenderer {
         }
         let detail = match state {
             crate::renderer::components::ImageLoad::Ready { width, height } => {
+                // SVG 按固有尺寸 ×2 栅格化（image/svg.rs）：bindload 报的是图的固有尺寸（与浏览器 naturalWidth 一致），
+                // 不是栅格。每个 (组件, src) 只发一次，这里多读一次文件头无所谓
+                let natural = src
+                    .to_ascii_lowercase()
+                    .ends_with(".svg")
+                    .then(|| crate::assets::resolve(src))
+                    .flatten()
+                    .and_then(|p| crate::renderer::components::image::svg::natural_size_of_file(src, &p));
+                let (width, height) = natural.unwrap_or((width, height));
                 ImageEventDetail::Load { width, height }
             }
             _ => ImageEventDetail::Error,
@@ -169,6 +180,11 @@ impl WxmlRenderer {
     /// 完全一样的字段拷贝，加字段要改六处。收敛到这里之后 `component_id` 只算一次。
     pub(super) fn push_event_bindings(&mut self, node: &RenderNode, bounds: GeoRect) {
         if node.events.is_empty() {
+            return;
+        }
+        // 禁用的按钮不接触摸事件：WebView 版 wx-button 的 `[disabled]` 是 `pointer-events:none`
+        // （官方 button.html 只写「是否禁用」）。不登记它的绑定，点击照常落到它下面 / 外层的节点上
+        if node.tag == "button" && node.attrs.get("disabled").is_some_and(|s| crate::renderer::components::attr_is_true(s)) {
             return;
         }
         let component_id = Self::get_component_id(node, &bounds);
@@ -294,8 +310,9 @@ impl WxmlRenderer {
     pub fn hit_test_bubble(&self, x: f32, y: f32, event_type: &str) -> Vec<EventBinding> {
         let p = crate::Point::new(x, y);
         let top = self.fixed_top_layer(&p);
-        let mut matched: Vec<EventBinding> = self.event_bindings.iter()
-            .filter(|b| b.event_type == event_type && b.bounds.contains(&p) && Self::fixed_reachable(b, top))
+        let mut matched: Vec<EventBinding> = self.event_bindings.iter().enumerate()
+            .filter(|(i, b)| b.event_type == event_type && b.bounds.contains(&p) && Self::fixed_reachable(b, top) && !self.sticky_hides(*i, b, &p))
+            .map(|(_, b)| b)
             .cloned()
             .collect();
         Self::bubble_chain(&mut matched)
@@ -311,10 +328,12 @@ impl WxmlRenderer {
     ) -> Vec<EventBinding> {
         let p = crate::Point::new(x, y);
         let top = self.fixed_top_layer(&p);
-        let mut matched: Vec<EventBinding> = self.event_bindings.iter()
-            .filter(|b| {
+        let mut matched: Vec<EventBinding> = self.event_bindings.iter().enumerate()
+            .filter(|(i, b)| {
                 b.is_fixed == fixed && b.event_type == event_type && b.bounds.contains(&p) && Self::fixed_reachable(b, top)
+                    && !self.sticky_hides(*i, b, &p)
             })
+            .map(|(_, b)| b)
             .cloned()
             .collect();
         Self::bubble_chain(&mut matched)
@@ -341,12 +360,15 @@ impl WxmlRenderer {
         let mut matched: Vec<EventBinding> = self
             .event_bindings
             .iter()
-            .filter(|b| {
+            .enumerate()
+            .filter(|(i, b)| {
                 scope.map(|s| b.is_fixed == s).unwrap_or(true)
                     && b.event_type == event_type
                     && b.bounds.contains(&p)
                     && Self::fixed_reachable(b, top)
+                    && !self.sticky_hides(*i, b, &p)
             })
+            .map(|(_, b)| b)
             .cloned()
             .collect();
         // 面积升序 ≈ 由内向外（子节点面积必然不大于父节点）
@@ -394,7 +416,9 @@ impl WxmlRenderer {
         let top = self.fixed_top_layer(&p);
         self.event_bindings
             .iter()
-            .filter(|b| scope.map(|s| b.is_fixed == s).unwrap_or(true) && b.bounds.contains(&p) && Self::fixed_reachable(b, top))
+            .enumerate()
+            .filter(|(i, b)| scope.map(|s| b.is_fixed == s).unwrap_or(true) && b.bounds.contains(&p) && Self::fixed_reachable(b, top) && !self.sticky_hides(*i, b, &p))
+            .map(|(_, b)| b)
             .min_by(|a, b| {
                 let area_a = a.bounds.width * a.bounds.height;
                 let area_b = b.bounds.width * b.bounds.height;
@@ -412,7 +436,16 @@ impl WxmlRenderer {
         let top = self.fixed_top_layer(&p);
         self.event_bindings
             .iter()
-            .any(|b| b.is_catch && b.event_type == event_type && b.bounds.contains(&p) && Self::fixed_reachable(b, top))
+            .enumerate()
+            .any(|(i, b)| {
+                if self.sticky_hides(i, b, &p) {
+                    return false;
+                }
+                // `catch:__lockscroll`：拖动类手势组件（gesture.js）只锁滚动、不截断触摸事件的冒泡
+                // （它的绑定并在使用方的节点上，写 catchtouchmove 会把使用方自己的 bindtouchmove 截掉）
+                let ty = b.event_type == event_type || (event_type == "touchmove" && b.event_type == "__lockscroll");
+                b.is_catch && ty && b.bounds.contains(&p) && Self::fixed_reachable(b, top)
+            })
     }
 
     pub(super) fn bubble_chain(matched: &mut Vec<EventBinding>) -> Vec<EventBinding> {

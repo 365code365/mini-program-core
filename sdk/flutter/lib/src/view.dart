@@ -357,6 +357,15 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
         _c.keyboardShift(shift);
       }
       _trackKeyboard();
+      // iOS：web-view 盖在画面上，插件要知道画面在屏上的哪块（键盘顶起时视图上移，矩形跟着挪）
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final box = _box.currentContext?.findRenderObject() as RenderBox?;
+          if (box == null || !box.hasSize || !mounted) return;
+          final o = box.localToGlobal(Offset(0, engineShift ? 0 : -shift));
+          _c.reportViewRect(o & box.size);
+        });
+      }
       return ColoredBox(
         key: _box,
         color: widget.backgroundColor,

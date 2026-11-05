@@ -138,6 +138,13 @@ mod gradient;
 mod manager;
 /// 一条 JSON 指令的解释执行（旧接口与 type="2d" 共用）
 mod commands;
+/// drawImage / createPattern / createImage 的图源（解码一次进缓存，SVG / data: URI）
+pub mod image_src;
+/// isPointInPath / isPointInStroke
+mod hit2d;
+pub use hit2d::canvas_hit_test;
+pub use image_src::info_json as canvas_image_info;
+pub use image_src::data_uri as canvas_data_uri;
 pub use gradient::{LinearGradient, RadialGradient};
 pub use manager::{ensure_canvas_context, execute_canvas_draw, take_canvas_dirty, CanvasContextManager, CANVAS_MANAGER};
 pub use extra2d::measure_text as canvas_measure_text;
@@ -157,7 +164,23 @@ impl CanvasComponent {
         // 必须在合成默认尺寸**之前**调用 —— CSS 语义里「指定尺寸」只算作者写的那个，
         // 引擎给 textarea 之类补的默认高度不算，那种情况仍应允许被父级压缩。
         super::pin_replaced_min_size(&mut ts);
-        let events = extract_events(node);
+        // 官方 tip：canvas 默认宽 300px、高 150px（没写的那一边各自补；只写一边时浏览器按 2:1 推另一边，微信没写，待验）
+        let sf = ctx.scale_factor;
+        if dim_is_auto(ts.size.width) {
+            ts.size.width = taffy::prelude::length(300.0 * sf);
+        }
+        if dim_is_auto(ts.size.height) {
+            ts.size.height = taffy::prelude::length(150.0 * sf);
+        }
+        let mut events = extract_events(node);
+        // disable-scroll（官方：在 canvas 里移动、且绑了手势事件时，禁止屏幕滚动与下拉刷新）：
+        // 登记一条 `catch:__lockscroll`（与拖动类手势组件同一招，hit_test.rs::has_catch_for）——
+        // 只锁滚动，不截断 canvas 自己 touchmove 的冒泡
+        if bool_attr_of(node, "disable-scroll") {
+            if let Some(e) = events.iter().find(|e| e.event_type.starts_with("touch") || e.event_type == "longtap").cloned() {
+                events.push(EventBind { event_type: "__lockscroll".into(), handler: "__canvas_lockscroll".into(), is_catch: true, phase: EventPhase::Bubble, mut_bind: false, ..e });
+            }
+        }
         let attrs = node.attributes.clone();
         
         // 旧接口的画布默认白底（沿用既有基线）；`type="2d"` 与浏览器 / 微信一致是透明的

@@ -17,6 +17,9 @@ impl MiniEngine {
             return;
         }
         self.app.eval("__dispatchPage('onHide')").ok();
+        // <video auto-pause-if-navigate>（默认 true）：跳到本小程序的其它页面时暂停（host/video.rs）
+        let t_ms = self.mono_ms();
+        super::video::pause_on_navigate(&mut self.app, self.renderer.as_ref(), &self.interaction, t_ms);
         let t = self.pump_notes.start();
         self.capture_back_shot();
         self.pump_notes.add("留图", t);
@@ -57,6 +60,9 @@ impl MiniEngine {
         if self.renderer.is_none() {
             self.update_renderers();
         }
+        // 放回来的渲染器的布局代数与离开那页的可能撞上（各数各的）：同层组件按代数判「没变」就不重报了，
+        // 宿主还以为页面上是离开那页的那几个（小窗 pop 进去的那一帧就漏报过，engine_pip.rs）
+        crate::renderer::components::host_view::mark_stale();
         self.page_data_dirty = true;
         self.mark_full();
         self.dmg.fixed_dirty = true;

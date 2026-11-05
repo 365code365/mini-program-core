@@ -10,9 +10,10 @@ use super::*;
 /// Canvas 上下文管理器 - 全局管理所有 canvas 实例
 pub struct CanvasContextManager {
     contexts: HashMap<String, Canvas2DContext>,
-    /// 每个 canvas 最近一次收到的指令流。元素真实尺寸与设备像素比只有布局后才知道，
-    /// 而 `ctx.draw()` 一般发生在 onLoad —— 后备缓冲重建后要靠它把内容重画一遍。
-    last_commands: HashMap<String, String>,
+    /// 旧接口每个 canvas 自上次清屏以来的各批指令（`draw(false)` 只留这一批，`draw(true)` 接在后面）。
+    /// 元素真实尺寸与设备像素比只有布局后才知道，而 `ctx.draw()` 一般发生在 onLoad ——
+    /// 后备缓冲重建后要靠它把内容重画一遍（按批重放：每批开头照样复位状态）。
+    last_commands: HashMap<String, Vec<String>>,
     /// `type="2d"` 画布（键 `2d#<id>`）自上次重置以来的全部指令。2d 上下文是「画了就生效」的
     /// 追加语义（逻辑层每个微任务交一批），与旧接口「每次 draw 交一整份」不同 ——
     /// 后备缓冲重建时要重放**全部**，只放最后一批会丢掉前面画的。
@@ -56,8 +57,12 @@ impl CanvasContextManager {
                     super::commands::run_command(ctx, cmd);
                 }
             }
-        } else if let Some(commands) = self.last_commands.get(canvas_id).cloned() {
-            self.execute_commands(canvas_id, &commands);
+        } else if let Some(batches) = self.last_commands.get(canvas_id) {
+            if let Some(ctx) = self.contexts.get_mut(canvas_id) {
+                for json in batches {
+                    run_old_batch(ctx, &serde_json::from_str::<Vec<serde_json::Value>>(json).unwrap_or_default());
+                }
+            }
         }
     }
 
@@ -112,21 +117,55 @@ impl CanvasContextManager {
         if canvas_id.starts_with("2d#") {
             return self.execute_2d(canvas_id, commands_json);
         }
-        // 记住指令流：后备缓冲按元素真实尺寸重建后要重放一遍（见 `sync_backing`）
-        if self.last_commands.get(canvas_id).map(|s| s.as_str()) != Some(commands_json) {
-            self.last_commands.insert(canvas_id.to_string(), commands_json.to_string());
-        }
         // 解析命令
         let commands: Vec<serde_json::Value> = serde_json::from_str(commands_json).unwrap_or_default();
-        
+        // 记住指令流：后备缓冲按元素真实尺寸重建后要重放一遍（见 `sync_backing`）。
+        // `draw(reserve)` 带的 `__draw` 头：false 从这批重新记，true 接着记；没有头（直接调的）只留这一批（旧行为）
+        let reserve = commands.first().filter(|c| c.get("type").and_then(|v| v.as_str()) == Some("__draw"))
+            .map(|c| c.get("reserve").and_then(|v| v.as_bool()).unwrap_or(false));
+        let log = self.last_commands.entry(canvas_id.to_string()).or_default();
+        if reserve != Some(true) {
+            log.clear();
+        }
+        if log.len() < OLD_LOG_CAP {
+            log.push(commands_json.to_string());
+        }
         // 获取或创建上下文（元素尺寸未知时先给个较大的默认值，随后由 sync_backing 校正）
         let ctx = self.contexts.entry(canvas_id.to_string())
             .or_insert_with(|| Canvas2DContext::new(canvas_id, 400, 300));
-        
-        // 执行每个命令（解释器在 commands.rs）
-        for cmd in commands {
-            super::commands::run_command(ctx, &cmd);
+        run_old_batch(ctx, &commands);
+    }
+}
+
+/// `draw(true)` 连着画的批数上限（每帧 draw(true) 的动画只增不减；超了之后重建后备缓冲时只重放到这里）
+const OLD_LOG_CAP: usize = 2_000;
+
+/// 旧接口的一批指令（解释器在 commands.rs）。开头的 `{type:'__draw', reserve}`（官方 CanvasContext.draw）：
+/// 每次 draw 之前状态都回到默认（fillStyle 黑、无变换……，官方示例两种 reserve 都是这样），
+/// reserve 为 false 时还要先清空画布
+fn run_old_batch(ctx: &mut Canvas2DContext, commands: &[serde_json::Value]) {
+    for cmd in commands {
+        if cmd.get("type").and_then(|v| v.as_str()) == Some("__draw") {
+            ctx.reset_for_draw(!cmd.get("reserve").and_then(|v| v.as_bool()).unwrap_or(false));
+            continue;
         }
+        super::commands::run_command(ctx, cmd);
+    }
+}
+
+impl Canvas2DContext {
+    /// 状态复位到默认、像素保留（`clear` 时清成透明）。后备缓冲不重新分配
+    fn reset_for_draw(&mut self, clear: bool) {
+        let canvas = self.canvas.clone();
+        if clear {
+            if let Ok(mut c) = canvas.lock() {
+                c.clear(Color::TRANSPARENT);
+            }
+        }
+        let (w, h) = (self.width, self.height);
+        let mut fresh = Self::new_with_dpr(&self.canvas_id, 1, 1, self.dpr);
+        (fresh.width, fresh.height, fresh.canvas) = (w, h, canvas);
+        *self = fresh;
     }
 }
 

@@ -25,6 +25,9 @@ pub struct NavigatorHit {
 
 const LABEL_CONTROLS: &[&str] = &["button", "checkbox", "radio", "switch", "input", "textarea"];
 
+/// 一个单选 / 多选组：(组的组件 id, 是不是 radio-group, 成员 (组件 id, value, 属性里是否选中))
+type ChoiceGroup = (String, bool, Vec<(String, String, bool)>);
+
 fn catches_tap(n: &RenderNode) -> bool {
     n.attrs.keys().any(|k| k == "catchtap" || k == "catch:tap" || k == "capture-catch:tap" || k == "mut-bind:tap")
 }
@@ -75,6 +78,12 @@ impl WxmlRenderer {
 
     /// (x, y) 落在一个 label 里、且不是直接点在它要触发的那个控件上时，返回那个控件的组件 id
     pub fn label_target_at(&self, x: f32, y: f32, fixed: bool, interaction: &InteractionManager) -> Option<String> {
+        self.label_target(x, y, fixed, interaction).map(|t| t.0)
+    }
+
+    /// 同上，另给控件的标签名（`for` 指向的控件可能不在视口里、不在本帧的交互元素表里，
+    /// 转发方按标签直接改它的状态）
+    pub fn label_target(&self, x: f32, y: f32, fixed: bool, interaction: &InteractionManager) -> Option<(String, String)> {
         let cache = self.cache.as_ref()?;
         let mut label: Option<(&RenderNode, (f32, f32), bool)> = None;
         for n in &cache.render_nodes {
@@ -102,12 +111,57 @@ impl WxmlRenderer {
                 found
             }
         };
-        let (id, rect) = target?;
+        let (id, rect, tag) = target?;
         // 点的就是控件本身：它自己已经响应过这次点击
         if in_fixed == fixed && rect.contains(&crate::Point::new(x, y)) {
             return None;
         }
-        Some(id)
+        Some((id, tag))
+    }
+
+    /// 单选 / 多选组：`member` 是组里某个 radio / checkbox 的组件 id（或组自己的组件 id），
+    /// 给出这个组的全部成员 `(组件 id, value, 属性里是否选中)`，文档顺序。不在组里返回 None。
+    ///
+    /// 走布局树（与 form.rs 同理）：本帧的交互元素表只有视口附近画到的那几个，长列表里滚出去的成员
+    /// 不在表里 —— 从前 radio 的互斥与组的 `detail.value` 都按元素表算，滚出去的那几项既不会被取消选中、
+    /// 也不进 change 的值。代价：只在点了 radio / checkbox 时走一遍布局树
+    pub fn choice_group(&self, member: &str, interaction: &InteractionManager) -> Option<Vec<(String, String, bool)>> {
+        let cache = self.cache.as_ref()?;
+        let mut groups: Vec<ChoiceGroup> = Vec::new();
+        for n in &cache.render_nodes {
+            self.collect_choice_groups(n, &cache.taffy, (0.0, 0.0), interaction, None, &mut groups);
+        }
+        groups.into_iter().find(|(gid, _, items)| gid == member || items.iter().any(|m| m.0 == member)).map(|g| g.2)
+    }
+
+    fn collect_choice_groups(
+        &self,
+        n: &RenderNode,
+        taffy: &Tree,
+        origin: (f32, f32),
+        interaction: &InteractionManager,
+        group: Option<usize>,
+        out: &mut Vec<ChoiceGroup>,
+    ) {
+        let Some((_, id, child_origin)) = self.form_geom(n, taffy, origin, interaction) else { return };
+        let mut group = group;
+        match n.tag.as_str() {
+            "radio-group" | "checkbox-group" => {
+                out.push((id, n.tag == "radio-group", Vec::new()));
+                group = Some(out.len() - 1);
+            }
+            // 成员只认对应的那一种（radio-group 里的 checkbox 不算）
+            "radio" | "checkbox" => {
+                if let Some(g) = group.filter(|&g| out[g].1 == (n.tag == "radio")) {
+                    out[g].2.push((id, Self::input_value_attr(n), n.style.custom_data > 0.5));
+                }
+                return;
+            }
+            _ => {}
+        }
+        for c in &n.children {
+            self.collect_choice_groups(c, taffy, child_origin, interaction, group, out);
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -139,7 +193,7 @@ impl WxmlRenderer {
         origin: (f32, f32),
         interaction: &InteractionManager,
         want_id: Option<&str>,
-        found: &mut Option<(String, GeoRect)>,
+        found: &mut Option<(String, GeoRect, String)>,
     ) {
         if found.is_some() {
             return;
@@ -151,7 +205,7 @@ impl WxmlRenderer {
                 None => true,
             };
             if matches {
-                *found = Some((id, rect));
+                *found = Some((id, rect, n.tag.clone()));
                 return;
             }
         }

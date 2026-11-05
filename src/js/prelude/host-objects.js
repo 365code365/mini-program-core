@@ -52,12 +52,60 @@
                 return o;
             };
 
+            // 相机帧（onCameraFrame）：宿主走同层渲染的相机（`__sameLayerCamera`）时由引擎从宿主交来的画面里取
+            // （按 frame-size 缩好，`ArrayBuffer` 经 __native_bin_take 直通，不过 base64：host/engine_camera.rs）；
+            // 否则照旧交给宿主（`CameraFrameListener.start`，帧经 contextEvent 推回来）
+            var __camSeq = 0, __camCbs = {};
+            globalThis.__cameraReply = function(seq, ok, res) {
+                var o = __camCbs[seq];
+                if (!o) return false;
+                delete __camCbs[seq];
+                try {
+                    if (ok) { if (typeof o.success === 'function') o.success(res); }
+                    else if (typeof o.fail === 'function') o.fail(res);
+                    if (typeof o.complete === 'function') o.complete(res);
+                } catch (e) { console.error(e); }
+                return true;
+            };
+            globalThis.__cameraFrameArrived = function(w, h) {
+                var buf = __native_bin_take(3, 0);
+                if (!buf) return 0;
+                return globalThis.__dispatchContextEvent({ context: 'CameraContext', contextId: '', event: 'cameraFrame', data: { width: w, height: h, data: buf } });
+            };
             wx.createCameraContext = function() {
                 // 一个页面只有一个 camera（官方限制），不带 id
                 var id = '';
                 var o = __hostObject('CameraContext', id, ['setZoom', 'startRecord', 'stopRecord', 'takePhoto']);
+                // startRecord 的 timeoutCallback：录到上限（timeout 秒）宿主自己停下，推 contextEvent `recordTimeout`，
+                // 这里再问一次 stopRecord 拿到文件（hostCall 的回包才会把 file:// 收进 wxfile://tmp）
+                var start = o.startRecord;
+                o.startRecord = function(opt) {
+                    opt = opt || {};
+                    var cb = opt.timeoutCallback;
+                    __ctxOff('CameraContext', id, 'recordTimeout');
+                    if (typeof cb === 'function') {
+                        __ctxOn('CameraContext', id, 'recordTimeout', function() {
+                            __ctxOff('CameraContext', id, 'recordTimeout');
+                            __hostInvoke('CameraContext.stopRecord', { contextId: id, success: cb, fail: function(e) { cb(e); } });
+                        });
+                    }
+                    var a = {};
+                    for (var k in opt) if (k !== 'timeoutCallback') a[k] = opt[k];
+                    return start(a);
+                };
                 o.onCameraFrame = function(cb) {
                     __ctxOn('CameraContext', id, 'cameraFrame', cb);
+                    if (globalThis.__sameLayerCamera && typeof __native_host_request === 'function') {
+                        var cmd = function(op) {
+                            return function(opt) {
+                                opt = opt || {};
+                                var seq = ++__camSeq;
+                                __camCbs[seq] = opt;
+                                __native_host_request('cameraFrame', JSON.stringify({ op: op, seq: seq }));
+                            };
+                        };
+                        return { start: cmd('start'), stop: cmd('stop') };
+                    }
                     return {
                         start: function(opt) { return __hostInvoke('CameraFrameListener.start', opt); },
                         stop: function(opt) { return __hostInvoke('CameraFrameListener.stop', opt); }
@@ -114,6 +162,13 @@
                     'exitPictureInPicture', 'getMaxZoom', 'pause', 'pauseBGM', 'playBGM', 'resume', 'resumeBGM', 'sendMessage', 'setBGMVolume',
                     'setMICVolume', 'setZoom', 'snapshot', 'start', 'startPreview', 'stop', 'stopBGM', 'stopPreview', 'switchCamera', 'toggleTorch']);
                 o.onCustomRendererEvent = function(ev, cb) { __ctxOn('LivePusherContext', id, ev, cb); };
+                // 小窗是引擎画的（host/engine_pip.rs）：记一个请求，引擎下一帧关掉小窗（宿主不用管）
+                o.exitPictureInPicture = function(opt) {
+                    globalThis.__pipExitRequest = true;
+                    var r = { errMsg: 'exitPictureInPicture:ok' };
+                    if (opt && typeof opt.success === 'function') opt.success(r);
+                    if (opt && typeof opt.complete === 'function') opt.complete(r);
+                };
                 o.createOffscreenCanvas = function() { return wx.createOffscreenCanvas({ type: '2d', width: 720, height: 1280 }); };
                 return o;
             };

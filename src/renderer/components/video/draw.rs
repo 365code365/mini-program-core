@@ -46,9 +46,7 @@ impl VideoComponent {
                 }
             }
         }
-        if !host {
-            Self::draw_danmu(node, canvas, text_renderer, x, y, w, sf);
-        }
+        Self::draw_danmu(node, canvas, text_renderer, x, y, w, sf, host.then_some(st.current));
         Self::draw_chrome(node, canvas, text_renderer, &video, &st, (x, y, w, h), sf);
     }
 

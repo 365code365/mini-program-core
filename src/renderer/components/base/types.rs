@@ -38,6 +38,8 @@ pub struct TextMeasure {
     pub max_line_width: f32,
     /// 最小不可拆分单元宽（CJK 单字 / 最长西文词），即 min-content 宽
     pub min_unit_width: f32,
+    /// 最多排几行（`-webkit-line-clamp` / Skyline `max-lines`），0 = 不限。盒高按 min(行数, 它) 算
+    pub max_lines: usize,
     /// 这段文字的字体栈：taffy 的度量闭包据此解析出与绘制**同一个**字体
     pub font_family: Option<std::sync::Arc<str>>,
 }
@@ -125,6 +127,9 @@ pub struct NodeStyle {
     pub custom_data: f32,
     /// 是否是 fixed 定位（相对于视口固定）
     pub is_fixed: bool,
+    /// `position: sticky`（与 `<sticky-header>`）：布局按 relative 排、不吃 top/bottom 偏移，
+    /// 偏移留在 `fixed_top` / `fixed_bottom` 里，画的时候按最近的滚动容器夹住（wxml_renderer/sticky.rs）
+    pub is_sticky: bool,
     /// fixed 定位的 bottom 值
     pub fixed_bottom: Option<f32>,
     /// fixed 定位的 top 值
@@ -140,6 +145,27 @@ pub struct NodeStyle {
     /// 无单位 line-height（倍数）。在全部声明应用完后再乘以最终字号，
     /// 避免受 CSS 声明遍历顺序影响（HashMap 无序，line-height 可能先于 font-size 生效）。
     pub line_height_scale: Option<f32>,
+    /// 文本最多画几行，0 = 不限。样式里是 `-webkit-line-clamp: N`（只在 `display:-webkit-box` 时生效，
+    /// 见 `webkit_box`）；text 组件建树时把 Skyline 的 `max-lines` 属性、父级 -webkit-box 的行数也折算进来
+    pub line_clamp: u16,
+    /// 写了 `display: -webkit-box` / `-webkit-inline-box`（浏览器里 line-clamp 只认这种盒子）
+    pub webkit_box: bool,
+    /// 超出 `line_clamp` 行时最后一行怎么收尾（Skyline text 的 `overflow` 属性；CSS line-clamp 恒为省略号）
+    pub clamp_overflow: ClampOverflow,
+}
+
+/// 超出最大行数时的收尾方式（Skyline `<text overflow>`：clip / fade / ellipsis / visible）
+#[derive(Clone, Copy, Default, PartialEq, Debug)]
+pub enum ClampOverflow {
+    /// 最后一行末尾换成省略号（CSS `-webkit-line-clamp` 的行为）
+    #[default]
+    Ellipsis,
+    /// 只画前 N 行，多出来的直接不画
+    Clip,
+    /// 只画前 N 行，最后一行末尾渐隐
+    Fade,
+    /// 盒高按 N 行算，但全部行照画（溢出盒子）
+    Visible,
 }
 
 #[derive(Clone, Copy, Default, PartialEq)]
@@ -274,6 +300,14 @@ pub struct InheritedText {
     pub letter_spacing: f32,
     /// 继承下来的字体栈（`font-family` 是继承属性）
     pub font_family: Option<std::sync::Arc<str>>,
+    /// 父级是 `display:-webkit-box; -webkit-line-clamp:N` 时的 N（只传给**直接**子文本，0 = 无）。
+    /// CSS 里 line-clamp 夹的是这个盒子里的行；小程序最常见的写法是 `<view class="title">{{t}}</view>`，
+    /// 行都在子文本节点上，所以由父级交给它（不往孙辈传：孙辈在自己的块里，不是这个盒子的行）
+    pub line_clamp: u16,
+    /// 父级是 `<cover-view>` 时它的 `white-space`（官方默认 nowrap），交给直接子文本。
+    /// 只有 cover-view 往下传：引擎的裸文本一向不继承 white-space（改成通用继承会动到所有写了 nowrap 的页面），
+    /// cover-view 的默认样式却必须作用在它里面的字上才有意义
+    pub white_space: Option<WhiteSpace>,
 }
 
 impl Default for InheritedText {
@@ -286,6 +320,8 @@ impl Default for InheritedText {
             line_height: None,
             letter_spacing: 0.0,
             font_family: None,
+            line_clamp: 0,
+            white_space: None,
         }
     }
 }

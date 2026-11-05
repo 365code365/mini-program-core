@@ -1,0 +1,27 @@
+<camera class="cam" mode="{{mode}}" device-position="{{position}}" flash="{{flash}}" frame-size="small"
+  bindinitdone="onInit" binderror="onError" bindstop="onStop" bindscancode="onScan"></camera>
+<view class="card">
+  <text class="title">CameraContext</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="takePhoto">takePhoto</view>
+    <view class="btn-s" bindtap="startRec">startRecord</view>
+    <view class="btn-s" bindtap="stopRec">stopRecord</view>
+    <view class="btn-o" bindtap="zoom2">setZoom(2)</view>
+    <view class="btn-o" bindtap="switchPos">{{position}}</view>
+    <view class="btn-o" bindtap="switchFlash">flash: {{flash}}</view>
+    <view class="btn-o" bindtap="switchMode">mode: {{mode}}</view>
+  </view>
+  <view class="result"><text>{{result}}</text></view>
+  <image wx:if="{{photo}}" class="shot" src="{{photo}}" mode="aspectFit"></image>
+  <text wx:if="{{video}}" class="hint">录像：{{video}}</text>
+  <text wx:if="{{scan}}" class="hint">扫到：{{scan}}</text>
+  <text class="hint">画面由宿主的相机采集（Android Camera2 / iOS AVCaptureSession），按框裁好交给引擎画进页面。onCameraFrame 的帧由引擎从画面里取（frame-size 小：长边 360）；扫码模式在画面上解二维码。</text>
+</view>
+<view class="card">
+  <text class="title">状态</text>
+  <view class="kv"><text class="kv-k">maxZoom</text><text class="kv-v">{{maxZoom}}</text></view>
+  <view class="kv"><text class="kv-k">帧</text><text class="kv-v">{{frame}}</text></view>
+  <view class="log">
+    <text class="log-line" wx:for="{{logs}}" wx:key="*this">{{item}}</text>
+  </view>
+</view>

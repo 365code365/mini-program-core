@@ -44,18 +44,24 @@ pub(super) fn resolve<'a>(old: &'a RenderNode, moved: &HashMap<NodeId, &'a Rende
 ///
 /// 逐个看过各组件的 `build`（components/registry.rs 那张表）：
 /// - `video`：静音态从播放器的界面状态里取（`video::ui::effective_muted`），不在属性里；
-/// - `grid-view`：瀑布流在布局**之后**改孩子的样式（`masonry_pass`），那几处不在 `layout_touched` 的记录里；
+/// - `type="masonry"` 的 `grid-view` / `grid-builder`：瀑布流在布局**之后**改孩子的样式（`masonry_pass`），
+///   那几处不在 `layout_touched` 的记录里（对齐网格没有这一步，照常留）；
 /// - 宿主承载的直播 / 相机组件：交给宿主，不猜。
 /// 其余（view / text / image / input / button / picker / swiper / scroll-view / canvas / rich-text / 表单控件 /
 /// 没登记的标签按 view 建）只读属性、样式表与字体，同样的输入建出同样的东西。
 /// 图片的固有尺寸**不进**布局（`ImageComponent::build` 只用样式里的尺寸，没写就是 150×100 的默认值），所以图片能留
-fn pure_tag(tag: &str) -> bool {
-    !matches!(tag, "video" | "grid-view" | "live-player" | "live-pusher" | "camera" | "voip-room")
+fn pure_tag(n: &WxmlNode) -> bool {
+    match n.tag_name.as_str() {
+        "video" | "live-player" | "live-pusher" | "camera" | "voip-room" => false,
+        // grid-builder 与 grid-view 同一套布局：只有瀑布流在布局之后改孩子（masonry_pass），对齐网格的样式全在建树时定
+        "grid-view" | "grid-builder" => !crate::renderer::components::grid_view::is_masonry(&n.attributes),
+        _ => true,
+    }
 }
 
 /// 可以「重建自己、孩子各自判」的容器：build_tree 走容器那条路（不是叶子组件），并且建树不读别处的状态
-fn container_tag(tag: &str) -> bool {
-    pure_tag(tag) && !crate::renderer::components::spec_for(tag).leaf
+fn container_tag(n: &WxmlNode) -> bool {
+    pure_tag(n) && !crate::renderer::components::spec_for(&n.tag_name).leaf
 }
 
 /// 自己这一层相等（不看孩子的个数与内容）：往下走的前提
@@ -73,7 +79,7 @@ fn reusable(a: &WxmlNode, b: &WxmlNode) -> bool {
     if !same_shallow(a, b) {
         return false;
     }
-    if a.node_type == WxmlNodeType::Element && !pure_tag(&a.tag_name) {
+    if a.node_type == WxmlNodeType::Element && !pure_tag(a) {
         return false;
     }
     a.children.iter().zip(&b.children).all(|(x, y)| reusable(x, y))
@@ -328,7 +334,7 @@ impl WxmlRenderer {
             }
             let plain = position_ok
                 && node.node_type == WxmlNodeType::Element
-                && container_tag(&node.tag_name)
+                && container_tag(node)
                 && same_self(node, ox)
                 // 带 transform / 动画的子树失效分析要按整棵的绘制几何算（invalidate_transform.rs），里面不能有占位
                 && orn.style.transform.is_none()

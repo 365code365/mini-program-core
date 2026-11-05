@@ -3,7 +3,7 @@
 //! 看不出是什么的空白。宿主在创建选项 `nativeComponents` 里点名了的照旧只报位置（宿主的控件盖在上面），不画占位。
 //!
 //! 也管这批标签与几个新组件的**默认样式**（`build_base_style` 在应用页面 CSS 之前调 [`ua_declarations`]，
-//! 页面 CSS 照样能覆盖）：微信里 map 默认 300×150、live-player / live-pusher 默认 300×225、web-view 铺满页面、
+//! 页面 CSS 照样能覆盖）：微信里 map 默认 300×150、live-player 默认 300×225、live-pusher 宽 100% 不给高、web-view 铺满页面、
 //! `span` 是行内混排（这里按「横排、换行、基线对齐」近似）、`keyboard-accessory` 不在页面里占位。
 use super::base::*;
 use crate::{Canvas, Color, Paint, PaintStyle};
@@ -28,7 +28,9 @@ pub fn label_of(tag: &str) -> Option<&'static str> {
 pub fn ua_declarations(tag: &str) -> &'static [(&'static str, &'static str)] {
     match tag {
         "map" => &[("width", "300px"), ("height", "150px")],
-        "live-player" | "live-pusher" => &[("width", "300px"), ("height", "225px")],
+        "live-player" => &[("width", "300px"), ("height", "225px")],
+        // 官方 tip：live-pusher 默认宽 100%、无默认高度（要页面自己写高）
+        "live-pusher" => &[("width", "100%")],
         "camera" | "voip-room" | "channel-video" => &[("width", "100%"), ("height", "300px")],
         "channel-live" => &[("width", "100%"), ("height", "200px")],
         "web-view" => &[("position", "fixed"), ("left", "0"), ("top", "0"), ("width", "100%"), ("height", "100%")],
@@ -37,6 +39,9 @@ pub fn ua_declarations(tag: &str) -> &'static [(&'static str, &'static str)] {
         "movable-area" => &[("position", "relative"), ("width", "10px"), ("height", "10px")],
         "movable-view" => &[("position", "absolute"), ("left", "0"), ("top", "0"), ("width", "10px"), ("height", "10px")],
         "keyboard-accessory" => &[("display", "none")],
+        // 官方 cover-view tip：默认 `white-space: nowrap; line-height: 1.2; display: block`
+        // （block 在这里就是默认的纵向弹性盒；nowrap 经 InheritedText::white_space 交给里面的字）
+        "cover-view" => &[("white-space", "nowrap"), ("line-height", "1.2")],
         _ => &[],
     }
 }

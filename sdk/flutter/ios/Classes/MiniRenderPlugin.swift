@@ -9,6 +9,8 @@ public class MiniRenderPlugin: NSObject, FlutterPlugin {
     private let channel: FlutterMethodChannel
     private let textures: FlutterTextureRegistry
     private var host: EngineHost?
+    /// 插件自带的原生组件（地图 / web-view / 同层视频 / 相机，NativeComponents.swift）
+    private var native: NativeComponents?
     /// 插件自带的宿主能力：选图 / 选视频 / 选文件 / 存相册 / 打开文档（MediaPicker.swift）
     private let picker = MediaPicker()
 
@@ -35,7 +37,22 @@ public class MiniRenderPlugin: NSObject, FlutterPlugin {
         case "init", "dispose":
             host?.dispose()
             host = nil
+            native?.dispose()
+            native = nil
             result(nil)
+        case "viewRect":
+            // 小程序画面在屏上的位置（Dart 布局完报来）：盖 web-view 的容器跟着它
+            let a = call.arguments as? [String: Any] ?? [:]
+            func d(_ k: String) -> CGFloat { CGFloat((a[k] as? NSNumber)?.doubleValue ?? 0) }
+            native?.setRect(CGRect(x: d("x"), y: d("y"), width: d("width"), height: d("height")))
+            result(nil)
+        case "lifecycle":
+            native?.lifecycle((call.arguments as? [String: Any])?["what"] as? Int ?? -1)
+            host?.handle(call, result: result) ?? result(nil)
+        case "back":
+            // web-view 里的网页先后退
+            if native?.goBack() == true { return result(true) }
+            host?.handle(call, result: result) ?? result(false)
         case "paths":
             let fm = FileManager.default
             let files = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -80,7 +97,21 @@ public class MiniRenderPlugin: NSObject, FlutterPlugin {
             return d.path
         }()
         let channel = self.channel
-        let h = EngineHost(textures: textures, onEvents: { channel.invokeMethod("events", arguments: $0) })
+        var nc: NativeComponents?
+        let h = EngineHost(textures: textures, onEvents: { list in
+            // 归自带原生组件的事件在这里处理掉，剩下的交给 Dart（主线程）
+            let rest = nc?.filter(list) ?? list
+            if !rest.isEmpty { channel.invokeMethod("events", arguments: rest) }
+        })
+        let n = NativeComponents(
+            run: { [weak h] b in h?.run(b) },
+            map: a["builtinMap"] as? Bool ?? false,
+            webView: a["builtinWebView"] as? Bool ?? false,
+            video: a["sameLayerVideo"] as? Bool ?? false,
+            cameras: a["builtinCamera"] as? [String] ?? [])
+        n.setAppDir(appDir)
+        nc = n
+        native = n
         host = h
         h.create(
             appDir: appDir,
@@ -89,7 +120,7 @@ public class MiniRenderPlugin: NSObject, FlutterPlugin {
             width: (a["width"] as? NSNumber)?.intValue ?? 1,
             height: (a["height"] as? NSNumber)?.intValue ?? 1,
             dpr: (a["dpr"] as? NSNumber)?.floatValue ?? 1,
-            options: Self.withDeviceFields((a["options"] as? String) ?? "{}"),
+            options: n.options(Self.withDeviceFields((a["options"] as? String) ?? "{}")),
             result: result,
             onFailed: { [weak self, weak h] in
                 if let self, let h, self.host === h { self.host = nil }

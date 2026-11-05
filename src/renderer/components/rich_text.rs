@@ -13,6 +13,28 @@ use taffy::prelude::*;
 
 pub struct RichTextComponent;
 
+/// HTML 字符串 → 节点数组（容错分词器）
+pub mod html;
+/// 节点数组 → 合成的 WXML 子树（模板展开时挂到 `<rich-text>` 下）
+pub mod tree;
+/// HTML 标签的默认样式（WebKit 取值）
+pub mod ua;
+
+/// 模板展开时调：`nodes` 的取值 → rich-text 的孩子（`space` 是 rich-text 自己的 `space` 属性）。
+///
+/// 从前 `nodes` 在这个组件里被拍成一串带颜色 / 粗细 / 字号的文字片段：class 不生效、图片不显示、
+/// 块级标签（p / h1 / li）没有换行与外边距、HTML 字符串只剩去掉标签的纯文本。现在变成真正的子树，
+/// 由正常的建树 / 样式 / 布局 / 绘制处理（tree.rs 文件头）。下面的片段路径只在没有展开过的节点上兜底
+pub fn expand_nodes(nodes: &serde_json::Value, space: Option<&str>) -> Vec<WxmlNode> {
+    let space = match space.map(str::trim) {
+        Some("ensp") => Some('\u{2002}'),
+        Some("emsp") => Some('\u{2003}'),
+        Some("nbsp") => Some('\u{00A0}'),
+        _ => None,
+    };
+    tree::expand(nodes, tree::Opts { space })
+}
+
 /// 一个带样式的文本片段
 struct Segment {
     text: String,
@@ -23,6 +45,10 @@ struct Segment {
 
 impl RichTextComponent {
     pub fn build(node: &WxmlNode, ctx: &mut ComponentContext) -> Option<RenderNode> {
+        // 模板展开时已经换成子树（expand_nodes）：自己只是个容器，孩子由渲染器照常建
+        if !node.children.is_empty() {
+            return super::ViewComponent::build(node, ctx);
+        }
         let (mut ts, ns) = build_base_style(node, ctx);
         let events = extract_events(node);
         let attrs = node.attributes.clone();

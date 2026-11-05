@@ -138,6 +138,11 @@ fn cap_side(img: ImageData) -> ImageData {
 
 /// 从本地文件加载图片（按宿主登记的小程序根目录解析包内绝对路径）
 pub(super) fn load_image_from_file(path: &str) -> Option<ImageData> {
+    // `data:` URI（base64 或百分号编码，常见的是内联的 SVG 图标）：直接解，不读盘
+    if path.starts_with("data:") {
+        let bytes = crate::renderer::components::canvas_data_uri(path)?;
+        return decode_with_animation(path, &bytes);
+    }
     let resolved = crate::assets::resolve(path)?;
     let bytes = std::fs::read(&resolved).ok()?;
     decode_with_animation(path, &bytes)
@@ -145,6 +150,11 @@ pub(super) fn load_image_from_file(path: &str) -> Option<ImageData> {
 
 /// 解码字节：若为多帧 GIF 则登记到动图缓存并返回首帧，否则按静态图解码。
 pub(super) fn decode_with_animation(src: &str, bytes: &[u8]) -> Option<ImageData> {
+    // SVG：栅格化一次（svg.rs），之后与位图同一份缓存。位图先判魔数再走这里，不多读任何东西
+    if svg::is_svg(src, bytes) {
+        let r = svg::rasterize(bytes)?;
+        return Some(ImageData { data: Arc::new(r.rgba), width: r.width, height: r.height, frame_index: 0 });
+    }
     if let Some(anim) = decode_animated_gif(bytes) {
         let first = ImageData {
             data: anim.frames[0].0.clone(),

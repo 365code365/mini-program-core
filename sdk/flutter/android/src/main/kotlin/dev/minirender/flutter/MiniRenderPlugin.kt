@@ -155,6 +155,7 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
             viewMode = call.argument<String>("presentation") != "texture",
             builtinMap = call.argument<Boolean>("builtinMap") ?: false,
             builtinWebView = call.argument<Boolean>("builtinWebView") ?: false,
+            builtinCamera = call.argument<List<String>>("builtinCamera") ?: emptyList(),
         )
         host = h
         h.create(

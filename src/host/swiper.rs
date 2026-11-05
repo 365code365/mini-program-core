@@ -13,6 +13,10 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, time_ms: u64) ->
     // <picker-view> 的滚轮与 swiper 共用手势仲裁，事件也在这里一起派（change / pickstart / pickend）
     picker_view::tick();
     events.extend(picker_view::take_events());
+    // <progress active> 走完的 activeend（components::progress_anim）
+    events.extend(crate::renderer::components::progress_anim::take_events());
+    // <textarea bindlinechange>（components::auto_height）
+    events.extend(crate::renderer::components::auto_height::take_events());
     let Some(r) = renderer else { return false };
     let mut fired = false;
     for (id, name, detail) in events {

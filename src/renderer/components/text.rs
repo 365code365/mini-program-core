@@ -15,12 +15,14 @@ pub struct TextComponent;
 
 impl TextComponent {
     pub fn build(node: &WxmlNode, ctx: &mut ComponentContext) -> Option<RenderNode> {
-        let (mut ts, ns) = build_base_style(node, ctx);
+        let (mut ts, mut ns) = build_base_style(node, ctx);
         let events = extract_events(node);
         let attrs = node.attributes.clone();
         
-        let text_content = get_text_content(node);
+        // `decode` / `space` 与行数限制（text_attrs.rs；没写的不分配）
+        let text_content = super::text_attrs::apply_content_attrs(node, std::borrow::Cow::Owned(get_text_content(node))).into_owned();
         if text_content.is_empty() { return None; }
+        super::text_attrs::resolve_clamp(node, &mut ns, ctx.inherited.line_clamp);
 
         // `<text>` 里嵌套 `<text>`：每一段用**自己**的样式。
         //
@@ -43,6 +45,8 @@ impl TextComponent {
             ts.flex_direction = FlexDirection::Row;
             ts.flex_wrap = FlexWrap::Wrap;
             ts.align_items = Some(AlignItems::BASELINE);
+            // 混排文字的行数限制：容器最多 N 行高、裁掉其余（每个 run 是独立的盒子，没法在最后一行末尾补省略号 —— 近似）
+            super::inline_flow::clamp_container(&mut ts, &mut ns, ctx.scale_factor);
             let child_ids: Vec<NodeId> = runs.iter().map(|c| c.taffy_node).collect();
             let tn = ctx.taffy.new_with_children(ts, &child_ids).unwrap();
             return Some(RenderNode {
@@ -146,6 +150,7 @@ impl TextComponent {
                 max_line_width,
                 min_unit_width,
                 font_family: ns.font_family.clone(),
+                max_lines: ns.line_clamp as usize,
             };
             let tn = ctx.taffy.new_leaf_with_context(ts, tm).unwrap();
             return Some(RenderNode {
@@ -172,7 +177,7 @@ impl TextComponent {
         } else {
             1
         };
-        let total_lines = min_lines.max(wrap_lines);
+        let total_lines = super::text_attrs::clamp_lines(min_lines.max(wrap_lines), ns.line_clamp);
         let text_height = actual_line_height * total_lines as f32;
         ts.size.height = length(text_height + pad_t + pad_b);
         ts.min_size.height = length(text_height + pad_t + pad_b);
@@ -250,6 +255,8 @@ impl TextComponent {
                             line_height: outer.line_height,
                             letter_spacing: outer.letter_spacing,
                             font_family: outer.font_family.clone(),
+                            line_clamp: 0,
+                            white_space: None,
                         },
                         sibling_index: idx,
                         sibling_count: child_count,
@@ -485,13 +492,24 @@ fn draw_text_wrapped_advanced(
     
     let mut current_y = y;
     let use_ellipsis = matches!(style.text_overflow, TextOverflow::Ellipsis);
+    // 行数限制（`-webkit-line-clamp` / `max-lines`，text_attrs.rs）：visible 照画全部行（溢出盒子）
+    let max_lines = if style.line_clamp > 0 && style.clamp_overflow != ClampOverflow::Visible {
+        style.line_clamp as usize
+    } else {
+        usize::MAX
+    };
+    let mut drawn = 0usize;
     
     // 先按换行符分割
     let paragraphs: Vec<&str> = text.split('\n').collect();
     
     for (para_idx, paragraph) in paragraphs.iter().enumerate() {
+        if drawn >= max_lines {
+            return;
+        }
         // 空段落也要换行
         if paragraph.is_empty() {
+            drawn += 1;
             current_y += actual_line_height;
             continue;
         }
@@ -506,6 +524,16 @@ fn draw_text_wrapped_advanced(
 
         for (idx, (ls_i, le_i)) in lines.iter().enumerate() {
             let has_more = idx + 1 < lines.len();
+            drawn += 1;
+            // 到了第 N 行而后面还有字（本段还有行，或者还有下一段）：按 overflow 收尾
+            if drawn == max_lines && (has_more || para_idx + 1 < paragraphs.len()) {
+                let line = &chars[*ls_i..*le_i];
+                let s: String = line.iter().collect();
+                let lx = aligned_line_x(tr, &s, x, max_width, size, letter_spacing, bold, style.text_align);
+                let tail = super::text_attrs::ClampTail { x, lx, y: current_y, size, max_width, ls: letter_spacing, bold };
+                super::text_attrs::draw_clamp_tail(canvas, tr, line, style.clamp_overflow, &tail, paint);
+                return;
+            }
             // 仅当设置了 text-overflow:ellipsis 且下一行超出容器高度时，用省略号截断并停止；
             // 否则正常继续换行（宁可纵向溢出也不横向溢出/挤成一行）。
             if has_more && use_ellipsis && max_height > 0.0

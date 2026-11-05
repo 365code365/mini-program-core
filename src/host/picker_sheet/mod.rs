@@ -104,6 +104,25 @@ pub struct PickerSheetState {
     pub viewport: (f32, f32),
     /// 滚轮列的拖动 / 回正（见 `wheel.rs`）。静止时每列就停在 `selected` 上
     pub wheel: WheelState,
+    /// time 的 start / end、region 的 custom-item / level（见 [`SheetExtra`]）
+    pub extra: SheetExtra,
+}
+
+/// 各 mode 自己的几项参数（官方 component/picker.html）
+#[derive(Clone, Debug, PartialEq)]
+pub struct SheetExtra {
+    /// time 的 `start` / `end`（时, 分），含两端。没写是 00:00 ~ 23:59
+    pub time_range: ((u32, u32), (u32, u32)),
+    /// region 的 `custom-item`：每一列顶部多一项（选了它，后面的列只剩它）
+    pub region_custom: Option<String>,
+    /// region 的 `level`：province 1 列 / city 2 列 / region 3 列（sub-district 没数据，按 3 列）
+    pub region_level: usize,
+}
+
+impl Default for SheetExtra {
+    fn default() -> Self {
+        Self { time_range: ((0, 0), (23, 59)), region_custom: None, region_level: 3 }
+    }
 }
 
 /// `date` 模式显示到哪一级
@@ -172,6 +191,27 @@ impl PickerSheetState {
         if self.mode == SheetMode::Date {
             self.rebuild_date_columns();
         }
+        if self.mode == SheetMode::Time {
+            self.rebuild_time_columns();
+        }
+    }
+
+    /// time 的 `start` / `end`：时列只到范围里的那几个小时，起止那一小时的分钟列裁边（与 date 同一套）。
+    /// 选中项按数值保持（换到起始小时、分钟早于起始分钟就落在起始分钟）
+    pub(crate) fn rebuild_time_columns(&mut self) {
+        let ((sh, sm), (eh, em)) = self.extra.time_range;
+        if self.columns.len() < 2 || ((sh, sm), (eh, em)) == ((0, 0), (23, 59)) {
+            return;
+        }
+        let h = (self.picked_number(0).unwrap_or(sh as i64) as u32).clamp(sh, eh);
+        let m = self.picked_number(1).unwrap_or(0) as u32;
+        self.columns[0] = (sh..=eh).map(|v| format!("{:02}时", v)).collect();
+        self.selected[0] = (h - sh) as usize;
+        let lo = if h == sh { sm } else { 0 };
+        let hi = if h == eh { em } else { 59 }.max(lo);
+        let m = m.clamp(lo, hi);
+        self.columns[1] = (lo..=hi).map(|v| format!("{:02}分", v)).collect();
+        self.selected[1] = (m - lo) as usize;
     }
 
     /// 年/月变化后按 `date_range` 重建「月」「日」两列（闰年、大小月、start / end 裁边），

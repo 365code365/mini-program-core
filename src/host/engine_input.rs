@@ -88,6 +88,8 @@ impl MiniEngine {
             }
         }
 
+        // page-container 弹着：右滑不滑页面、松手关容器（engine_edge_back.rs `edge_container_begin`）
+        let pc = self.edge_container_begin(x);
         self.gesture = Some(input::begin_gesture(
             &self.interaction,
             &self.scroll,
@@ -97,8 +99,9 @@ impl MiniEngine {
             on_fixed,
             self.page_stack.len(),
             // 侧滑返回（engine_edge_back.rs）：上一次的还在收尾时不再起新的；分栏时不做（上一页就在另一栏）
-            self.edge_back.is_some() || self.frameset.active,
+            self.edge_back.is_some() || self.frameset.active || pc,
         ));
+        super::gesture_native::begin(self.renderer.as_ref(), x, if on_fixed { y } else { actual_y }); // native-view 手势组件
         // 建手势本身不改任何像素：按压态、停惯性、touchstart 里的 setData 上面各自标过脏。
         // 从前这里无条件 `needs_redraw` —— 每一次按下都整帧重画一次，滑动的第一帧必卡
     }
@@ -124,16 +127,10 @@ impl MiniEngine {
         // 手势仲裁决定这次位移归谁：内层 scroll-view / 页面 / 谁也不动
         // 松手速度按事件时间采样（engine_resample.rs）：事件常常几个一批地到
         let gesture_now = self.gesture_clock(now);
-        let eff = input::apply_gesture_move(
-            &mut self.gesture,
-            &mut self.interaction,
-            &mut self.scroll,
-            &mut self.edge_back,
-            self.width as f32,
-            x,
-            y,
-            gesture_now,
-        );
+        // 代理容器的手势组件拦了这一下（should-accept / should-response-on-move 返回 false，gesture_native.rs）：容器不动
+        let eff = if super::gesture_native::move_blocked(&self.app) { Default::default() } else {
+            input::apply_gesture_move(&mut self.gesture, &mut self.interaction, &mut self.scroll, &mut self.edge_back, self.width as f32, x, y, gesture_now)
+        };
         // 只推动了 scroll-view：不置整帧，出帧时按位置变化只重画它自己的盒子（engine_damage）
         if eff.needs_redraw && !eff.area_scrolled {
             self.mark_full();
@@ -157,8 +154,8 @@ impl MiniEngine {
         if self.touch.is_active()
             && input::scroll_took_over(&self.scroll, &self.interaction, self.scroll_pos_at_press)
         {
-            let outs = self.touch.cancel();
-            self.dispatch_touch(&outs, x, y);
+            // native-view 手势组件要一直收到 touchmove（gesture_native.rs）：不补 cancel
+            if !super::gesture_native::keeps_touch() { let outs = self.touch.cancel(); self.dispatch_touch(&outs, x, y); }
             // 页面动了，这一下不再是点击：点击态立刻撤（不等手指移出元素，也不留 hover-stay-time）
             self.interaction.cancel_press();
         }
@@ -201,6 +198,8 @@ impl MiniEngine {
         let outs = self.touch.release(x, y, now);
         self.touch.finish();
         self.dispatch_touch(&outs, x, y);
+        super::gesture_native::end();
+        self.edge_container_end(x);
         // tap 只在「没被判成滑动、没被滚动接管、也不是用来停惯性」时才有
         let stopped_fling = std::mem::take(&mut self.tap_stops_fling);
         if outs.contains(&TouchOut::Tap) && !stopped_fling && !slider_dragged && !seek_dragged {
@@ -447,7 +446,7 @@ impl MiniEngine {
         (self.width as f32, self.height as f32)
     }
 
-    fn apply_interaction(&mut self, res: crate::ui::interaction::InteractionResult) {
+    pub(super) fn apply_interaction(&mut self, res: crate::ui::interaction::InteractionResult) {
         use crate::ui::interaction::InteractionResult as R;
         // 复制 / 剪切：引擎里存一份，再发 `clipboard` 事件让宿主写系统剪贴板
         // （与 `wx.setClipboardData` 同一条事件）。从前这两种结果在这里直接丢掉，
@@ -483,9 +482,8 @@ impl MiniEngine {
             return;
         }
         // 与桌面窗体同一条派发（`host::tap::dispatch_input_event`）
-        let r = self.renderer.take();
-        crate::host::tap::dispatch_input_event(&mut self.app, r.as_ref(), &id, kind, &value);
-        self.renderer = r;
+        // focus 带键盘高度、按「完成」之后补 blur（engine_keyboard.rs）
+        self.dispatch_input_result(&res, &id, kind, &value);
         if kind == "input" {
             if let Some(v) = crate::host::tap::take_input_replacement(&self.app) {
                 self.interaction.replace_input_value(&id, &v);

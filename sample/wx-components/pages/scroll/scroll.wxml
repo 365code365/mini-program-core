@@ -1,0 +1,33 @@
+<view class="card">
+  <view class="h">下拉刷新 + 下拉二级 · enhanced 滚动条</view>
+  <scroll-view id="sv" class="box" scroll-y enhanced show-scrollbar refresher-enabled refresher-default-style="none"
+               refresher-triggered="{{triggered}}" refresher-two-level-enabled refresher-two-level-scroll-enabled
+               bindrefresherstatuschange="onStatus" bindrefresherrefresh="onRefresh" bindscroll="onScroll" binddragend="onDragEnd">
+    <view slot="refresher" class="refresher {{status >= 6 ? 'second' : ''}}">{{statusText}}</view>
+    <view wx:for="{{rows}}" wx:key="*this" id="r{{item}}" class="r {{item % 2 ? 'odd' : ''}}">第 {{item}} 行</view>
+  </scroll-view>
+  <view class="row">
+    <view class="btn" bindtap="top">scrollTo 0</view><view class="btn" bindtap="into">r15 居中</view>
+    <view class="btn gray" bindtap="lock">锁 / 解滚动</view><view class="btn gray" bindtap="twoLevel">进二楼</view><view class="btn gray" bindtap="closeTwo">回一楼</view>
+  </view>
+</view>
+<view class="card">
+  <view class="h">paging-enabled + min-drag-distance=30</view>
+  <scroll-view class="box small" scroll-y enhanced paging-enabled min-drag-distance="30" bounces="{{false}}">
+    <view wx:for="{{[0,1,2,3]}}" wx:key="*this" class="page p{{item}}">第 {{item + 1}} 页（整页吸附，不越界）</view>
+  </scroll-view>
+</view>
+<view class="card">
+  <view class="h">scroll-anchoring</view>
+  <scroll-view class="box small" scroll-y scroll-top="200">
+    <view wx:for="{{msgs}}" wx:key="id" id="{{item.id}}" class="msg">{{item.t}}</view>
+  </scroll-view>
+  <view class="row"><view class="btn" bindtap="prepend">在上方插一条</view><text class="tip">看着的那条不跳</text></view>
+</view>
+<view class="card">
+  <view class="h">swiper item-id → currentItemId：{{cur}}</view>
+  <swiper class="sw" indicator-dots bindchange="onSwiper">
+    <swiper-item wx:for="{{banners}}" wx:key="*this" item-id="banner-{{item}}"><view class="ban b{{index}}">banner-{{item}}</view></swiper-item>
+  </swiper>
+</view>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

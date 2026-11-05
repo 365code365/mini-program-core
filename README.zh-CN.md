@@ -187,7 +187,7 @@ my-mini-app/                                                    ┌────�
   `triggerEvent` 的 `bubbles` / `composed` / `capturePhase`、`wx://form-field` 系列 behavior、`selectComponent`）；
 - **样式**：选择器与特异性层叠、继承、`@import`、CSS 变量、`rpx`、`calc()`、渐变、阴影、
   `transform` / `transition` / `@keyframes`、`@media`（宽高 / 方向 / 宽高比 / 深浅色）、`@font-face`（TTF / OTF）；
-- **组件行为**：`scroll-view` 的受控位置、滚动 / 触底事件与自定义下拉刷新；`swiper` 的跟手拖动、衔接、
+- **组件行为**：`scroll-view` 的受控位置、滚动 / 触底事件与自定义下拉刷新、`scroll-x` + `scroll-y` 横竖同时滚；`swiper` 的跟手拖动、衔接、
   一屏多项、前后边距、Skyline 的 `direction` / `indicator-type` / `layout-type` 与 change / transition / animationfinish；
   `form` 的 submit / reset；`picker` 的 columnchange / cancel / `header-text`；`picker-view` 内嵌滚轮；
   `<video>` 的播放事件、全屏、封面、弹幕；`<canvas type="2d">`（渐变 / 图案 / 阴影 / 合成模式 / 像素读回）；
@@ -218,8 +218,7 @@ my-mini-app/                                                    ┌────�
 这一轮（T23~T29）补了 WebSocket / 文件系统 / 音频等 API、组件事件冒泡与 `virtualHost` / 动态 slot、`navigator` / `label`、
 `picker-view` 滚动、swiper 的 Skyline 属性、canvas 2d 的渐变阴影与像素读回、video 封面与弹幕；`@supports` / `@container` / `@layer`
 查证 Skyline 本身就不支持，两端都整块跳过。还开着的：`wx:key` 参与增量失效与 WXS 响应事件（G-2）、H5 导出的自定义组件（G-2c）、
-scroll-view 的滚动条与 Skyline 的 `sticky` / `grid-view` / 嵌套滚动（G-4）、离屏 scroll-view 的受控值（G-5）、video 的拖动进度 /
-画中画（G-6）、swiper 的 worklet 回调（G-7）、canvas 的虚线与 clip（G-9）、未注册标签的兜底语义（G-12）。
+离屏 scroll-view 的受控值（G-5）、video 的画中画（G-6）、canvas 的虚线与 clip（G-9）、未注册标签的兜底语义（G-12）。
 
 **最大的已知短板是内存**：峰值 600MB~1GB，几乎全是字体。`cargo run --release --example mem_report`
 的实测分项（RSS 增量，macOS）：
@@ -542,9 +541,9 @@ Android 在 ubuntu runner 上编、iOS 在 macOS runner 上编，然后把两个
 
 | 类别 | 已支持 |
 |---|---|
-| 组件（24 个标签） | 容器：view / block / scroll-view / swiper / swiper-item<br/>文本与媒体：text / rich-text / icon / image / video / canvas<br/>表单：button / input / textarea / switch / slider / progress / checkbox / checkbox-group / radio / radio-group / picker / picker-view / picker-view-column |
-| 补齐的官方组件 | 渲染器：grid-view（对齐网格 / 瀑布流）、cover-image / cover-view、span、movable-area；宿主没接的 map / camera / live-* / web-view / channel-* 画占位<br/>内置组件（WXML + JS，用到才注入，`src/builtin_components`）：movable-view、page-container、match-media、root-portal、page-meta、navigation-bar、draggable-sheet、8 个手势组件、audio、editor（纯文本） |
-| 宿主原生组件（Android / iOS SDK，Flutter Android 插件） | `<map>`：SDK 自带瓦片地图（`MiniMapView`，高德公开瓦片 GCJ-02），同层渲染进页面；标记 / 气泡 / 标签 / 折线 / 圆 / 多边形 / 卫星图 / 比例尺，拖动、惯性、捏合、双击放大（创建选项 `sameLayerGestures`，按在地图上的整串触摸交给宿主），`bindtap` / `markertap` / `callouttap` / `labeltap` / `regionchange` / `updated`，MapContext 14 个方法<br/>`<web-view>`：系统 WebView / WKWebView 盖在页面上，网页里的 `wx.miniProgram.*`、`WeixinJSBridge`，postMessage 在返回时一次派给 `bindmessage`，网页标题当导航栏标题<br/>`<live-player>`：系统播放器（MediaPlayer / AVPlayer）拉 HLS / mp4，同层渲染；`bindstatechange` 状态码、`bindnetstatus`、LivePlayerContext（播放 / 暂停 / 静音 / 全屏 / 截图）<br/>真机验收：`tools/android-native-components.sh`、`tools/ios-native-components.sh` |
+| 组件（24 个基础标签，全部标签数见落地页：76） | 容器：view / block / scroll-view / swiper / swiper-item<br/>文本与媒体：text / rich-text / icon / image / video / canvas<br/>表单：button / input / textarea / switch / slider / progress / checkbox / checkbox-group / radio / radio-group / picker / picker-view / picker-view-column |
+| 补齐的官方组件 | 渲染器：grid-view（对齐网格 / 瀑布流）、cover-image / cover-view、span（行内混排）、movable-area、list-view / list-builder / grid-builder（按 list 展开，itembuild / itemdispose）、sticky-header / sticky-section 与 CSS `position: sticky`、nested-scroll-header / nested-scroll-body；宿主没接的 map / camera / live-* / web-view / channel-* 画占位<br/>内置组件（WXML + JS，用到才注入，`src/builtin_components`）：movable-view、page-container、match-media、root-portal、page-meta、navigation-bar、draggable-sheet、8 个手势组件、audio、editor（纯文本）、open-data、open-container（只有 closed 外观）、share-element（配合 page-container）、9 个开放能力组件（ad / official-account / store-* / functional-page-navigator，按微信外的表现报失败） |
+| 宿主原生组件（Android / iOS SDK，Flutter 插件的 Android 与 iOS） | `<map>`：SDK 自带瓦片地图（`MiniMapView`，高德公开瓦片 GCJ-02），同层渲染进页面；标记 / 气泡 / 标签 / 折线 / 圆 / 多边形 / 卫星图 / 比例尺，拖动、惯性、捏合、双击放大（创建选项 `sameLayerGestures`，按在地图上的整串触摸交给宿主），`bindtap` / `markertap` / `callouttap` / `labeltap` / `regionchange` / `updated`，MapContext 14 个方法<br/>`<web-view>`：系统 WebView / WKWebView 盖在页面上，网页里的 `wx.miniProgram.*`、`WeixinJSBridge`，postMessage 在返回时一次派给 `bindmessage`，网页标题当导航栏标题<br/>`<live-player>`：系统播放器（MediaPlayer / AVPlayer）拉 HLS / mp4，同层渲染；`bindstatechange` 状态码、`bindnetstatus`、LivePlayerContext（播放 / 暂停 / 静音 / 全屏 / 截图）<br/>`<camera>`：Camera2 / AVCaptureSession，同层渲染；`initdone {maxZoom}`、CameraContext（takePhoto、startRecord / stopRecord 出 mp4、setZoom），onCameraFrame 由引擎从预览里取、`mode="scanCode"` 由引擎解二维码与条形码（EAN-13 / Code 128 等）<br/>`<live-pusher>`：硬编 H.264 + AAC 经 RTMP 推流，官方状态码与 netstatus，LivePusherContext（start / stop / pause / resume / switchCamera / snapshot / toggleTorch / setZoom）；美颜 / 美白 / 滤镜（Android GL 着色器、iOS Core Image，预览与推流同一份，滤镜颜色是近似）；背景音 playBGM 等（本地放 + 混进推流）；小窗 `picture-in-picture-mode`（离开页面时缩成引擎画的右下角浮窗，推流不断）；变声、混响没做<br/>`<voip-room mode="camera">`：本机相机画面；`mode="video"` 别人的画面由宿主自己的通话服务交（`MiniVoip`）：微信的 VoIP 后台在微信外进不去，`joinVoIPChat` 等放进 hostApis 由宿主实现；宿主没接时派 binderror<br/>camera 与 live-pusher 只在 Android 真机上验过（iOS 编得过、模拟器没有相机）<br/>真机验收：`tools/android-native-components.sh`、`tools/ios-native-components.sh` |
 | 动画 | `this.animate` / `clearAnimation`（含滚动时间线）、`wx.worklet`（shared / derived / timing / spring / decay / sequence / repeat / delay / Easing）与 `applyAnimatedStyle`：按选择器写节点样式（data 的 `__nodeStyles`） |
 | 触摸 | touchmove / touchend / touchcancel 锁定在 touchstart 的节点上（与微信、DOM 一致），手指移出、节点被挪走都照样收到 |
 | 事件 | touchstart/move/end/cancel、longpress/longtap、tap、change、focus/input/blur/confirm、image 的 load/error、scroll-view 的 scroll / scrolltoupper / scrolltolower / refresher*、swiper 的 change / transition / animationfinish、form 的 submit / reset、picker 的 columnchange / cancel、video 的 play / pause / ended / timeupdate / loadedmetadata / seekcomplete / fullscreenchange / error、页面 onPageScroll / onReachBottom / onPullDownRefresh；六种绑定前缀（bind / catch / capture-bind / capture-catch / mut-bind / bind:）与捕获-冒泡完整链路 |

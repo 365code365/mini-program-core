@@ -1,3 +1,6 @@
 .map { width: 100%; height: 640rpx; background-color: #e8eef5; }
+.cc { padding: 8px 10px; background-color: #ffffff; border-radius: 6px; border: 1px solid #07c160; }
+.cc-t { font-size: 14px; color: #07c160; }
+.cc-d { font-size: 11px; color: #666666; }
 .log { display: flex; flex-direction: column; margin-top: 12rpx; padding: 12rpx 16rpx; min-height: 120rpx; background-color: #1f1f1f; border-radius: 8rpx; }
 .log-line { font-size: 22rpx; line-height: 1.7; color: #9fe6b8; }

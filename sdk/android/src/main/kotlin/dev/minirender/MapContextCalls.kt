@@ -1,6 +1,10 @@
 package dev.minirender
 
 import android.animation.ValueAnimator
+import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -8,7 +12,8 @@ import org.json.JSONObject
  * `wx.createMapContext(id)` 的方法（经 hostCall 交给 [MiniMapView]，主线程）。回包字段照官方：
  * `getCenterLocation {latitude, longitude}`、`getScale {scale}`、`getRegion {southwest, northeast}`、
  * `toScreenLocation {x, y}`、`fromScreenLocation {latitude, longitude}`。
- * `moveToLocation` 不给坐标时官方是挪到「当前定位」：SDK 不拿定位，回到属性里的中心点。
+ * `moveToLocation` 不给坐标时官方是挪到「当前定位」：有定位权限时用定位（[MapLocation]），没有回到属性里的中心点。
+ * `openMapApp` 走 `geo:` Intent（iOS 走 `maps://`）。
  */
 internal object MapContextCalls {
     fun handle(m: MiniMapView, method: String, a: JSONObject, reply: MiniHostReply): Boolean {
@@ -21,11 +26,15 @@ internal object MapContextCalls {
             "moveToLocation" -> {
                 val lat = a.optDouble("latitude")
                 val lng = a.optDouble("longitude")
-                val t = if (!lat.isNaN() && !lng.isNaN()) LatLng(lat, lng) else attrCenter(m)
+                // 不给坐标：官方挪到当前定位点。有定位权限时用蓝点的位置（没开 show-location 用系统缓存的最后位置），
+                // 没权限 / 还没定到位时退回属性里的中心点
+                val t = if (!lat.isNaN() && !lng.isNaN()) LatLng(lat, lng)
+                    else m.location?.fix ?: m.hostContext?.let { MapLocation.lastKnown(it) } ?: attrCenter(m)
                 if (t == null || !t.valid) return reply.fail("moveToLocation:fail 没有可挪去的位置").let { true }
                 m.moveTo(t, m.zoom, animate = true)
                 reply.success()
             }
+            "openMapApp" -> openMapApp(m, a, reply)
             "includePoints" -> {
                 val pts = MapGeo.points(a.optJSONArray("points"))
                 if (pts.isEmpty()) return reply.fail("includePoints:fail points 为空").let { true }
@@ -87,6 +96,42 @@ internal object MapContextCalls {
             else -> return false
         }
         return true
+    }
+
+    /** preferApplication → 包名（装了就直接交给它，没装退回系统选择） */
+    private val PACKAGES = mapOf(
+        "amap" to "com.autonavi.minimap", "baidu" to "com.baidu.BaiduMap", "tencent" to "com.tencent.map",
+        "google" to "com.google.android.apps.maps", "petal" to "com.huawei.maps.app",
+    )
+
+    /**
+     * `openMapApp {latitude, longitude, destination, preferApplication}`：`geo:` Intent 交给系统，装了几个地图 App 由系统弹选择。
+     * 坐标原样给（GCJ-02）：高德 / 腾讯 / 百度按 GCJ-02 认没有偏差，Google 地图在国内也按 GCJ-02 显示；国外坐标两者相同
+     */
+    private fun openMapApp(m: MiniMapView, a: JSONObject, reply: MiniHostReply) {
+        val lat = a.optDouble("latitude")
+        val lng = a.optDouble("longitude")
+        if (!LatLng(lat, lng).valid) return reply.fail("openMapApp:fail latitude / longitude 不对")
+        val ctx = m.hostContext ?: return reply.fail("openMapApp:fail 地图还没挂上")
+        val name = a.optString("destination")
+        val uri = Uri.parse("geo:$lat,$lng?q=$lat,$lng" + if (name.isNotEmpty()) "(${Uri.encode(name)})" else "")
+        fun intent(pkg: String?) = Intent(Intent.ACTION_VIEW, uri).apply {
+            if (pkg != null) setPackage(pkg)
+            if (ctx !is Activity) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val pkg = PACKAGES[a.optString("preferApplication")]
+        for (p in listOf(pkg, null).distinct()) {
+            try {
+                ctx.startActivity(intent(p))
+                android.util.Log.i("mini-render", "🗺 openMapApp ${p ?: "系统选择"} $uri")
+                return reply.success()
+            } catch (e: ActivityNotFoundException) {
+                // 指定的 App 没装：退回系统选择
+            } catch (e: SecurityException) {
+                break
+            }
+        }
+        reply.fail("openMapApp:fail 没有可用的地图 App")
     }
 
     private fun attrCenter(m: MiniMapView): LatLng? {

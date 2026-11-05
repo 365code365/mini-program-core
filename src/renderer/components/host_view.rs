@@ -74,6 +74,11 @@ pub fn is_same_layer(tag: &str) -> bool {
     TAGS.with(|t| t.borrow().iter().any(|x| x == tag))
 }
 
+/// 下一帧重新数一遍页面上的同层组件（小窗收起 / 关掉时：它不在页面上了，要从 `sameLayerViews` 里拿掉）
+pub fn mark_stale() {
+    STALE.with(|s| s.set(true));
+}
+
 /// 换了渲染器之后第一次问返回 true（只返回一次）
 pub fn take_stale() -> bool {
     STALE.with(|s| s.replace(false))

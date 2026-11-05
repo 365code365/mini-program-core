@@ -71,21 +71,37 @@
             };
 
             // <navigator> 被点了（host::builtin_tap）：按 open-type 走对应的路由 API
-            globalThis.__navigatorTap = function(openType, url, delta, mpJson) {
+            // target="miniProgram"（mpJson 非空）时按 open-type 分流（官方 component/navigator）：navigate → navigateToMiniProgram、
+            // navigateBack → navigateBackMiniProgram（带 extra-data）、exit → 退出；结果派给 navigator 的
+            // bind:success / fail / complete（binds 由宿主给，[{type, handler, owner, id, dataset}]；detail 是 API 的 res）
+            globalThis.__navigatorTap = function(openType, url, delta, mpJson, binds) {
+                if (mpJson) {
+                    var mp = {};
+                    try { mp = JSON.parse(mpJson); } catch (e) {}
+                    var extra = mp['extra-data'];
+                    try { extra = extra ? JSON.parse(extra) : undefined; } catch (e) {}
+                    var cb = function(name) {
+                        return function(res) {
+                            (binds || []).forEach(function(b) {
+                                if (b.type !== name) return;
+                                var t = { id: b.id || '', dataset: b.dataset || {}, offsetLeft: 0, offsetTop: 0 };
+                                __dispatchEvent(b.handler, { type: name, target: t, currentTarget: t, detail: res || {} }, b.owner);
+                            });
+                        };
+                    };
+                    var o = { success: cb('success'), fail: cb('fail'), complete: cb('complete') };
+                    if (openType === 'exit') return __navigatorExit();
+                    if (openType === 'navigateBack') { o.extraData = extra; return wx.navigateBackMiniProgram(o); }
+                    o.appId = mp['app-id']; o.path = mp.path; o.extraData = extra;
+                    o.envVersion = mp.version || 'release'; o.shortLink = mp['short-link'];
+                    return wx.navigateToMiniProgram(o);
+                }
                 switch (openType) {
                     case 'redirect': return wx.redirectTo({ url: url });
                     case 'switchTab': return wx.switchTab({ url: url });
                     case 'reLaunch': return wx.reLaunch({ url: url });
                     case 'navigateBack': return wx.navigateBack({ delta: delta || 1 });
-                    case 'exit': return __navigatorExit(); // 退出小程序：发宿主事件 exitMiniProgram（route-ext.js）
-                    case 'miniProgram': {
-                        var mp = {};
-                        try { mp = JSON.parse(mpJson || '{}'); } catch (e) {}
-                        var extra = mp['extra-data'];
-                        try { extra = extra ? JSON.parse(extra) : undefined; } catch (e) {}
-                        return wx.navigateToMiniProgram({ appId: mp['app-id'], path: mp.path, extraData: extra,
-                                                          envVersion: mp.version || 'release', shortLink: mp['short-link'] });
-                    }
+                    case 'exit': return; // 官方：exit 只在 target="miniProgram" 时生效
                     default: return wx.navigateTo({ url: url });
                 }
             };

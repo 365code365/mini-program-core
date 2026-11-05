@@ -323,6 +323,8 @@ fn 直播走同层视频那一套_状态码_播放命令_截图() {
     assert_eq!(lp["url"], "https://example.com/live/stream.m3u8");
     assert_eq!((lp["attrs"]["object-fit"].as_str(), lp["attrs"]["loop"].as_str()), (Some("cover"), Some("false")));
     assert_eq!(lp["box"], serde_json::json!([VW * DPR, VH * DPR]));
+    // WP-E4：orientation / mode 规范成合法值透传（没写的给官方默认 vertical / live）
+    assert_eq!((lp["attrs"]["orientation"].as_str(), lp["attrs"]["mode"].as_str()), (Some("vertical"), Some("live")));
 
     // 交一帧：只重画直播框，fillCrop 铺满（4:3 的帧盖满 3:2 的框）
     assert!(host_feed::push_rgba("lp", 8, 6, 32, &solid([255, 0, 0])));
@@ -345,6 +347,8 @@ fn 直播走同层视频那一套_状态码_播放命令_截图() {
     }
     assert_eq!(a.eval("JSON.stringify(getCurrentPages()[0].data.codes)").unwrap(), "[2001,2002,2008,2009,2003,2004,2007,2004,-2301]");
     assert_eq!(a.eval("String(getCurrentPages()[0].data.net)").unwrap(), "1280", "netstatus 带画面宽");
+    // 现行码表里没有「播放结束」（旧 2006 已删）：ended 不报码
+    assert!(!a.dispatch_native_view_event("lp", "ended", serde_json::json!({})), "ended 不再报 2006");
 
     // LivePlayerContext：播放命令 → videoCommand；mute 改 muted；截图；找不到 id 走 fail
     a.eval("const p = getCurrentPages()[0]; p.run('pause'); p.run('play'); p.run('mute'); p.run('snapshot'); p.run('stop', 'nope')").unwrap();
@@ -356,4 +360,51 @@ fn 直播走同层视频那一套_状态码_播放命令_截图() {
     let res = a.eval("JSON.stringify(getCurrentPages()[0].data.res)").unwrap();
     assert!(res.contains("pause:pause:ok") && res.contains("snapshot:png") && res.contains("stop:fail"), "{res}");
     host_feed::retain(&[]);
+}
+
+/// WP-E3：同层渲染时弹幕也由引擎画在画面上（时间用宿主报来的位置），`sendDanmu` 不再告警丢掉；
+/// 本地文件的 `loadedmetadata` 一到补发 `bindprogress {buffered: 100}`
+#[test]
+fn e3_同层渲染_弹幕由引擎画_send_danmu_与_bindprogress() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = fixture("danmu");
+    std::fs::write(
+        root.join("pages/p/p.wxml"),
+        r#"<view class="hd">卡片标题</view>
+<video id="dm" class="v" src="/assets/clip.mp4" enable-danmu danmu-list="{{list}}" bindprogress="onProg"></video>"#,
+    )
+    .unwrap();
+    std::fs::write(
+        root.join("pages/p/p.js"),
+        "Page({ data: { list: [{ text: '弹幕弹幕弹幕弹幕', color: '#ffffff', time: 0 }], ev: [] }, onProg(e) { this.data.ev.push('p' + e.detail.buffered); } });",
+    )
+    .unwrap();
+    let mut e = engine(&root, false);
+    let mut t = 1000u64;
+    let mut pump = |e: &mut MiniEngine| {
+        t += 16;
+        e.pump_ex(t);
+    };
+    pump(&mut e);
+    events(&mut e);
+    e.dispatch_native_view_event("dm", "loadedmetadata", serde_json::json!({"duration": 10, "width": 8, "height": 6}));
+    assert_eq!(e.eval("JSON.stringify(__currentPage.data.ev)").unwrap(), r#"["p100"]"#, "本地文件：元数据到了就报全部缓冲好");
+    // 播到 2.5 秒：time 0 的那条弹幕走到画面中间
+    // 第一行弹幕那一条（框顶往下 0~30 逻辑像素）里的白色像素；中间的播放键在框正中，不在这一条里
+    let white = |e: &mut MiniEngine| {
+        (0..150).map(|i| (0..30).filter(|dy| px(e, VX + 2.0 * i as f32, VY + *dy as f32).iter().all(|c| *c > 230)).count()).sum::<usize>()
+    };
+    e.dispatch_native_view_event("dm", "timeupdate", serde_json::json!({"currentTime": 2.5, "duration": 10}));
+    assert!(host_feed::push_rgba("dm", 8, 6, 32, &solid([255, 0, 0])));
+    pump(&mut e);
+    assert!(white(&mut e) > 3, "弹幕画在宿主交来的画面上（白字）");
+    // sendDanmu：当前位置（宿主报的 2.5 秒）加一条；不再告警丢掉
+    e.eval("wx.createVideoContext('dm').sendDanmu({ text: 'new', color: '#00ff00' })").unwrap();
+    pump(&mut e);
+    pump(&mut e);
+    e.dispatch_native_view_event("dm", "timeupdate", serde_json::json!({"currentTime": 4.0, "duration": 10}));
+    assert!(host_feed::push_rgba("dm", 8, 6, 32, &solid([255, 0, 0])));
+    pump(&mut e);
+    let green = (0..150).any(|i| (16..40).any(|dy| { let p = px(&mut e, VX + 2.0 * i as f32, VY + dy as f32); p[1] > 200 && p[0] < 80 }));
+    assert!(green, "sendDanmu 的绿字出现在画面上");
 }

@@ -175,8 +175,8 @@
         <div><dt data-i18n="stat.2.k">Repeated frames, 90 Hz phone</dt><dd><span data-count="1.5">1.5</span><small>%</small></dd><p data-i18n="stat.2.v">list scrolling with setData, down from 11.2%</p></div>
         <div><dt data-i18n="stat.3.k">GPU vs CPU</dt><dd><span data-count="34">34</span><small>/34</small></dd><p data-i18n="stat.3.v">scenes byte-identical, fallback included</p></div>
         <div><dt data-i18n="stat.4.k">Difference vs Chrome</dt><dd><span data-count="4.57">4.57</span><small>%</small></dd><p data-i18n="stat.4.v">15 pages of the same source, per pixel</p></div>
-        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1546">1546</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
-        <div><dt data-i18n="stat.6.k">Official wx.* APIs</dt><dd><span data-count="503">503</span><small>/503</small></dd><p data-i18n="stat.6.v">every name in the index, plus 57 component tags</p></div>
+        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1689">1689</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
+        <div><dt data-i18n="stat.6.k">Official wx.* APIs</dt><dd><span data-count="503">503</span><small>/503</small></dd><p data-i18n="stat.6.v">every name in the index, plus 76 component tags</p></div>
       </dl>
     </div>
   </section>
@@ -558,8 +558,9 @@ XComponent({ type: <span class="s">'surface'</span>,
 
   <!-- ─────────────────────────  Skyline 对齐  ───────────────────────── -->
   <!-- 口径：官方 API 目录（503 个 wx.*）与组件目录，见 .agents/tasks/wx-gap-2026-10-23/gap.md 与测试说明 T31。
-       标签数 57 = 渲染器登记 26 + 按官方行为走兜底的 navigator / label / form 3 + cover-view / span / movable-area 3
-       + 内置组件 17（含 8 个手势组件）+ 原生组件 8（map / web-view / live-player 由移动端 SDK 承载，其余画占位）；改了组件表要同步这里与 stat.6 / sky.c2 / scope.yes.1 -->
+       标签数 76 = 渲染器登记 34（registry.rs 的 36 减去内部用的 #text 与匿名容器；含 span、list-builder / list-view / grid-builder、
+       sticky-header / sticky-section、nested-scroll-header / body）+ 按官方行为走兜底的 navigator / label / form 3 + cover-view / movable-area 2
+       + 内置组件 29（builtin_components：12 个 + 8 个手势组件 + 9 个开放能力组件）+ 原生组件 8（map / web-view / live-player / camera / live-pusher / voip-room 由移动端 SDK 承载，channel-live / channel-video 画占位）；改了组件表要同步这里与 stat.6 / sky.c2 / scope.yes.1 -->
   <section class="band sky-band" id="skyline">
     <div class="wrap">
       <header class="sec-head">
@@ -579,17 +580,19 @@ XComponent({ type: <span class="s">'surface'</span>,
         <div class="sky-main">
           <dl class="sky-cov">
             <div><dt data-i18n="sky.c1.k">Official wx.* names</dt><dd>503<small>/503</small></dd><p data-i18n="sky.c1.v">516 keys at runtime; host-only ones fail until the host claims them</p></div>
-            <div><dt data-i18n="sky.c2.k">Component tags</dt><dd>57</dd><p data-i18n="sky.c2.v">incl. 17 built-in components and 8 native components, 3 of them hosted by the mobile SDKs</p></div>
+            <div><dt data-i18n="sky.c2.k">Component tags</dt><dd>76</dd><p data-i18n="sky.c2.v">incl. 29 built-in components and 8 native components, 6 of them hosted by the mobile SDKs</p></div>
             <div><dt data-i18n="sky.c3.k">Map vs page while scrolling</dt><dd>0<small>px</small></dd><p data-i18n="sky.c3.v">the SDKs' own tile map, same-layer rendered; measured on a phone</p></div>
           </dl>
 
           <div class="tagset">
             <div class="tag-group">
-              <h3 data-i18n="sky.g1">Containers &amp; layout<small>12</small></h3>
+              <h3 data-i18n="sky.g1">Containers &amp; layout<small>19</small></h3>
               <ul class="chips">
                 <li>view</li><li>block</li><li>scroll-view</li><li>swiper</li><li>swiper-item</li>
                 <li class="new">grid-view</li><li class="new">movable-area</li><li class="new part">movable-view</li>
                 <li class="new">cover-view</li><li class="new">root-portal</li><li class="new">match-media</li><li class="new">span</li>
+                <li class="new">list-view</li><li class="new part">list-builder</li><li class="new">grid-builder</li>
+                <li class="new">sticky-header</li><li class="new">sticky-section</li><li class="new">nested-scroll-header</li><li class="new">nested-scroll-body</li>
               </ul>
             </div>
             <div class="tag-group">
@@ -608,10 +611,11 @@ XComponent({ type: <span class="s">'surface'</span>,
               </ul>
             </div>
             <div class="tag-group">
-              <h3 data-i18n="sky.g4">Page &amp; navigation<small>5</small></h3>
+              <h3 data-i18n="sky.g4">Page &amp; navigation<small>7</small></h3>
               <ul class="chips">
                 <li>navigator</li><li class="new">page-container</li><li class="new part">page-meta</li>
                 <li class="new">navigation-bar</li><li class="new">draggable-sheet</li>
+                <li class="new part">open-container</li><li class="new part">share-element</li>
               </ul>
             </div>
             <div class="tag-group">
@@ -627,15 +631,24 @@ XComponent({ type: <span class="s">'surface'</span>,
             <div class="tag-group">
               <h3 data-i18n="sky.g6">Native components<small>8</small></h3>
               <ul class="chips">
-                <li class="new same">map</li><li class="new ph">camera</li><li class="new same">live-player</li>
-                <li class="new ph">live-pusher</li><li class="new ph">voip-room</li><li class="new">web-view</li>
+                <li class="new same">map</li><li class="new same part">camera</li><li class="new same">live-player</li>
+                <li class="new same part">live-pusher</li><li class="new part">voip-room</li><li class="new">web-view</li>
                 <li class="new ph">channel-live</li><li class="new ph">channel-video</li>
+              </ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="sky.g7">Open capabilities<small>10</small></h3>
+              <ul class="chips">
+                <li class="new part">open-data</li><li class="new part">ad</li><li class="new part">ad-custom</li>
+                <li class="new part">official-account</li><li class="new part">official-account-publish</li>
+                <li class="new part">store-product</li><li class="new part">store-coupon</li><li class="new part">store-gift</li>
+                <li class="new part">store-home</li><li class="new part">functional-page-navigator</li>
               </ul>
             </div>
           </div>
 
           <ul class="chips chip-legend">
-            <li class="new" data-i18n="sky.leg.new">added in October 2026</li>
+            <li class="new" data-i18n="sky.leg.new">added since October 2026</li>
             <li class="part" data-i18n="sky.leg.part">documented degradation</li>
             <li class="same" data-i18n="sky.leg.same">same-layer rendering (Android, iOS)</li>
             <li class="ph" data-i18n="sky.leg.ph">placeholder until the host takes it</li>
@@ -1390,7 +1403,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card panel-yes">
           <h3 data-i18n="scope.yes.h"><span class="dot ok" aria-hidden="true"></span>Implemented</h3>
           <ul class="ticks">
-            <li data-i18n="scope.yes.1"><b>57 component tags</b>: 26 drawn by the renderer (incl. <code>swiper</code>, <code>scroll-view</code>, <code>picker-view</code>, <code>grid-view</code> aligned and masonry); <code>navigator</code> / <code>label</code> / <code>form</code> with official behavior; 17 built-in WXML components injected only when a page uses them (<code>movable-view</code>, <code>page-container</code>, <code>draggable-sheet</code>, 8 gesture handlers…); 8 native components: <code>map</code>, <code>web-view</code> and <code>live-player</code> come with the mobile SDKs, the other 5 draw a placeholder until the host takes them</li>
+            <li data-i18n="scope.yes.1"><b>76 component tags</b>: 34 drawn by the renderer (incl. <code>swiper</code>, <code>scroll-view</code>, <code>picker-view</code>, <code>grid-view</code> aligned and masonry, <code>list-builder</code> / <code>grid-builder</code>, <code>sticky-header</code> / <code>sticky-section</code>); <code>navigator</code> / <code>label</code> / <code>form</code> with official behavior; 29 built-in WXML components injected only when a page uses them (<code>movable-view</code>, <code>page-container</code>, <code>draggable-sheet</code>, 8 gesture handlers, <code>open-data</code> and 9 open-capability components that fail the way they do outside WeChat…); 8 native components: <code>map</code>, <code>web-view</code>, <code>live-player</code>, <code>camera</code> (scans QR codes and barcodes), <code>live-pusher</code> (beauty, filters, background music, picture-in-picture) and <code>voip-room</code> come with the mobile SDKs (camera and live-pusher checked on Android phones only), <code>channel-live</code> / <code>channel-video</code> draw a placeholder until the host takes them</li>
             <li data-i18n="scope.yes.2"><b>Events</b>: six binding prefixes with the full capture-bubble chain; touch sequences follow WeChat semantics (slop cancels tap, 350ms longpress, a <code>touchcancel</code> is synthesized when scrolling takes over)</li>
             <li data-i18n="scope.yes.3"><b>Templates</b>: <code>wx:if</code> / <code>wx:for</code> / <code>wx:key</code> / <code>block</code>, the expression engine, <code>template</code> / <code>import</code> / <code>include</code>, <code>wxs</code> modules, custom components (one instance per use site, style isolation, named, default and dynamic <code>&lt;slot&gt;</code>, <code>virtualHost</code>, bubbling <code>triggerEvent</code>, <code>wx://form-field</code> behaviors)</li>
             <li data-i18n="scope.yes.4"><b>Styles</b>: selectors with specificity cascade, inheritance, <code>@import</code>, CSS variables, <code>rpx</code>, <code>calc()</code>, gradients, shadows, <code>transform</code> / <code>transition</code> / <code>@keyframes</code>, <code>@media</code> (size, orientation, dark mode), <code>@font-face</code></li>
@@ -1398,9 +1411,9 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
             <li data-i18n="scope.yes.6"><b>Lifecycles</b>: 28 hooks across three levels (App 7 / Page 13 / Component 5 + <code>pageLifetimes</code> 3)</li>
             <li data-i18n="scope.yes.7"><b>Interaction</b>: inertial scrolling with critically damped bounce, gesture arbitration, 300 ms route transitions, left-edge swipe back, engine-drawn navigation bar and capsule button, pull-to-refresh, picker sheet, action sheet, image preview, partial repaint</li>
             <li data-i18n="scope.yes.12"><b>Skyline animation and gestures</b>: <code>this.animate</code> / <code>clearAnimation</code> with scroll timelines, <code>wx.worklet</code> with <code>applyAnimatedStyle</code>, eight gesture handlers, <code>movable-view</code> with inertia and edge bounce, <code>draggable-sheet</code> with snap points; touch sequences stay on the <code>touchstart</code> node</li>
-            <li data-i18n="scope.yes.8"><b>Media</b>: a Canvas 2D context plus <code>&lt;canvas type="2d"&gt;</code> with gradients, patterns, shadows, composite modes and pixel readback; <code>&lt;video&gt;</code> (MP4 demux + H.264 software decode + audio, playback events, <code>VideoContext</code>, fullscreen, poster, danmu), or hosted by the app's own player; <code>InnerAudioContext</code> / <code>BackgroundAudioManager</code> / <code>&lt;audio&gt;</code> play through the system audio output on desktop and Android</li>
+            <li data-i18n="scope.yes.8"><b>Media</b>: a Canvas 2D context plus <code>&lt;canvas type="2d"&gt;</code> with gradients, patterns, shadows, composite modes, <code>roundRect</code>, <code>isPointInPath</code> and pixel readback; <code>&lt;image&gt;</code> also takes SVG and <code>data:</code> URIs; <code>&lt;video&gt;</code> (MP4 demux + H.264 software decode + audio, playback events, <code>VideoContext</code>, fullscreen, poster, danmu, controls laid over the video, drag to seek), or hosted by the app's own player; <code>InnerAudioContext</code> / <code>BackgroundAudioManager</code> / <code>&lt;audio&gt;</code> play through the system audio output on desktop and Android</li>
             <li data-i18n="scope.yes.9"><b>Dual backend</b>: CPU rasterization + optional GPU compositing (wgpu). Enabled only after a start-up self-test is byte-identical to the CPU, forceable with <code>--backend</code> / <code>MINI_BACKEND</code>, falls back to the CPU on any failure. Wired into the desktop window, headless, the Android SDK and the native iOS view (CAMetalLayer); the Flutter iOS texture composites on the CPU</li>
-            <li data-i18n="scope.yes.10"><b>Component behavior</b>: <code>scroll-view</code> controlled position, events, custom pull-to-refresh, <code>reverse</code> and <code>padding</code>; <code>swiper</code> drag, circular mode, margins and Skyline's <code>direction</code> / <code>indicator-type</code> / <code>layout-type</code>; <code>form</code> submit / reset; <code>picker</code> column linkage and <code>header-text</code>; the inline <code>picker-view</code> wheel</li>
+            <li data-i18n="scope.yes.10"><b>Component behavior</b>: <code>scroll-view</code> controlled position, events, custom and two-level pull-to-refresh, scrolling both axes at once, <code>reverse</code>, <code>padding</code>, scrollbars, paging, scroll anchoring and nested scrolling; <code>position: sticky</code> that repaints only the pinned box; <code>swiper</code> drag, circular mode, margins and Skyline's <code>direction</code> / <code>indicator-type</code> / <code>layout-type</code>; <code>form</code> submit / reset; <code>picker</code> column linkage, <code>header-text</code> and the full region table with codes; the inline <code>picker-view</code> wheel; controlled <code>focus</code> and <code>auto-height</code> on inputs</li>
             <li data-i18n="scope.yes.11"><b>Hosts</b>: desktop window and launcher, headless snapshots for CI, a C ABI, native Android and iOS views with built-in map, web-view, video and live-player (and an example app for each), and a Flutter plugin (<code>MiniProgramScaffold</code>, <code>hostApis</code>, native components through <code>nativeViewBuilder</code>, same-layer <code>sameLayerVideo</code> / <code>sameLayerViews</code>)</li>
           </ul>
         </article>
@@ -1416,7 +1429,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
             </tbody>
           </table>
           <h3 class="mt" data-i18n="scope.miss.h">Still open</h3>
-          <p class="note" data-i18n="scope.miss.p">Each with its impact written down in the test guide: <code>wx:key</code> in incremental invalidation and WXS event handlers; custom components in the H5 export; scrollbars, Skyline's sticky sections and nested scrolling; dragging video progress and picture-in-picture; multi-finger gestures (pinch on <code>movable-view</code> and the scale handler); worklets off the logic thread and swiper worklet callbacks; <code>type="webgl"</code> canvases; bare text placed directly in a <code>&lt;view&gt;</code> does not wrap; inherited <code>color</code> overriding progress / slider / icon defaults; per-element CSS variables and <code>grid-template</code>; textarea <code>auto-height</code> and IME composition; same-layer components on iOS.</p>
+          <p class="note" data-i18n="scope.miss.p">Each with its impact written down in the test guide: <code>wx:key</code> in incremental invalidation and WXS event handlers; custom components in the H5 export; <code>list-builder</code> builds every item instead of only the visible ones; the route transition of <code>open-container</code> and <code>share-element</code> across pages; picture-in-picture for <code>video</code> and <code>live-player</code> (only <code>live-pusher</code> has it); multi-finger gestures (pinch on <code>movable-view</code> and the scale handler); worklets off the logic thread; <code>type="webgl"</code> canvases; inherited <code>color</code> overriding progress / slider / icon defaults; per-element CSS variables and <code>grid-template</code>; IME composition; voice changer, reverb and custom effects on <code>live-pusher</code> (its filters only approximate WeChat's colors); <code>voip-room</code> calls: WeChat's backend is out of reach outside WeChat, so the SDKs hand <code>joinVoIPChat</code> and the other person's video to the host's own call service.</p></p>
         </article>
       </div>
 
@@ -1517,7 +1530,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card">
           <h3 data-i18n="stack.reg.h">Regression suite<small>all green on every change</small></h3>
           <table class="kv"><tbody>
-            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>1546</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>1689</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r2k">Scene gallery</th><td data-i18n="stack.reg.r2v">65 images, byte-reproducible</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r3k">Partial-repaint check</th><td data-i18n="stack.reg.r3v">5 desktop scenes + 12 SDK cases, frame by frame</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r4k">SDK vs desktop</th><td data-i18n="stack.reg.r4v">sample 15/15, news 6/6 pixel-identical</td></tr>
@@ -1529,7 +1542,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card">
           <h3 data-i18n="stack.todo.h">Three biggest TODOs</h3>
           <ol class="ol">
-            <li data-i18n="stack.todo.1"><b>Native components in the Flutter iOS plugin</b> — <code>&lt;map&gt;</code>, <code>&lt;web-view&gt;</code> and <code>&lt;live-player&gt;</code> are built in on Android and in the native iOS view, not yet in the Flutter plugin on iOS</li>
+            <li data-i18n="stack.todo.1"><b><code>&lt;camera&gt;</code> and <code>&lt;live-pusher&gt;</code> on a real iPhone</b> — the iOS code (AVCaptureSession, VideoToolbox, RTMP) builds and takes the simulator's no-camera path, but so far has only run on Android phones</li>
             <li data-i18n="stack.todo.2"><b>The last incremental-layout gaps</b> — subtrees with a transform or animation are rebuilt whole, and content that gets shorter still repaints a full frame</li>
             <li data-i18n="stack.todo.3"><b>Custom components in the H5 export</b> — the cross-check against Chrome only covers pages without them</li>
           </ol>

@@ -96,6 +96,9 @@ impl Canvas {
             let mut active: Vec<usize> = Vec::new();
             let mut all_intersections: Vec<Vec<f32>> = vec![Vec::new(); SUB_SAMPLES];
             let mut segments: Vec<(f32, f32)> = Vec::new();
+            // `<canvas>` 的 nonzero 填充（fill_rule.rs）：交点带上边的方向；别处一律 even-odd，这一支不走
+            let nonzero = super::fill_rule::nonzero();
+            let mut crossings: Vec<(f32, i8)> = Vec::new();
             for y in y0.max(by0)..=y1.min(by1 - 1) {
                 let (row_top, row_bottom) = (y as f32, y as f32 + 1.0);
                 while next_edge < edges.len() && edges[next_edge].2 < row_bottom {
@@ -108,6 +111,17 @@ impl Canvas {
                     intersections.clear();
                     let scan_y = y as f32 + (sub as f32 + 0.5) / SUB_SAMPLES as f32;
 
+                    if nonzero {
+                        crossings.clear();
+                        for &i in &active {
+                            let (p0, p1, _, _) = &edges[i];
+                            if (p0.y <= scan_y && p1.y > scan_y) || (p1.y <= scan_y && p0.y > scan_y) {
+                                let t = (scan_y - p0.y) / (p1.y - p0.y);
+                                crossings.push((p0.x + t * (p1.x - p0.x), if p1.y > p0.y { 1 } else { -1 }));
+                            }
+                        }
+                        super::fill_rule::nonzero_spans(&mut crossings, intersections);
+                    } else {
                     for &i in &active {
                         let (p0, p1, _, _) = &edges[i];
                         if (p0.y <= scan_y && p1.y > scan_y) || (p1.y <= scan_y && p0.y > scan_y) {
@@ -118,6 +132,7 @@ impl Canvas {
                     }
 
                     intersections.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                    }
                     for pair in intersections.chunks(2) {
                         if let [l, r] = pair {
                             if r > l {

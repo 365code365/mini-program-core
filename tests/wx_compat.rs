@@ -283,7 +283,9 @@ fn match_media_与手势组件() {
     e.pointer_up(150.0, 100.0);
     e.pump(5200);
     let l = log(&e);
-    assert!(l.first().map(|s| s.starts_with("pan 1")).unwrap_or(false), "先 BEGIN：{l:?}");
+    // 官方「手势状态」：按下 POSSIBLE(0)，认出来 BEGIN(1)
+    assert!(l.first().map(|s| s.starts_with("pan 0")).unwrap_or(false), "先 POSSIBLE：{l:?}");
+    assert!(l.get(1).map(|s| s.starts_with("pan 1")).unwrap_or(false), "再 BEGIN：{l:?}");
     assert!(l.iter().any(|s| s.starts_with("pan 2")), "再 ACTIVE：{l:?}");
     assert_eq!(l.last().map(|s| s.as_str()), Some("pan 3 100"), "最后 END，累计位移 100：{l:?}");
 }

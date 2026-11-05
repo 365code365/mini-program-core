@@ -58,7 +58,26 @@ pub(super) fn apply_style_property(
                     }
                     "flex" => ts.display = Display::Flex,
                     "grid" => ts.display = Display::Grid,
+                    // 旧式弹性盒：布局照旧按 flex 排（与从前一样），记下来给 `-webkit-line-clamp` 用 ——
+                    // 浏览器里 line-clamp 只在这种盒子上生效
+                    "-webkit-box" | "-webkit-inline-box" => {
+                        ts.display = Display::Flex;
+                        ns.webkit_box = true;
+                    }
                     _ => ts.display = Display::Flex,
+                };
+                if !s.starts_with("-webkit-") {
+                    ns.webkit_box = false;
+                }
+            }
+            // 多行省略：`display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:N; overflow:hidden`。
+            // 行数在 text 建树 / 度量 / 绘制里用（最多 N 行，最后一行末尾省略号）；`none` 取消
+            "-webkit-line-clamp" | "line-clamp" => {
+                ns.line_clamp = match value {
+                    // 样式表把无单位数解析成 px 长度（`Length(3, Px)`），行内 style 里是 Number
+                    StyleValue::Number(n) | StyleValue::Length(n, LengthUnit::Px) if *n >= 1.0 => n.min(u16::MAX as f32) as u16,
+                    StyleValue::String(s) => s.trim().parse::<u16>().unwrap_or(0),
+                    _ => 0,
                 };
             }
             // `box-sizing`：决定 width/height 算的是内容盒还是边框盒。
@@ -461,7 +480,16 @@ pub(super) fn apply_style_property(
                 ns.animation = Some(spec);
             }
             "position" => if let StyleValue::String(s) = value {
+                // 后写的 position 盖掉前面的 sticky（`position: sticky` 之后又写 relative）
+                ns.is_sticky = false;
                 match s.as_str() {
+                    // 吸顶：布局上就是 relative（占原来的位置），top / bottom 不参与布局 ——
+                    // 声明全部落地之后在 base_style.rs 把偏移从 taffy 挪走（top 可能写在 position 前面）
+                    "sticky" | "-webkit-sticky" => {
+                        ts.position = Position::Relative;
+                        ns.is_sticky = true;
+                        ns.is_positioned = true;
+                    }
                     "absolute" => {
                         ts.position = Position::Absolute;
                         ns.is_positioned = true;

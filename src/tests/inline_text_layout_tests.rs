@@ -105,6 +105,7 @@ fn probe_measure(text: &str, font_px: f32, max_line: f32, min_unit: f32) -> f32 
         max_line_width: max_line,
         min_unit_width: min_unit,
         font_family: None,
+        max_lines: 0,
     };
     measure_text_node(
         taffy::geometry::Size { width: None, height: None },
@@ -162,6 +163,7 @@ fn min_content_query_never_exceeds_max_content() {
         max_line_width: 25.0,
         min_unit_width: 36.0,
         font_family: None,
+        max_lines: 0,
     };
     let w = measure_text_node(
         taffy::geometry::Size { width: None, height: None },

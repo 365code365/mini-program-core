@@ -41,6 +41,8 @@ pub enum Composite {
     Darken,
     Lighten,
     Difference,
+    // 下面这些是 Compositing and Blending Level 1 里剩下的（HTML globalCompositeOperation 的全部取值），fx_composite.rs
+    Overlay, ColorDodge, ColorBurn, HardLight, SoftLight, Exclusion, Hue, Saturation, Color, Luminosity,
 }
 
 impl Composite {
@@ -61,6 +63,16 @@ impl Composite {
             "darken" => Self::Darken,
             "lighten" => Self::Lighten,
             "difference" => Self::Difference,
+            "overlay" => Self::Overlay,
+            "color-dodge" => Self::ColorDodge,
+            "color-burn" => Self::ColorBurn,
+            "hard-light" => Self::HardLight,
+            "soft-light" => Self::SoftLight,
+            "exclusion" => Self::Exclusion,
+            "hue" => Self::Hue,
+            "saturation" => Self::Saturation,
+            "color" => Self::Color,
+            "luminosity" => Self::Luminosity,
             _ => Self::SourceOver,
         }
     }

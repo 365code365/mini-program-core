@@ -1,6 +1,7 @@
 //! **引擎内置的官方组件**：用小程序自己的三件套（WXML + WXSS + `Component()`）实现的那一批官方标签 ——
 //! `page-container`、`match-media`、`root-portal`、`page-meta` / `navigation-bar`、`draggable-sheet`、
-//! 八个手势组件、`audio`、`editor`。
+//! 八个手势组件、`audio`、`editor`、`open-data`、`open-container`、`share-element`，
+//! 以及九个开放能力组件（ad / official-account / store-* / functional-page-navigator，挂上即按官方「加载失败」走）。
 //!
 //! ## 为什么用组件写、不进 Rust 渲染器
 //! 它们的行为全是「逻辑层能做的事」：按属性显隐、按窗口尺寸判断、在触摸事件里算状态、调 `wx.*`。
@@ -29,7 +30,26 @@ const BUILTINS: &[(&str, &str, &str, &str)] = &[
     ("editor", include_str!("editor.wxml"), include_str!("editor.wxss"), include_str!("editor.js")),
     // 模板根节点并入宿主（`__mergeHost`）；movable-area 不是组件，只是带默认样式（相对定位、10px 见方）的容器
     ("movable-view", include_str!("movable-view.wxml"), "", include_str!("movable-view.js")),
+    // 开放数据（「微信用户」+ 灰头像）、容器转场的 closed 外观、page-container 里的共享元素
+    ("open-data", include_str!("open-data.wxml"), include_str!("open-data.wxss"), include_str!("open-data.js")),
+    ("open-container", include_str!("open-container.wxml"), include_str!("open-container.wxss"), include_str!("open-container.js")),
+    ("share-element", include_str!("share-element.wxml"), "", include_str!("share-element.js")),
 ];
+
+/// 要微信后台 / 宿主才有的开放能力组件：一份实现按 `__KIND__` 区分（open-capability.js），挂上后按官方「加载失败」走
+const OPEN_CAPS: &[&str] = &[
+    "ad",
+    "ad-custom",
+    "official-account",
+    "official-account-publish",
+    "store-product",
+    "store-coupon",
+    "store-gift",
+    "store-home",
+    "functional-page-navigator",
+];
+const OPEN_CAP_WXML: &str = include_str!("open-capability.wxml");
+const OPEN_CAP_JS: &str = include_str!("open-capability.js");
 
 /// 八个手势组件共用一份实现，按 `__KIND__` 区分
 const GESTURES: &[&str] = &[
@@ -47,7 +67,7 @@ const GESTURE_JS: &str = include_str!("gesture.js");
 
 /// 引擎内置的全部标签名（canIUse、文档用）
 pub fn tags() -> Vec<&'static str> {
-    BUILTINS.iter().map(|b| b.0).chain(GESTURES.iter().copied()).collect()
+    BUILTINS.iter().map(|b| b.0).chain(GESTURES.iter().copied()).chain(OPEN_CAPS.iter().copied()).collect()
 }
 
 /// WXML 里用到了 `<tag`（后面跟空白、`>` 或 `/`）
@@ -95,14 +115,22 @@ pub fn for_page(page_wxml: &str, declared: &[ComponentSource]) -> Vec<ComponentS
             out.push(source(tag, &gesture_wxml(tag), "", &GESTURE_JS.replace("__KIND__", tag)));
         }
     }
+    for tag in OPEN_CAPS {
+        if uses(&text, tag) && !taken(tag) {
+            out.push(source(tag, OPEN_CAP_WXML, ":host { display: block; }", &OPEN_CAP_JS.replace("__KIND__", tag)));
+        }
+    }
     out
 }
 
-/// 拖动类手势（pan / vertical-drag）抓住这串触摸、不让页面跟着竖着滚（catchtouchmove）；
+/// 拖动类手势（pan / vertical-drag）锁住这串触摸、不让页面跟着竖着滚（`catch:__lockscroll`：
+/// 只锁滚动、不截断冒泡 —— 绑定并在使用方的节点上，写 catchtouchmove 会截掉使用方自己的 bindtouchmove，
+/// 见 `WxmlRenderer::has_catch_for`）；代理原生容器（`native-view`）时不锁，容器照常滚。
 /// 其余的不拦：横向拖动本来就不滚页面（手势仲裁按轴锁定），点击 / 长按不该挡住滚动
 fn gesture_wxml(tag: &str) -> String {
     let blocks = matches!(tag, "pan-gesture-handler" | "vertical-drag-gesture-handler");
-    GESTURE_WXML.replace("__MOVE__", if blocks { "catchtouchmove" } else { "bindtouchmove" })
+    let lock = if blocks { r#"catch:__lockscroll="{{nativeView ? '' : '__gh:' + uid + ':lock'}}""# } else { "" };
+    GESTURE_WXML.replace("__LOCK__", lock)
 }
 
 #[cfg(test)]
@@ -138,8 +166,9 @@ mod tests {
         }
         for tag in GESTURES {
             let w = gesture_wxml(tag);
-            assert!(!w.contains("__MOVE__"));
+            assert!(!w.contains("__LOCK__"));
             crate::parser::wxml::WxmlParser::new(&w).parse().expect("gesture.wxml");
         }
+        crate::parser::wxml::WxmlParser::new(OPEN_CAP_WXML).parse().expect("open-capability.wxml");
     }
 }

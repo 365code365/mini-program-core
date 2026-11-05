@@ -14,4 +14,5 @@ pub mod frame_cost;
 
 pub use wxml_renderer::{WxmlRenderer, EventBinding, PickerBinding, FramePlan, ImageEvent, ImageEventDetail, InputRegion, NativeRegion, VIEWPORT_CULL_MARGIN_PX};
 pub use wxml_renderer::{FormAction, FormControl, FormField, FormHit, NavigatorHit, QueryHit};
+pub use wxml_renderer::BuilderWindow;
 pub use components::{RenderNode, NodeStyle};

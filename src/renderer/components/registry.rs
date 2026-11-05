@@ -131,6 +131,17 @@ pub const TAGS: &[TagSpec] = &[
         draw: |d| draw_background(d.canvas, &d.node.style, d.x, d.y, d.w, d.h),
     },
     TagSpec {
+        // Skyline 吸顶容器与 nested 滚动的头 / 体（components::sticky：padding 属性、offset-top）
+        tags: &["sticky-header", "sticky-section", "nested-scroll-header", "nested-scroll-body"],
+        profile: "view",
+        leaf: false,
+        stateful: false,
+        clips: false,
+        base_style_only: false,
+        build: |n, c| super::sticky::build(n, c),
+        draw: |d| ViewComponent::draw(d.node, d.canvas, d.x, d.y, d.w, d.h, d.sf),
+    },
+    TagSpec {
         tags: &["swiper-item"],
         profile: "其它",
         leaf: false,
@@ -151,6 +162,29 @@ pub const TAGS: &[TagSpec] = &[
         base_style_only: false,
         build: |n, c| TextComponent::build(n, c),
         draw: |d| TextComponent::draw(d.node, d.canvas, d.text, d.x, d.y, d.w, d.h, d.sf),
+    },
+    TagSpec {
+        // Skyline 的 span：文字与图片行内混排（components::inline_flow）。孩子拆成 run 交给它自己，所以是叶子；
+        // 拆不成（里面有别的组件）时 build 交出没有孩子的容器，建树按容器补建孩子（layout.rs `span_as_container`）
+        tags: &["span"],
+        profile: "text",
+        leaf: true,
+        stateful: false,
+        clips: false,
+        base_style_only: false,
+        build: |n, c| super::inline_flow::build_span(n, c),
+        draw: |d| ViewComponent::draw(d.node, d.canvas, d.x, d.y, d.w, d.h, d.sf),
+    },
+    TagSpec {
+        // Skyline 的列表构造器与列表容器：竖排、`padding` 属性、list-builder 的定高项（components::builder）
+        tags: &["list-builder", "list-view"],
+        profile: "view",
+        leaf: false,
+        stateful: false,
+        clips: false,
+        base_style_only: false,
+        build: |n, c| ViewComponent::build(n, c),
+        draw: |d| ViewComponent::draw(d.node, d.canvas, d.x, d.y, d.w, d.h, d.sf),
     },
     TagSpec {
         tags: &["rich-text"],
@@ -196,8 +230,8 @@ pub const TAGS: &[TagSpec] = &[
         draw: |d| ImageComponent::draw(d.node, d.canvas, d.text, d.x, d.y, d.w, d.h, d.sf),
     },
     TagSpec {
-        // Skyline 的 grid-view：对齐网格 / 瀑布流（见 components::grid_view）
-        tags: &["grid-view"],
+        // Skyline 的 grid-view：对齐网格 / 瀑布流（见 components::grid_view）；grid-builder 是它的按 list 展开版（components::builder）
+        tags: &["grid-view", "grid-builder"],
         profile: "view",
         leaf: false,
         stateful: false,
@@ -209,7 +243,8 @@ pub const TAGS: &[TagSpec] = &[
     TagSpec {
         tags: &["video"],
         profile: "video",
-        leaf: true,
+        // 不是叶子：子节点（盖在画面上的 cover-view 控件）照常建树、画在视频之上（官方 video 的子节点）
+        leaf: false,
         stateful: false,
         clips: false,
         base_style_only: false,
@@ -393,6 +428,8 @@ mod tests {
         // README / 支持范围表写的是 26 个标签；这里多出的两个是内部用的
         // `#text`（裸文本节点）与 `""`（模板展开的匿名容器）。
         // （page-container / audio / editor 这些是 WXML 内置组件，见 builtin_components，不在这张表里）
-        assert_eq!(registered_tag_count(), 28, "标签数变了就同步一下文档");
+        // +4：sticky-header / sticky-section / nested-scroll-header / nested-scroll-body（WP-D）
+        // +4：span / list-builder / list-view / grid-builder（WP-A）
+        assert_eq!(registered_tag_count(), 36, "标签数变了就同步一下文档");
     }
 }

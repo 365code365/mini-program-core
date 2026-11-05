@@ -205,6 +205,12 @@ impl MiniEngine {
             host_feed::note_event(key, name, &detail);
             let t = self.mono_ms();
             found = super::own_events::dispatch_own(&mut self.app, &r, &v.component_id, name, detail, t);
+            // bindprogress {buffered}（百分比）：本地文件元数据一到就是全部可读（与内置播放器一样报 100）；
+            // 网络地址要宿主按缓冲进度回传 `progress`（Android OnBufferingUpdate / iOS loadedTimeRanges，宿主侧还没接）
+            let local = v.attrs.get("src").is_some_and(|s| !s.starts_with("http://") && !s.starts_with("https://"));
+            if name == "loadedmetadata" && local {
+                super::own_events::dispatch_own(&mut self.app, &r, &v.component_id, "progress", json!({ "buffered": 100 }), t);
+            }
             self.app.pump_jobs();
         }
         self.renderer = Some(r);

@@ -181,6 +181,13 @@ impl crate::MiniAppWindow {
         // `<image bindload>` / `<image binderror>`：图片有结论了就派发到逻辑层。
         // 必须在这里做（每条渲染路径的共同出口），只在事件循环里做的话
         // 快照/无窗口路径会漏掉。
+        // sticky-header 的 stickontopchange（与 SDK 共用一份，host::scroll_view）
+        let t = self.event_time_ms();
+        if let Some(r) = self.renderer.as_mut() {
+            if mini_render::host::scroll_view::dispatch_sticky_events(&mut self.app, r, t) > 0 {
+                self.app.pump_jobs();
+            }
+        }
         let img_events = self.renderer.as_mut().map(|r| r.take_image_events()).unwrap_or_default();
         if !img_events.is_empty() {
             let time_ms = self.event_time_ms();

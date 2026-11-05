@@ -11,6 +11,10 @@ use crate::host::ui_overlay;
 impl MiniEngine {
     /// 按下：浮层吃掉了返回 true（调用方到此为止）
     pub(super) fn overlay_pointer_down(&mut self, x: f32, y: f32) -> bool {
+        // 小窗浮在所有层之上（engine_pip.rs；没有小窗时一次判空）
+        if self.pip_pointer(0, x, y) {
+            return true;
+        }
         // picker 面板在最上层，先于弹窗/页面吃事件
         if picker_sheet::on_press(&mut self.picker_sheet, x, y) {
             self.dmg.compose_dirty = true;
@@ -68,6 +72,9 @@ impl MiniEngine {
 
     /// 移动：浮层吃掉了返回 true
     pub(super) fn overlay_pointer_move(&mut self, x: f32, y: f32) -> bool {
+        if self.pip_pointer(1, x, y) {
+            return true;
+        }
         // 按在胶囊上的这串触摸：只更新按压态，不滚页面
         if self.capsule_move(x, y) {
             return true;
@@ -92,6 +99,9 @@ impl MiniEngine {
 
     /// 抬起：浮层吃掉了返回 true
     pub(super) fn overlay_pointer_up(&mut self, x: f32, y: f32) -> bool {
+        if self.pip_pointer(2, x, y) {
+            return true;
+        }
         if self.capsule_up(x, y) {
             return true;
         }

@@ -90,6 +90,16 @@ impl WxmlRenderer {
             .collect()
     }
 
+    /// snap-to-edge 的整排位移（设备像素；没写这个属性时不解析边距，直接 0）
+    fn swiper_edge_snap(&self, node: &RenderNode, cfg: &SwiperConfig, pos: f32) -> f32 {
+        if !node.attrs.contains_key("snap-to-edge") {
+            return 0.0;
+        }
+        let (m0, m1) = SwiperComponent::margins(node, self.screen_width);
+        let sf = self.scale_factor;
+        SwiperComponent::edge_snap_shift(node, cfg, pos, m0 * sf, m1 * sf)
+    }
+
     /// 这个 swiper 最近一次画在哪（跨帧留着，见 `swiper_known`）
     pub fn known_swiper(&self, id: &str) -> Option<&SwiperRegion> {
         self.swiper_known.get(id)
@@ -124,7 +134,7 @@ impl WxmlRenderer {
             let t = cfg.total as f32;
             v += ((pos - i as f32) / t).round() as i64 * cfg.total as i64;
         }
-        let shift = item_shift(v, i, pos, item);
+        let shift = item_shift(v, i, pos, item) + self.swiper_edge_snap(node, &cfg, pos);
         if cfg.vertical {
             (0.0, shift)
         } else {
@@ -171,12 +181,18 @@ impl WxmlRenderer {
             .lock()
             .map(|mut m| m.sync(&id, &cfg, item / sf, now))
             .unwrap_or((0.0, false, 0));
+        // clip=false：盒子外（主轴两侧各一个盒子长）露出的项照画；snap-to-edge：首尾项贴边（components/swiper/mod.rs）
+        let clip = SwiperComponent::clips(node);
+        let snap = self.swiper_edge_snap(node, &cfg, pos);
+        let view = if cfg.vertical { h } else { w };
+        let ext = if clip { 0.0 } else { view };
         if active {
             self.mark_animating();
             // 记下盒子（与 CSS 动画节点同一条规则，见 animation.rs）：宿主只重画这块。
             // 不记的话宿主只知道「在动」不知道在哪，SDK 每帧整页重画（`整帧·动画`）
             if !self.drawing_offscreen {
-                self.animated_bounds.push(GeoRect::new(x - 2.0, y - 2.0, w + 4.0, h + 4.0));
+                let (ex, ey) = if cfg.vertical { (0.0, ext) } else { (ext, 0.0) };
+                self.animated_bounds.push(GeoRect::new(x - 2.0 - ex, y - 2.0 - ey, w + 4.0 + ex * 2.0, h + 4.0 + ey * 2.0));
             }
         }
         let region = SwiperRegion { id: id.clone(), bounds: logical, is_fixed: self.registering_fixed, vertical: cfg.vertical };
@@ -185,16 +201,17 @@ impl WxmlRenderer {
             self.swiper_regions.push(region);
         }
         canvas.save();
-        canvas.clip_rect(GeoRect::new(x, y, w, h));
-        let view = if cfg.vertical { h } else { w };
+        if clip {
+            canvas.clip_rect(GeoRect::new(x, y, w, h));
+        }
         if let Some(fx) = swiper_effects::kind(node) {
             // Skyline layout-type / transformer-type：每项带变换与不透明度，按层级先后画
             for (child, ox, oy) in Self::swiper_effect_plan(node, fx, pos, item, (x, y), &cfg) {
                 self.dispatch_draw(canvas, taffy, &child, ox, oy, interaction, kind);
             }
         } else {
-            for (real, v) in visible_items(pos, pad, item, view, cfg.total, cfg.circular) {
-                let shift = item_shift(v, real, pos, item);
+            for (real, v) in visible_items(pos, pad + ext, item, view + ext * 2.0, cfg.total, cfg.circular) {
+                let shift = item_shift(v, real, pos, item) + snap;
                 let (ox, oy) = if cfg.vertical { (x, y + shift) } else { (x + shift, y) };
                 if let Some(child) = node.children.get(real) {
                     self.dispatch_draw(canvas, taffy, child, ox, oy, interaction, kind);
@@ -236,16 +253,21 @@ impl WxmlRenderer {
                 (c as f32, c)
             });
         let (item, pad) = Self::swiper_item_geometry(taffy, node, cfg.vertical);
+        let clip = SwiperComponent::clips(node);
+        let snap = self.swiper_edge_snap(node, &cfg, pos);
         canvas.save();
-        canvas.clip_rect(GeoRect::new(x, y, w, h));
+        if clip {
+            canvas.clip_rect(GeoRect::new(x, y, w, h));
+        }
         let view = if cfg.vertical { h } else { w };
+        let ext = if clip { 0.0 } else { view };
         if let Some(fx) = swiper_effects::kind(node) {
             for (child, ox, oy) in Self::swiper_effect_plan(node, fx, pos, item, (x, y), &cfg) {
                 draw_item(self, canvas, &child, ox, oy);
             }
         } else {
-            for (real, v) in visible_items(pos, pad, item, view, cfg.total, cfg.circular) {
-                let shift = item_shift(v, real, pos, item);
+            for (real, v) in visible_items(pos, pad + ext, item, view + ext * 2.0, cfg.total, cfg.circular) {
+                let shift = item_shift(v, real, pos, item) + snap;
                 let (ox, oy) = if cfg.vertical { (x, y + shift) } else { (x + shift, y) };
                 if let Some(child) = node.children.get(real) {
                     draw_item(self, canvas, child, ox, oy);

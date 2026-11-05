@@ -121,8 +121,17 @@ impl Canvas2DContext {
 
     // ========== 变换 ==========
 
-    /// 填充当前路径
+    /// 填充当前路径（HTML 默认的 nonzero 规则）
     pub fn fill(&mut self) {
+        self.fill_with_rule(false);
+    }
+
+    /// `fill('evenodd')` / `fill('nonzero')`。不自交的图形两种规则逐字节相同（canvas/fill_rule.rs）
+    pub fn fill_with_rule(&mut self, even_odd: bool) {
+        crate::canvas::fill_rule::scoped(!even_odd, || self.fill_inner());
+    }
+
+    fn fill_inner(&mut self) {
         let path = self.build_path();
         if !self.fx.trivial(false) {
             return self.fx_path(&path, None);
@@ -172,21 +181,10 @@ impl Canvas2DContext {
 
     /// 绘制图片（支持目标位置与目标尺寸；旋转/斜切按轴对齐近似）
     pub fn draw_image(&mut self, src: &str, dx: f32, dy: f32, dw: f32, dh: f32) {
-        // 加载图片
-        // 包内路径 / `wxfile://` 走与 `<image>` 同一套解析（G-16：从前按进程工作目录读，宿主里一张都读不到）
-        let bytes = crate::assets::resolve(src).and_then(|p| std::fs::read(p).ok())
-            .or_else(|| std::fs::read(src).ok())
-            .or_else(|| std::fs::read(src.trim_start_matches('/')).ok());
-        let bytes = match bytes { Some(b) => b, None => return };
-        let img = match image::load_from_memory(&bytes) { Ok(i) => i, Err(_) => return };
-        use image::GenericImageView;
-        let (iw, ih) = img.dimensions();
-        let rgba = img.to_rgba8().into_raw();
-        let (tw, th) = (dw * self.avg_scale(), dh * self.avg_scale());
-        let (px, py) = self.tp(dx, dy);
-        if let Ok(mut canvas) = self.canvas.lock() {
-            canvas.draw_image(&rgba, iw, ih, px, py, tw, th, "scaleToFill", 0.0);
-        }
+        // 包内路径 / `wxfile://` 走与 `<image>` 同一套解析（G-16：从前按进程工作目录读，宿主里一张都读不到）；
+        // 解码一次进缓存（image_src.rs），完整的 drawImage 语义见 image_src::draw_image_cmd
+        let cmd = serde_json::json!({ "src": src, "dx": dx, "dy": dy, "dWidth": dw, "dHeight": dh });
+        super::image_src::draw_image_cmd(self, &cmd);
     }
 }
 

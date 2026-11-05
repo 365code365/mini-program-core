@@ -119,6 +119,8 @@ const PRELUDE: &[Prelude] = prelude![
     "net-socket" => "net-socket.js",
     // 路由：校验、success 时机、EventChannel、路由事件、返回询问、rewriteRoute、exit / restart
     "route-ext" => "route-ext.js",
+    // <button open-type> 的行为与回调（宿主点击之后调 __buttonOpenType，host::builtin_tap）
+    "open-type" => "open-type.js",
     // 页面 / 组件实例补齐的方法（options、getOpenerEventChannel、router、getPageId …）
     "page-ext" => "page-ext.js",
     // 旧版语音 / 背景音频 / 录音、previewMedia、getVideoInfo、createOffscreenCanvas

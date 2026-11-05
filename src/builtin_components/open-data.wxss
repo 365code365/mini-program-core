@@ -1,0 +1,2 @@
+:host { display: inline-block; overflow: hidden; }
+.od-avatar { width: 100%; height: 100%; background-color: #e6e6e6; }

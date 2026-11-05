@@ -15,6 +15,14 @@ use crate::host::edge_back::PageShot;
 /// 留图的上限：微信页面栈最多 10 层
 const MAX_SHOTS: usize = 10;
 
+/// page-container 弹着时右滑多远（逻辑像素）算一次返回。官方没给数，取 iOS 侧滑返回常见的判定量级（待验）
+const EDGE_CONTAINER_CLOSE: f32 = 60.0;
+
+thread_local! {
+    /// page-container 弹着时从边缘按下的 x（[`MiniEngine::edge_container_begin`]）
+    static EDGE_CONTAINER: std::cell::Cell<Option<f32>> = const { std::cell::Cell::new(None) };
+}
+
 impl MiniEngine {
     /// 当前页将被新页盖住：留一张视口图（`navigateTo` 之前调）
     pub(super) fn capture_back_shot(&mut self) {
@@ -100,6 +108,29 @@ impl MiniEngine {
             progress: eb.progress(),
             shot_on_top: false,
         })
+    }
+
+    /// 按下：page-container 弹着时的左边缘按下（官方 component/page-container：右滑手势、物理返回键、navigateBack
+    /// 这三种返回都先关容器、不离开页面）。返回 true 时这串触摸不起页面侧滑（当「侧滑忙」传给手势仲裁），
+    /// 松手时 [`Self::edge_container_end`] 看划没划够。只在起点落在边缘触发区、栈里有上一页时问一次逻辑层
+    pub(super) fn edge_container_begin(&mut self, x: f32) -> bool {
+        let on = crate::host::edge_back::EdgeBack::at_edge(x)
+            && self.page_stack.len() > 1
+            && self.app.eval("typeof __pageContainerOpen === 'function' && __pageContainerOpen() ? 1 : 0").map(|s| s.trim() == "1").unwrap_or(false);
+        EDGE_CONTAINER.with(|c| c.set(on.then_some(x)));
+        on
+    }
+
+    /// 松手：从边缘往右划过 [`EDGE_CONTAINER_CLOSE`] 就关容器（走 `__interceptBack`，与返回键同一条路）
+    pub(super) fn edge_container_end(&mut self, x: f32) {
+        let Some(x0) = EDGE_CONTAINER.with(|c| c.take()) else { return };
+        if x - x0 >= EDGE_CONTAINER_CLOSE {
+            self.app.eval("__interceptBack()").ok();
+            self.app.pump_jobs();
+            if self.app.take_data_dirty() {
+                self.page_data_dirty = true;
+            }
+        }
     }
 
     /// 本帧上屏时当前页整帧右移了多少（视口逻辑像素，没有侧滑为 0）。

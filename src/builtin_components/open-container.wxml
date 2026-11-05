@@ -1,0 +1,1 @@
+<view class="ocn" style="background-color:{{closedColor}};border-radius:{{closedBorderRadius}}px;{{shadow}}"><slot></slot></view>

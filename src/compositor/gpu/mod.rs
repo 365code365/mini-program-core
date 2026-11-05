@@ -241,6 +241,9 @@ impl GpuCompositor {
             Some("全屏视频")
         } else if crate::host::ui_overlay::sheet_overlay_visible() {
             Some("操作菜单 / 图片预览")
+        } else if crate::renderer::components::pip::visible() {
+            // 小窗画在 CPU 合成那一步（components/pip.rs）：直通，只传它那几行
+            Some("小窗")
         } else {
             None
         };

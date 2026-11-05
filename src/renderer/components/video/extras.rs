@@ -34,8 +34,8 @@ pub fn send_danmu(src: &str, text: &str, color: &str) {
     send_danmu_at(src, text, color, time);
 }
 
-/// 同上，位置由调用方给（命令执行时播放器已经锁着，不能再去问它）
-pub(super) fn send_danmu_at(src: &str, text: &str, color: &str, time: f64) {
+/// 同上，位置由调用方给（命令执行时播放器已经锁着，不能再去问它；同层渲染时是宿主报来的位置）
+pub fn send_danmu_at(src: &str, text: &str, color: &str, time: f64) {
     let color = crate::renderer::components::color_parse::parse_color_str(color).unwrap_or(Color::WHITE);
     SENT.with(|s| s.borrow_mut().entry(src.to_string()).or_default().push(Danmu { text: text.to_string(), color, time }));
 }
@@ -86,12 +86,13 @@ impl VideoComponent {
         true
     }
 
-    /// 弹幕：`enable-danmu` 开着时，画当前时刻在屏上的那几条
-    pub(super) fn draw_danmu(node: &RenderNode, canvas: &mut Canvas, tr: Option<&TextRenderer>, x: f32, y: f32, w: f32, sf: f32) {
+    /// 弹幕：`enable-danmu` 开着时，画当前时刻在屏上的那几条。`host_now`：同层渲染时宿主报来的播放位置（秒），
+    /// 内置播放器给 None（问播放器）。同层渲染时弹幕也由引擎画在画面上（宿主每交一帧这个框重画一次，弹幕跟着走）
+    pub(super) fn draw_danmu(node: &RenderNode, canvas: &mut Canvas, tr: Option<&TextRenderer>, x: f32, y: f32, w: f32, sf: f32, host_now: Option<f64>) {
         let on = node.attrs.get("enable-danmu").map(|s| !matches!(s.trim(), "false" | "0" | "{{false}}")).unwrap_or(false);
         let (Some(tr), true) = (tr, on) else { return };
         let src = &node.text;
-        let Some((now, _)) = video_position(src) else { return };
+        let Some(now) = host_now.or_else(|| video_position(src).map(|(t, _)| t)) else { return };
         let mut list = attr_danmu(node);
         SENT.with(|s| list.extend(s.borrow().get(src).cloned().unwrap_or_default()));
         let size = 15.0 * sf;

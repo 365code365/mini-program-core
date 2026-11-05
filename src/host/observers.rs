@@ -47,6 +47,7 @@ pub fn active() -> bool {
 /// 引擎销毁 / 重新启动小程序时清空
 pub fn clear() {
     OBSERVERS.with(|o| o.borrow_mut().clear());
+    super::builder_events::clear();
 }
 
 /// 比例落在第几个阈值区间
@@ -106,8 +107,10 @@ pub fn tick(
 ) -> bool {
     take_requests(app);
     let Some(r) = renderer.filter(|r| r.has_layout()) else { return false };
+    // list-builder / grid-builder 的 itembuild / itemdispose 也按视口裁剪窗算，挂在这里两种宿主都调得到（builder_events.rs）
+    let built = super::builder_events::tick(app, r, interaction, route, view.scroll_top, view.height, t_ms);
     if !active() {
-        return false;
+        return built;
     }
     let mut fires: Vec<(u64, Value)> = Vec::new();
     OBSERVERS.with(|o| {
@@ -155,5 +158,5 @@ pub fn tick(
             eprintln!("⚠️ IntersectionObserver 回调失败：{e}");
         }
     }
-    !fires.is_empty()
+    built || !fires.is_empty()
 }

@@ -1,0 +1,26 @@
+<view class="card">
+  <view class="h">button open-type</view>
+  <view class="row">
+    <button id="share-btn" size="mini" open-type="share" data-from="lab">share</button>
+    <button wx:for="{{types}}" wx:key="*this" size="mini" open-type="{{item}}" lang="zh_CN" app-parameter="from=lab"
+            bindgetphonenumber="onRes" bindgetrealtimephonenumber="onRes" bindchooseavatar="onRes" bindcontact="onRes"
+            bindopensetting="onRes" bindgetuserinfo="onRes" bindlaunchapp="onRes" binderror="onRes" bindagreeprivacyauthorization="onRes">{{item}}</button>
+  </view>
+</view>
+<view class="card">
+  <view class="h">open-data · ad · official-account</view>
+  <view class="row"><open-data type="userAvatarUrl" class="avatar"></open-data><open-data type="userNickName" class="nick"></open-data></view>
+  <ad unit-id="adunit-lab" binderror="onAdErr"></ad>
+  <official-account binderror="onOaErr"></official-account>
+  <text class="tip">引擎不连微信后台：open-data 照官方现状显示「微信用户」与灰头像，广告 / 公众号组件派 binderror、不占高度。</text>
+</view>
+<view class="card">
+  <view class="h">snapshot.takeSnapshot</view>
+  <snapshot id="snap"><view class="poster"><view class="poster-t">海报</view><text>这一块被离屏画成 PNG</text></view></snapshot>
+  <view class="row"><view class="btn" bindtap="shoot">截图</view><image wx:if="{{shot}}" class="shot" src="{{shot}}" mode="aspectFit"></image></view>
+</view>
+<view class="card">
+  <view class="h">navigator target="miniProgram"</view>
+  <navigator target="miniProgram" app-id="wx0000000000000000" open-type="navigate" bindsuccess="onNavRes" bindfail="onNavRes" class="btn gray">跳另一个小程序（宿主没接回 fail）</navigator>
+</view>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

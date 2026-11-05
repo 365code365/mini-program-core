@@ -29,9 +29,12 @@ impl IconComponent {
         let sf = ctx.scale_factor;
 
         let icon_type = node.get_attr("type").unwrap_or("success");
+        // `size` 认 px / rpx（官方：单位默认 px，2.4.0 起支持传入单位）。从前只认纯数字，
+        // `size="40rpx"` 解析失败落回默认 23
         let icon_size = node
             .get_attr("size")
-            .and_then(|s| s.trim().parse::<f32>().ok())
+            .and_then(|s| super::progress::attr_len_px(s, ctx.screen_width))
+            .filter(|v| *v >= 0.0)
             .unwrap_or(23.0);
         let icon_color = node.get_attr("color").and_then(parse_color_str);
 

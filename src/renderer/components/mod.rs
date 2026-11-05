@@ -13,6 +13,8 @@ mod icon;
 pub mod icon_data;
 pub mod svg_path;
 mod progress;
+/// `<progress active>` 的进度动画与 `bindactiveend`
+pub mod progress_anim;
 mod switch;
 mod checkbox;
 mod radio;
@@ -24,6 +26,8 @@ mod video;
 pub mod video_audio;
 /// 同层渲染的通用原生组件（`sameLayer` 里除 video 以外的标签，如 `<map>`）：宿主画好帧交给引擎画进页面
 pub mod host_view;
+/// 小窗（`picture-in-picture-mode`）：离开页面时同层组件缩成右下角的浮窗，画在合成那一步
+pub mod pip;
 /// 同层渲染的 `<live-player>`（宿主播放器交帧，与同层视频同一个帧表）
 pub mod live_player;
 /// 宿主没接管的原生组件（map / camera / web-view ...）的占位与几类标签的默认样式
@@ -33,25 +37,37 @@ pub mod grid_view;
 mod canvas;
 mod swiper;
 mod rich_text;
+/// `<text>` 的 decode / space 与行数限制（`-webkit-line-clamp`、Skyline `max-lines` + `overflow`）
+pub mod text_attrs;
+/// `<span>` 与 rich-text 段落的行内混排（文字接在图片后面折行）
+mod inline_flow;
+/// list-builder / grid-builder / list-view 的布局（padding 属性、定高项）
+pub mod builder;
 mod picker;
 /// `<picker-view>` 内嵌滚轮：每列的位置、跟手 / 吸附、change / pickstart / pickend
 pub mod picker_view;
+/// `<picker-view>` 选中框与蒙层的样式（indicator-style / -class、mask-style / -class）
+pub mod picker_view_style;
 /// 标签 → 组件行为的唯一登记点（build / draw / 叶子 / 绘制归因）
 pub mod registry;
 mod checkbox_group;
+/// Skyline 吸顶容器 sticky-header / sticky-section 与 nested-scroll-header / body（吸顶本身在 wxml_renderer/sticky.rs）
+pub mod sticky;
 
 pub use base::*;
 pub use view::ViewComponent;
 pub use text::TextComponent;
-pub use button::ButtonComponent;
+pub use button::{is_loading as button_is_loading, ButtonComponent};
 pub use icon::IconComponent;
-pub use progress::ProgressComponent;
+pub use progress::{attr_len_px, ProgressComponent};
 pub use switch::SwitchComponent;
 pub use checkbox::CheckboxComponent;
 pub use radio::RadioComponent;
 pub use slider::{SliderComponent, SliderAttrs, slider_track_span, SLIDER_VALUE_WIDTH};
 pub use input::{PLACEHOLDER_SHOWN, PLACEHOLDER_COLOR, VALUE_COLOR, parse_color_attr, InputComponent, is_password_input, masked_value, cursor_blink_visible, blink_visible_at, cursor_blink_interval_ms,
     reset_cursor_blink, last_caret_rect, layout_textarea_lines};
+/// textarea 的 auto-height 与 linechange（宿主每帧取 `take_relayout` / `take_events`）
+pub use input::auto_height;
 pub use image::prefetch as image_prefetch;
 pub use image::{ImageComponent, is_animated, animated_frame, animation_total_ms, image_cache_report, image_cache_bytes, clear_image_caches, image_cache_budget_mb, image_rgba};
 mod image_state;
@@ -64,7 +80,7 @@ pub use video::{
     has_playing_video, get_or_create_player, get_video_frame, get_video_progress,
     toggle_video_play, is_video_playing,
     clear_fullscreen, draw_fullscreen, fullscreen_video, video_command, video_events_pending,
-    video_poll_events, video_position, VideoCommand, clear_danmu, progress_track, send_danmu,
+    video_poll_events, video_position, VideoCommand, clear_danmu, progress_track, send_danmu, send_danmu_at,
 };
 /// 控制条的状态 / 几何、全屏那一层（两种播放器共用，见 video/ui.rs、chrome.rs、fullscreen.rs）
 pub use video::{chrome as video_chrome, fullscreen as video_fullscreen, ui as video_ui};
@@ -75,6 +91,8 @@ pub use canvas::gpu_view::{GpuBlend, GpuGradient};
 pub use canvas::image2d as canvas_image;
 pub use canvas::text_font::{FontSpec, TextMetrics2D};
 pub use canvas::{CanvasComponent, Canvas2DContext, CanvasContextManager, LinearGradient, RadialGradient, execute_canvas_draw, ensure_canvas_context, take_canvas_dirty, canvas_key, canvas_measure_text};
+/// canvas 的 isPointInPath / createImage（js/bridge_io.rs 的 `__native_canvas_hit` / `__native_canvas_image`）
+pub use canvas::{canvas_hit_test, canvas_image_info, canvas_data_uri};
 // 单测直接看画布后备缓冲：页面合成结果依赖进程级的 CANVAS_DIRTY，并行的别的用例 pump 时
 // 可能先把它取走，拿页面像素断言会偶发失败
 // 读像素 / 导出的同步桥（js::bridge_io）与单测要直接摸管理器
@@ -83,7 +101,7 @@ pub use swiper::{SwiperComponent, SwiperItemComponent, SwiperConfig, SWIPER_MANA
     swiper_is_dragging, take_swiper_events, swiper_drag_begin, swiper_drag_update, swiper_drag_end, swiper_set_clock, swiper_clock_ms, swiper_pages,
     swiper_layout_params, Easing as SwiperEasing, SwiperStateManager};
 pub use swiper::effects as swiper_effects;
-pub use rich_text::RichTextComponent;
+pub use rich_text::{expand_nodes as rich_text_expand, ua as rich_text_ua, RichTextComponent};
 pub use picker::{PickerComponent, PickerViewComponent, PickerViewColumnComponent, PickerMode, PICKER_MANAGER};
 pub use checkbox_group::{CheckboxGroupComponent, RadioGroupComponent};
 pub use registry::{spec_for, DrawCtx, TagSpec};

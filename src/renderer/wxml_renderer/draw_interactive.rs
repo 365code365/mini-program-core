@@ -23,8 +23,8 @@ impl WxmlRenderer {
         scroll_offset: f32,
         viewport_height: f32,
     ) {
-        // 跳过 fixed 元素，它们会单独渲染
-        if node.style.is_fixed {
+        // 跳过 fixed 元素，它们会单独渲染；吸附元素等滚动容器画完再画（sticky.rs）
+        if node.style.is_fixed || self.sticky_skips(node) {
             return;
         }
         // CSS 动画 / transform：由专门路径接管（含离屏仿射合成）
@@ -102,10 +102,12 @@ impl WxmlRenderer {
 
         // 绘制组件 - 特殊处理 input 和 button 组件
         let gif = Self::animated_image_frame(node);
+        // button loading / progress active 的自带动画（self_anim.rs；别的标签只多一次比较）
+        let own = self.self_anim(node, &component_id, (x, y, w, h));
         if !self.outside_damage(x, y, w, h) {
             match node.tag.as_str() {
-                "input" | "textarea" | "button" => self.draw_interactive_component(
-                    canvas, node, &node_to_draw, interaction, &component_id, x, y, w, h, sf,
+                "input" | "textarea" | "button" | "progress" => self.draw_interactive_component(
+                    canvas, node, &node_to_draw, interaction, &component_id, (x, y, w, h), sf, own,
                 ),
                 _ => self.draw_component(canvas, &node_to_draw, x, y, w, h, sf),
             }
@@ -117,7 +119,13 @@ impl WxmlRenderer {
         // picker-view 同理：滚轮一拖，缓存整块要重画；动图也是（缓存里的 GIF 不换帧，见 animated_image.rs）
         // 横向（`scroll-x`）的也走这条：下面的离屏缓存只会按纵向偏移贴 —— 从前横着一滑，
         // 整段内容被当成「往下滚」贴出视口，那一排（分类标签、筛选条）整个变空白
+        // type="nested" 的外层里面一定有一个在滚的里层 scroll-view：离屏缓存画不出它在滚（WP-D）
+        // clip=false 的也走这条：离屏缓存只有盒子那么宽，盒子外的画不进去
+        // 横竖都能滚的也走这条：离屏缓存只有盒子那么宽、只按纵向偏移贴（scroll_2d_attrs.rs）
         if node.tag == "scroll-view" && (super::scroll_views::scroll_axes(&node.attrs).0
+            || super::scroll_views::scroll_both(&node.attrs)
+            || !super::scroll_views::clips(&node.attrs)
+            || node.attrs.get("type").is_some_and(|t| t.trim() == "nested")
             || Self::subtree_has_tag(node, "swiper") || Self::subtree_has_tag(node, "picker-view") || Self::subtree_has_animated_image(node)) {
             self.draw_scroll_view_live(canvas, taffy, node, (x, y, w, h), &component_id, interaction, scroll_offset, viewport_height);
             self.push_event_bindings(node, logical_bounds);
@@ -217,6 +225,10 @@ impl WxmlRenderer {
                 for child in &node.children {
                     self.register_child_interactions(taffy, child, x, y + child_offset_y, text_color, interaction, window_top, h / sf);
                 }
+                // 吸附元素：离屏缓存里没画它们，按吸住的位置画在贴好的内容上面（命中区登记在内容之后，点它不落到底下的内容）
+                self.draw_scroll_stickies(canvas, taffy, node, (x, y, w, h), (x, y + child_offset_y), text_color, interaction, scroll_offset, viewport_height);
+                // 滚动条（enhanced + show-scrollbar，scrollbar.rs；没开时只是一次查表）
+                self.draw_scrollbar(canvas, &component_id, (x, y, w, h), interaction);
                 if log_scroll {
                     let ms = |a: std::time::Instant, b: std::time::Instant| (b - a).as_secs_f32() * 1000.0;
                     eprintln!(
@@ -250,6 +262,10 @@ impl WxmlRenderer {
         inherited_color: Color,
         interaction: &InteractionManager,
     ) {
+        // 吸附元素不进离屏缓存：贴完之后按吸住的位置另画（sticky.rs）
+        if self.sticky_skips(node) {
+            return;
+        }
         let sf = self.scale_factor;
         let layout = taffy.layout(node.taffy_node).unwrap();
         let x = ox + layout.location.x;
@@ -292,8 +308,8 @@ impl WxmlRenderer {
         scroll_offset: f32,
         viewport_height: f32,
     ) {
-        // 跳过 fixed 元素，它们会单独渲染
-        if node.style.is_fixed {
+        // 跳过 fixed 元素，它们会单独渲染；吸附元素等滚动容器画完再画（sticky.rs）
+        if node.style.is_fixed || self.sticky_skips(node) {
             return;
         }
         // CSS 动画 / transform：由专门路径接管（含离屏仿射合成）
@@ -405,10 +421,11 @@ impl WxmlRenderer {
 
         // 绘制组件 - 特殊处理 input、button 和有点击事件的 view 组件
         let gif = Self::animated_image_frame(node);
+        let own = self.self_anim(node, &component_id, (x, y, w, h));
         if !self.outside_damage(x, y, w, h) {
             match node.tag.as_str() {
-                "input" | "textarea" | "button" => self.draw_interactive_component(
-                    canvas, node, &node_to_draw, interaction, &component_id, x, y, w, h, sf,
+                "input" | "textarea" | "button" | "progress" => self.draw_interactive_component(
+                    canvas, node, &node_to_draw, interaction, &component_id, (x, y, w, h), sf, own,
                 ),
                 _ => self.draw_component(canvas, &node_to_draw, x, y, w, h, sf),
             }
@@ -418,8 +435,13 @@ impl WxmlRenderer {
         // 这种 scroll-view 逐帧画时偏移也按物理像素取整（下面的 `tiled` 分支），与贴块的位置一致
         let tiled = node.tag == "scroll-view"
             && !super::scroll_views::scroll_axes(&node.attrs).0
+            && !super::scroll_views::scroll_both(&node.attrs)
             && self.tile_eligible(node);
         if tiled && self.draw_scroll_view_tiled(canvas, taffy, node, (x, y, w, h), &component_id, logical_bounds, interaction) {
+            // 块里没画吸附元素：贴完按吸住的位置画上去（与块同一个取整的偏移）
+            let pos = interaction.get_scroll_controller(&component_id).map(|c| c.get_position()).unwrap_or(0.0);
+            self.draw_scroll_stickies(canvas, taffy, node, (x, y, w, h), (x, y - (pos * sf).round()), text_color, interaction, scroll_offset, viewport_height);
+            self.draw_scrollbar(canvas, &component_id, (x, y, w, h), interaction);
             self.push_event_bindings(node, logical_bounds);
             return;
         }
@@ -434,8 +456,10 @@ impl WxmlRenderer {
             // 检查是否是横向滚动（与登记、布局同一个判定）
             let is_horizontal_scroll = is_scroll_view && super::scroll_views::scroll_axes(&node.attrs).0;
             
-            // 对于 overflow: hidden 的容器，应用裁剪
-            if has_overflow_hidden || is_scroll_view {
+            // 对于 overflow: hidden 的容器，应用裁剪（scroll-view 写了 clip=false 的不裁：Skyline 的属性）
+            let sv_clip = is_scroll_view && super::scroll_views::clips(&node.attrs);
+            let sv_ext = if is_scroll_view && !sv_clip { if is_horizontal_scroll { w } else { h } } else { 0.0 };
+            if has_overflow_hidden || sv_clip {
                 canvas.save();
                 canvas.clip_rect(GeoRect::new(x, y, w, h));
             }
@@ -457,6 +481,8 @@ impl WxmlRenderer {
                         child_offset_y = -(pos * sf).round(); // 与分块贴的位置一致（scroll_tiles.rs）
                     } else {
                         child_offset_y = -pos * sf; // 纵向滚动
+                        // 横竖都能滚：横向的那一半（scroll_2d_attrs.rs；单向的是一次判空）
+                        child_offset_x = Self::scroll_child_offset(&node.attrs, &component_id, interaction, sf).0;
                     }
                     pos
                 } else {
@@ -470,8 +496,8 @@ impl WxmlRenderer {
             if is_scroll_view {
                 if is_horizontal_scroll {
                     // 横向滚动：检查水平方向的可见性
-                    let viewport_left = scroll_position * sf;
-                    let viewport_right = viewport_left + w;
+                    let viewport_left = scroll_position * sf - sv_ext;
+                    let viewport_right = scroll_position * sf + w + sv_ext;
                     
                     for child in &node.children {
                         let child_layout = taffy.layout(child.taffy_node).unwrap();
@@ -485,8 +511,8 @@ impl WxmlRenderer {
                     }
                 } else {
                     // 纵向滚动：检查垂直方向的可见性
-                    let viewport_top = scroll_position * sf;
-                    let viewport_bottom = viewport_top + h;
+                    let viewport_top = scroll_position * sf - sv_ext;
+                    let viewport_bottom = scroll_position * sf + h + sv_ext;
                     
                     for child in &node.children {
                         let child_layout = taffy.layout(child.taffy_node).unwrap();
@@ -495,7 +521,7 @@ impl WxmlRenderer {
                         
                         // 只渲染与视口相交的子元素
                         if child_bottom >= viewport_top && child_top <= viewport_bottom {
-                            self.draw_child_with_interaction(canvas, taffy, child, x, y + child_offset_y, text_color, interaction, scroll_offset, viewport_height); 
+                            self.draw_child_with_interaction(canvas, taffy, child, x + child_offset_x, y + child_offset_y, text_color, interaction, scroll_offset, viewport_height); 
                         }
                     }
                 }
@@ -505,8 +531,15 @@ impl WxmlRenderer {
                 }
             }
 
-            if has_overflow_hidden || is_scroll_view {
+            if has_overflow_hidden || sv_clip {
                 canvas.restore();
+            }
+            // 吸附元素：内容画完再按吸住的位置画（sticky.rs；没有吸附元素时只是一次判空）
+            if is_scroll_view && !is_horizontal_scroll {
+                self.draw_scroll_stickies(canvas, taffy, node, (x, y, w, h), (x + child_offset_x, y + child_offset_y), text_color, interaction, scroll_offset, viewport_height);
+            }
+            if is_scroll_view {
+                self.draw_scrollbar(canvas, &component_id, (x, y, w, h), interaction);
             }
         }
 

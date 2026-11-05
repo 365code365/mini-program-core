@@ -47,6 +47,10 @@ if [ "${MINI_APP:-flutter}" = native ]; then
   # 桌面图标进的是入口页（StoreActivity，服务器上的小程序列表），量的是内置示例：直接起 MainActivity。
   # 回桌面再回来也用同一条 —— 意图与任务的根意图一样，系统只把任务带回前台，不会再起一个
   LAUNCH(){ D shell am start -n $PKG/.MainActivity >/dev/null 2>&1; }
+  # `ROUTE=pages/camera/camera`：直接打开内置示例的这一页再量（场景名照常，如 `ROUTE=… route-slow` 慢拖）
+  if [ -n "${ROUTE:-}" ]; then
+    LAUNCH(){ D shell "am start -n $PKG/.MainActivity --es route '$ROUTE'" >/dev/null 2>&1; }
+  fi
   # `STORE_APP=news-app`：量从服务器下载的小程序（与入口页点图标同一条路：MainActivity 带 storeApp 起来，
   # 盖 loading 层、下载解包、打开）。列表从商店服务取（STORE_URL 可换），已是最新版就不再下载
   if [ -n "${STORE_APP:-}" ]; then

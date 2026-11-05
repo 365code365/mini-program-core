@@ -433,6 +433,8 @@ impl MiniEngine {
     pub fn launch(&mut self, route: Option<&str>) -> Result<(), String> {
         let route = route.map(str::to_string).unwrap_or_else(|| self.home_route());
         let (path, query) = crate::host::navigation::parse_url(&route);
+        // 小窗是线程级的：同一条线程上前一个引擎留下的不能带进来
+        crate::renderer::components::pip::clear();
         self.navigate_to(&path, query)
     }
 

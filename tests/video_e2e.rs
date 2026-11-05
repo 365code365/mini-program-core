@@ -333,3 +333,104 @@ fn inline_seek_drag_follows_finger_and_seeks_once() {
     e.wait(32);
     assert!(e.events().is_empty(), "{:?}", e.events());
 }
+
+// ───────────── WP-E3：子节点、圆角、双击、横划拖进度、跳页自动暂停、bindprogress ─────────────
+
+/// 换掉首页 wxml，另加一页 `pages/b/b`（跳页用）
+fn fixture_with(name: &str, wxml: &str) -> Fixture {
+    let fx = fixture(name);
+    std::fs::write(fx.0.join("pages/index/index.wxml"), wxml.replace("NAME", name)).unwrap();
+    std::fs::write(fx.0.join("app.json"), r#"{"pages":["pages/index/index","pages/b/b"],"window":{"navigationStyle":"custom"}}"#).unwrap();
+    for (rel, text) in [("pages/b/b.json", "{}"), ("pages/b/b.wxml", "<view>b</view>"), ("pages/b/b.wxss", ""), ("pages/b/b.js", "Page({});")] {
+        let p = fx.0.join(rel);
+        std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+        std::fs::write(p, text).unwrap();
+    }
+    fx
+}
+
+fn px(e: &mut E, x: usize, y: usize) -> (u8, u8, u8) {
+    let (w, _) = e.e.pixel_size();
+    let p = e.e.rgba();
+    let i = (y * w as usize + x) * 4;
+    (p[i], p[i + 1], p[i + 2])
+}
+
+#[test]
+fn e3_子节点画在视频上_点子控件不切控制条_圆角只认css() {
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    let fx = fixture_with(
+        "child",
+        r#"<video id="v" src="/assets/NAME.mp4" style="width:300px;height:200px;border-radius:20px" bindcontrolstoggle="onToggle" bindprogress="onProg">
+  <cover-view style="position:absolute;left:10px;top:10px;width:60px;height:40px;background-color:#ff0000" bindtap="onBtn"></cover-view>
+</video>"#,
+    );
+    std::fs::write(fx.0.join("pages/index/index.js"), JS.replace("onBtn() {", "onProg(e) { this.rec('progress', e); },\n  onBtn() {")).unwrap();
+    let mut e = E::new(&fx);
+    assert_eq!(px(&mut e, 80, 60), (255, 0, 0), "cover-view 子节点画在视频上（物理像素 @2x）");
+    assert_ne!(px(&mut e, 200, 120), (255, 255, 255), "视频框里是画面（第一帧），不是页面白底");
+    assert_eq!(px(&mut e, 4, 4), (255, 255, 255), "圆角 20px（CSS）：(2,2) 逻辑像素在圆角外；从前强制 4px 会是黑的");
+    assert!(e.events().iter().any(|s| s == r#"progress {"buffered":100}"#), "本地文件加载完 bindprogress 报 100：{:?}", e.events());
+    e.clear();
+    e.tap(40.0, 30.0);
+    assert_eq!(e.js("__currentPage.data.taps"), 1, "点子控件：它的 bindtap");
+    assert!(e.events().is_empty(), "点子控件不切视频的控制条：{:?}", e.events());
+    e.tap(200.0, 60.0);
+    assert_eq!(e.events(), vec![r#"controlstoggle {"show":false}"#], "点画面别处照常切控制条");
+}
+
+#[test]
+fn e3_双击切换播放_跳页自动暂停() {
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    let fx = fixture_with(
+        "dbl",
+        r#"<video id="v" src="/assets/NAME.mp4" style="width:300px;height:200px" enable-play-gesture loop
+  bindplay="onPlay" bindpause="onPause" bindcontrolstoggle="onToggle"></video>"#,
+    );
+    let mut e = E::new(&fx);
+    e.clear();
+    e.tap(40.0, 40.0);
+    e.tap(40.0, 40.0);
+    let ev = e.events();
+    assert!(ev.iter().any(|s| s == "play {}"), "enable-play-gesture：双击起播：{ev:?}");
+    e.clear();
+    e.e.eval("wx.navigateTo({ url: '/pages/b/b' })").unwrap();
+    e.wait(100);
+    let first: Vec<String> = serde_json::from_value(e.js("getCurrentPages()[0].data.ev")).unwrap_or_default();
+    assert!(first.iter().any(|s| s == "pause {}"), "auto-pause-if-navigate 默认 true：跳页时暂停并派 pause：{first:?}");
+    assert_eq!(e.js("getCurrentPages().length"), 2);
+}
+
+#[test]
+fn e3_起播后横划画面拖进度_关掉不拖() {
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    for (name, attr, want) in [("swipe", "", true), ("noswipe", r#"enable-progress-gesture="{{false}}""#, false)] {
+        let fx = fixture_with(
+            name,
+            &format!(r#"<video id="v" src="/assets/NAME.mp4" style="width:300px;height:200px" {attr} bindseekcomplete="onSeek"></video>"#),
+        );
+        let mut e = E::new(&fx);
+        e.ctx("play()");
+        e.wait(250); // 10fps 的片子：过了第一帧，位置才大于 0（算「起播过」）
+        e.ctx("pause()");
+        e.clear();
+        // 画面中间（避开控制条与中间的播放键）从左往右划半个宽度
+        let y = 50.0;
+        e.e.pointer_down(40.0, y);
+        e.wait(16);
+        for i in 1..=6 {
+            e.e.pointer_move(40.0 + 150.0 * i as f32 / 6.0, y);
+            e.wait(16);
+        }
+        e.e.pointer_up(190.0, y);
+        e.wait(32);
+        let seeks: Vec<_> = e.events().into_iter().filter(|s| s.starts_with("seekcomplete")).collect();
+        if want {
+            assert_eq!(seeks.len(), 1, "默认开着：横划画面 seek 一次：{:?}", e.events());
+            let pos: f64 = serde_json::from_str::<Value>(seeks[0].trim_start_matches("seekcomplete ")).unwrap()["position"].as_f64().unwrap();
+            assert!(pos > 0.4, "划过半个宽度 ≈ 半段时长：{pos}");
+        } else {
+            assert!(seeks.is_empty(), "enable-progress-gesture=false 不拖：{:?}", e.events());
+        }
+    }
+}

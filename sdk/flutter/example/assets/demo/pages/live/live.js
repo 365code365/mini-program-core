@@ -65,7 +65,7 @@ Page({
     if (c === -2301 && this.auto && !this.autoDone) {
       this.autoDone = true;
       console.log('NC-CHECK live ' + JSON.stringify({ ok: false, code: c, src: this.data.src }));
-      if (this.chain) console.log('NC-CHECK done');
+      if (this.chain) wx.redirectTo({ url: '/pages/camera/camera?auto=1&chain=1' });
     }
   },
   onNet(e) {
@@ -88,6 +88,7 @@ Page({
       ms: Date.now() - this.started
     };
     console.log('NC-CHECK live ' + JSON.stringify(r));
-    if (this.chain) console.log('NC-CHECK done');
+    // 接着验相机与推流（camera → pusher，最后一页打 NC-CHECK done）
+    if (this.chain) wx.redirectTo({ url: '/pages/camera/camera?auto=1&chain=1' });
   }
 });

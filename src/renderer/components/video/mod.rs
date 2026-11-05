@@ -93,7 +93,7 @@ pub struct VideoPlayer {
 mod audio;
 /// 封面、弹幕、进度轨道几何（G-6）
 mod extras;
-pub use extras::{clear_danmu, send_danmu};
+pub use extras::{clear_danmu, send_danmu, send_danmu_at};
 pub use chrome::progress_track;
 /// H.264 解码与像素转换
 mod decode;
@@ -292,7 +292,7 @@ impl VideoComponent {
         }
         
         ns.background_color = Some(Color::BLACK);
-        ns.border_radius = 4.0 * sf;
+        // 圆角只认 CSS（从前强制 4px，连作者写的 border-radius 一起盖掉；微信的 video 没有默认圆角）
         
         let tn = ctx.taffy.new_leaf(ts).unwrap();
         

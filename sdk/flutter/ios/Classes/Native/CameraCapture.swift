@@ -1,0 +1,1 @@
+../../../../ios/Sources/MiniRender/CameraCapture.swift

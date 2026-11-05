@@ -96,7 +96,19 @@ impl TemplateEngine {
         }
         // 收集模式：带事件绑定的元素记进冒泡路径（组件 triggerEvent 的 bubbles 要用）
         let pushed = if cx.collecting() { cx.push_chain(f.owner, super::component::ChainFrame::of(node, data, false)) } else { false };
-        new_node.children = Self::render_nodes(&node.children, data, cx, f);
+        if crate::renderer::components::builder::is_builder(&node.tag_name) {
+            // list-builder / grid-builder：按 list 逐项展开 slot:item 模板（builder.rs）
+            let (kids, per_item) = Self::render_builder(node, data, cx, f);
+            new_node.children = kids;
+            if per_item > 1 && !cx.collecting() {
+                new_node.attributes.insert(crate::renderer::components::builder::PER_ITEM_ATTR.to_string(), per_item.to_string());
+            }
+        } else {
+            new_node.children = Self::render_nodes(&node.children, data, cx, f);
+        }
+        if node.tag_name == "rich-text" && !cx.collecting() {
+            Self::expand_rich_text(node, data, f.owner, &mut new_node);
+        }
         cx.pop_chain(pushed);
         out.push(new_node);
     }

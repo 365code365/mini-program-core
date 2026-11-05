@@ -122,6 +122,18 @@ impl SwiperComponent {
     pub fn config(node: &RenderNode) -> SwiperConfig {
         let a = &node.attrs;
         let num = |k: &str, d: u64| a.get(k).and_then(|s| s.trim().parse::<f64>().ok()).filter(|v| *v >= 0.0).map(|v| v as u64).unwrap_or(d);
+        // swiper-item 的 item-id（一项都没写就不分配）与 `current-item-id`（按 item-id 选当前项，与 current 不能同时写；
+        // 现行文档已不列这两个，老版 / WebView 文档里有）
+        let item_ids: Vec<String> = if node.children.iter().any(|c| c.attrs.contains_key("item-id")) {
+            node.children.iter().map(|c| c.attrs.get("item-id").cloned().unwrap_or_default()).collect()
+        } else {
+            Vec::new()
+        };
+        let by_item = a
+            .get("current-item-id")
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .and_then(|id| item_ids.iter().position(|x| x == id));
         SwiperConfig {
             total: node.children.len(),
             per_view: num("display-multiple-items", 1).max(1) as usize,
@@ -131,14 +143,38 @@ impl SwiperComponent {
             interval: num("interval", 5000),
             duration: num("duration", 500),
             easing: a.get("easing-function").map(|s| Easing::parse(s)).unwrap_or_default(),
-            current_attr: a.get("current").and_then(|s| s.trim().parse::<f64>().ok()).filter(|v| *v >= 0.0).map(|v| v as usize),
+            current_attr: by_item.or_else(|| a.get("current").and_then(|s| s.trim().parse::<f64>().ok()).filter(|v| *v >= 0.0).map(|v| v as usize)),
             direction: match a.get("direction").map(|s| s.trim()) {
                 Some("positive") => 1,
                 Some("negative") => -1,
                 _ => 0,
             },
             scroll_with_animation: a.get("scroll-with-animation").map(|s| truthy(s)).unwrap_or(true),
+            item_ids,
         }
+    }
+
+    /// `clip`（Skyline 3.17.4，默认 true）：false 时不裁到盒子，盒子外露出的相邻项照画
+    pub fn clips(node: &RenderNode) -> bool {
+        node.attrs.get("clip").map(|s| truthy(s)).unwrap_or(true)
+    }
+
+    /// `snap-to-edge`（WebView，默认 false）：非衔接、至少两项、写了前 / 后边距时，第一项贴左（上）边、
+    /// 最后一项贴右（下）边 —— 返回当前位置下整排要再挪多少（主轴，设备像素；中间那些页不挪，首尾一页内线性过渡）
+    pub fn edge_snap_shift(node: &RenderNode, cfg: &SwiperConfig, pos: f32, prev_px: f32, next_px: f32) -> f32 {
+        if cfg.circular || cfg.total < 2 || (prev_px <= 0.0 && next_px <= 0.0) {
+            return 0.0;
+        }
+        if !node.attrs.get("snap-to-edge").map(|s| truthy(s)).unwrap_or(false) {
+            return 0.0;
+        }
+        let last = (swiper_pages(cfg) as f32 - 1.0).max(0.0);
+        if last <= 0.0 {
+            return 0.0;
+        }
+        let head = -prev_px * (1.0 - pos.clamp(0.0, 1.0));
+        let tail = next_px * (pos - (last - 1.0)).clamp(0.0, 1.0);
+        head + tail
     }
 
     /// `previous-margin` / `next-margin`（逻辑 px，接受 px 与 rpx）

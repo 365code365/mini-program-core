@@ -1,0 +1,24 @@
+<view class="card">
+  <view class="h">list-builder（200 行，child-height=44）</view>
+  <text class="tip">itembuild {{built}} 次 · itemdispose {{disposed}} 次（滚动列表时变化）</text>
+  <scroll-view scroll-y type="custom" class="box">
+    <list-builder list="{{list}}" type="static" child-height="44" padding="{{[8, 0, 8, 0]}}" bind:itembuild="onBuild" bind:itemdispose="onDispose">
+      <view slot:item="row" slot:index="i" class="lrow">{{row.name}} · index {{i}}</view>
+    </list-builder>
+  </scroll-view>
+</view>
+<view class="card">
+  <view class="h">grid-builder（三列，aligned）</view>
+  <scroll-view scroll-y type="custom" class="box small">
+    <grid-builder list="{{cards}}" type="aligned" cross-axis-count="3" main-axis-gap="8" cross-axis-gap="8">
+      <view slot:item="c" class="cell" style="background:{{c.c}}">#{{c.id}}</view>
+    </grid-builder>
+  </scroll-view>
+</view>
+<view class="card">
+  <view class="h">grid-view masonry（瀑布流：按顺序放进最矮的列）</view>
+  <grid-view type="masonry" cross-axis-count="2" main-axis-gap="8" cross-axis-gap="8">
+    <view wx:for="{{cards}}" wx:key="id" class="mcell" style="height:{{item.h}}rpx;background:{{item.c}}">#{{item.id}}</view>
+  </grid-view>
+</view>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

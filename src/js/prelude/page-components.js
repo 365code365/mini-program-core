@@ -95,9 +95,27 @@
             // 处理函数的返回值记在 __lastHandlerResult：`bindinput` 返回一个字符串就替换输入框内容（微信语义），
             // 宿主派发完 input 之后来取（host::tap::take_input_replacement）
             var __lastHandlerResult;
+            // 手势组件（builtin_components/gesture.js）的实例：uid → 实例。它们的绑定并在使用方的节点上
+            // （虚组件，parser/template/gesture_merge.rs），处理函数名 `__gh:<uid>:<方法>` 带着实例，
+            // 不靠节点的组件归属找。同一个节点上嵌套几层时用 `|` 连起来、内层在前：倒着派，
+            // 进竞技场的顺序就与跨节点时（捕获阶段先到外层）一致
+            var __ghInstances = {};
+            function __ghDispatch(name, event) {
+                var parts = name.split('|');
+                for (var i = parts.length - 1; i >= 0; i--) {
+                    var m = parts[i].split(':');
+                    var inst = __ghInstances[m[1]];
+                    var fn = inst && inst['_' + m[2]];
+                    if (typeof fn === 'function') { fn.call(inst, event); }
+                }
+                return true;
+            }
             function __dispatchHandler(name, event, ownerKey) {
                 __lastHandlerResult = undefined;
                 if (!name) { return false; }
+                if (name.charCodeAt(0) === 95 && name.indexOf('__gh:') === 0) { return __ghDispatch(name, event); }
+                // <image show-menu-by-longpress> 的长按（renderer components/image/attrs.rs）：media.js 的 __imageMenu
+                if (name.charCodeAt(0) === 95 && name.indexOf('__imgmenu:') === 0 && typeof __imageMenu === 'function') { return __imageMenu(name.slice(10), event); }
                 var st = __compState();
                 if (ownerKey) {
                     var owner = st.map[ownerKey] ||

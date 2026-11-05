@@ -108,6 +108,11 @@ pub fn compose_rows(buf: &mut [u32], layers: &FrameLayers<'_>, rows: (u32, u32))
             edge_back::compose(buf, w, h, eb.offset_px, eb.shot, eb.progress);
         }
     }
+    // 6. 小窗（picture-in-picture-mode，components/pip.rs）：钉在窗口右下角、所有层之上，侧滑 / 转场不带着它走
+    if let Some((a, b)) = crate::renderer::components::pip::reach(layers.scale, h) {
+        crate::renderer::components::pip::draw(buf, w, h, layers.scale);
+        fp.touch(a as f32, b as f32, h);
+    }
     fp
 }
 
@@ -166,6 +171,11 @@ pub fn overlay_reach(layers: &FrameLayers<'_>) -> Option<((u32, u32), (u32, u32)
         // picker 的遮罩画在最上面，要压到下面每一层写过的行（同 Modal，见 ui_overlay::overlay_reach）
         base = rows;
     }
+    // 小窗：圆角外露出底下，那几行要有底图
+    if let Some((a, b)) = crate::renderer::components::pip::reach(sf, h) {
+        rows.touch(a as f32, b as f32, h);
+        base.touch(a as f32, b as f32, h);
+    }
     if rows.full || base.full {
         return None;
     }
@@ -194,7 +204,8 @@ fn sheet_only(layers: &FrameLayers<'_>) -> bool {
         || o.modal.is_some()
         || o.toast.is_some()
         || o.loading.is_some()
-        || ui_overlay::image_preview::visible();
+        || ui_overlay::image_preview::visible()
+        || crate::renderer::components::pip::visible();
     !others && ui_overlay::action_sheet::visible()
 }
 

@@ -17,8 +17,17 @@ pub(super) const DRAW_OPS: &[&str] = &[
 ];
 
 impl Canvas2DContext {
-    /// `ctx.clip()`：当前路径与已有裁剪区求交
+    /// `ctx.clip()`：当前路径与已有裁剪区求交（HTML 默认 nonzero）
     pub fn clip(&mut self) {
+        self.clip_with_rule(false);
+    }
+
+    /// `clip('evenodd')`
+    pub fn clip_with_rule(&mut self, even_odd: bool) {
+        crate::canvas::fill_rule::scoped(!even_odd, || self.clip_inner());
+    }
+
+    fn clip_inner(&mut self) {
         let path = self.build_path();
         let Ok(canvas) = self.canvas.lock() else { return };
         let (w, h) = (canvas.width(), canvas.height());

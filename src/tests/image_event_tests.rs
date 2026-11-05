@@ -147,3 +147,79 @@ fn dataset_and_id_ride_along_with_the_event() {
     assert_eq!(e.data.get("index").map(String::as_str), Some("3"), "data-* 要带上");
     assert!(e.owner.is_empty(), "页面模板里的绑定 owner 为空串");
 }
+
+// ───────────── WP-E2：image 的 SVG / data: / fade-in / cloud:// / 长按菜单（官方 component/image）─────────────
+
+/// 渲染一页（白底，sf = 1），返回画布
+fn render_once(r: &mut WxmlRenderer, wxml: &str) -> Canvas {
+    let nodes = WxmlParser::new(wxml).parse().expect("wxml");
+    let mut im = InteractionManager::new();
+    let mut canvas = Canvas::new(375, 200);
+    canvas.clear(Color::WHITE);
+    r.render_with_interaction(&mut canvas, &nodes, &json!({}), &mut im);
+    canvas
+}
+
+/// 纯色 PNG 的 data: URI
+fn png_data_uri(w: u32, h: u32, rgba: [u8; 4]) -> String {
+    use base64::Engine as _;
+    let mut buf = std::io::Cursor::new(Vec::new());
+    image::RgbaImage::from_pixel(w, h, image::Rgba(rgba)).write_to(&mut buf, image::ImageFormat::Png).unwrap();
+    format!("data:image/png;base64,{}", base64::engine::general_purpose::STANDARD.encode(buf.into_inner()))
+}
+
+#[cfg(feature = "svg")]
+#[test]
+fn e2_svg_解码成位图_data_uri_也认_scale_to_fill_撑满() {
+    // 20×10 的 SVG：左半红、右半透明；画进 80×20 的框（scaleToFill：Skyline 撑满，官方 image.md）
+    let svg = r##"<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10"><rect width="10" height="10" fill="#ff0000"/></svg>"##;
+    let src = format!("data:image/svg+xml,{}", svg.replace('#', "%23").replace('"', "%22").replace('<', "%3C").replace('>', "%3E"));
+    let mut r = WxmlRenderer::new_with_scale(WxssParser::new(".s{width:80px;height:20px}").parse().unwrap_or_default(), 375.0, 667.0, 1.0);
+    let c = render_once(&mut r, &format!(r#"<view><image class="s" src="{src}"></image></view>"#));
+    let p = c.get_pixel(20, 10);
+    assert!(p.r > 240 && p.g < 20 && p.b < 20, "左半是红（横向拉伸到 40px 宽）：{p:?}");
+    assert_eq!(c.get_pixel(60, 10), Color::WHITE, "右半透明，露出白底");
+}
+
+#[test]
+fn e2_fade_in_从透明渐显_不写不渐显() {
+    let src = png_data_uri(4, 4, [255, 0, 0, 255]);
+    let other = png_data_uri(4, 4, [0, 0, 255, 255]);
+    let css = ".s{width:40px;height:40px}";
+    let mut r = WxmlRenderer::new_with_scale(WxssParser::new(css).parse().unwrap_or_default(), 375.0, 667.0, 1.0);
+    let wxml = format!(r#"<view><image class="s" fade-in src="{src}"></image><image class="s" src="{other}"></image></view>"#);
+    let c0 = render_once(&mut r, &wxml);
+    let p0 = c0.get_pixel(20, 20);
+    assert!(p0.g > 150, "刚出现几乎透明（白底透出来）：{p0:?}");
+    assert_eq!(c0.get_pixel(20, 60), Color::new(0, 0, 255, 255), "没写 fade-in 的直接不透明");
+    assert!(!r.animated_images_due(0.0, 1e6).is_empty() || r.has_animated_images(0.0, 1e6), "渐显中按动图续帧（宿主醒着、只重画这块）");
+    std::thread::sleep(std::time::Duration::from_millis(crate::renderer::components::image::fade::DURATION_MS as u64 + 30));
+    assert!(!r.animated_images_due(0.0, 1e6).is_empty(), "渐显到头：那块要重画成不透明");
+    let c1 = render_once(&mut r, &wxml);
+    assert_eq!(c1.get_pixel(20, 20), Color::new(255, 0, 0, 255), "渐显完不透明");
+}
+
+#[test]
+fn e2_cloud_文件_id_走_binderror() {
+    let evs = collect_image_events(r#"<view><image class="p" src="cloud://env-1.xxx/a.png" binderror="onErr"></image></view>"#, ".p{width:10px;height:10px}", 3);
+    assert!(evs.iter().any(|(t, h, d)| t == "error" && h == "onErr" && matches!(d, ImageEventDetail::Error)), "cloud:// 宿主解析不了，发 error：{evs:?}");
+}
+
+#[test]
+fn e2_长按菜单_宿主没接弹_action_sheet_返回已处理() {
+    let a = {
+        let mut a = crate::runtime::MiniApp::new(375, 667).expect("create MiniApp");
+        a.init().expect("init");
+        a
+    };
+    let out = a
+        .eval(
+            r#"(function() {
+  var got = null; wx.showActionSheet = function(o) { got = o.itemList; };
+  var handled = __dispatchHandler('__imgmenu:/img/a.png', { type: 'longpress', detail: {} });
+  return JSON.stringify({ handled: handled, items: got });
+})()"#,
+        )
+        .unwrap();
+    assert_eq!(out, r#"{"handled":true,"items":["发送给朋友","收藏","保存图片"]}"#);
+}

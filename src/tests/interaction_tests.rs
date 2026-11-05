@@ -44,20 +44,21 @@ fn test_checkbox_toggle() {
     assert!(!im.get_state("cb1").unwrap().checked);
 }
 
+/// 交互层只管「点中的那个选上、已选中的再点不变」；同组互斥要知道 radio-group 的成员，
+/// 由宿主按布局树做（host::builtin_tap `exclusive_radio`，见 src/tests/wpb/controls.rs 的 b5 用例）
 #[test]
-fn test_radio_exclusive() {
+fn test_radio_select_and_reclick_is_noop() {
     let mut im = InteractionManager::new();
     im.register_element(elem(InteractionType::Radio, "r1", 0.0, 0.0, 40.0, 40.0));
-    im.register_element(elem(InteractionType::Radio, "r2", 0.0, 50.0, 40.0, 40.0));
 
     // 选中 r1
-    im.handle_click(20.0, 20.0);
+    let r = im.handle_click(20.0, 20.0);
+    assert!(matches!(r, Some(InteractionResult::Select { .. })));
     assert!(im.get_state("r1").unwrap().checked);
 
-    // 选中 r2 -> r1 应被取消
-    im.handle_click(20.0, 70.0);
-    assert!(im.get_state("r2").unwrap().checked);
-    assert!(!im.get_state("r1").unwrap().checked, "radio 应互斥");
+    // 再点已选中的 r1：不变、不发 change（返回 None，按普通 tap 往下派）
+    assert!(im.handle_click(20.0, 20.0).is_none());
+    assert!(im.get_state("r1").unwrap().checked);
 }
 
 #[test]

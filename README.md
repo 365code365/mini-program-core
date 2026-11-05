@@ -211,13 +211,23 @@ What remains is concentrated in bold glyph shapes and subpixel text positioning.
 **Implemented** (full table in [Feature coverage](#feature-coverage)):
 
 - **All 503 official `wx.*` APIs exist** (host-only ones fail immediately until the host claims them in `hostApis`),
-  plus the Skyline-era components: `grid-view`, `movable-view`, `page-container`, gesture handlers, `draggable-sheet`,
+  plus the Skyline-era components: `grid-view`, `list-builder` / `grid-builder`, `sticky-header` / `sticky-section`,
+  `position: sticky`, nested scrolling, `movable-view`, `page-container`, gesture handlers, `draggable-sheet`,
   `this.animate`, `wx.worklet` and `applyAnimatedStyle` (see `doc/原生App集成指南.md` for the documented degradations);
-- **Host native components** (Android / iOS SDKs, Flutter Android plugin): `<map>` is a built-in tile map (`MiniMapView`,
+- **Host native components** (Android / iOS SDKs, Flutter plugin on Android and iOS): `<map>` is a built-in tile map (`MiniMapView`,
   same-layer rendered: markers, callouts, labels, polylines, circles, polygons, satellite, pan / fling / pinch via
   `sameLayerGestures`, `regionchange` / `markertap`, 14 MapContext methods); `<web-view>` is the system WebView with the
   `wx.miniProgram.*` JSSDK and WeChat's deliver-on-back `bindmessage`; `<live-player>` plays HLS / mp4 with the system
-  player, same-layer rendered, with `bindstatechange` codes and LivePlayerContext. Device checks:
+  player, same-layer rendered, with `bindstatechange` codes and LivePlayerContext; `<camera>` (Camera2 / AVCaptureSession,
+  same-layer rendered: `initdone`, CameraContext `takePhoto` / `startRecord` / `stopRecord` / `setZoom`, `onCameraFrame` taken
+  by the engine from the preview, `mode="scanCode"` decoded by the engine: QR codes and barcodes such as EAN-13 / Code 128) and
+  `<live-pusher>` (H.264 + AAC pushed over RTMP, official status codes and `netstatus`; `beauty` / `whiteness` / `filter` as a
+  shader on Android and Core Image on iOS, applied to preview and stream alike, with filter colors approximating WeChat's;
+  `playBGM` & co. play locally and are mixed into the stream; `picture-in-picture-mode` shrinks the pusher into an engine-drawn
+  corner window when its page is covered or closed, and the stream keeps going); `<voip-room mode="camera">` shows the local
+  camera, and `mode="video"` asks the host's own call service for the other person's video (`MiniVoip`: WeChat's VoIP backend
+  can't be reached outside WeChat, so `joinVoIPChat` & co. go to `hostApis`). Camera and pusher were checked
+  on Android phones only (the iOS code builds; the simulator has no camera). Device checks:
   `tools/android-native-components.sh`, `tools/ios-native-components.sh`;
 - **24 component tags** (containers / text and media / form controls, including `swiper`,
   `scroll-view`, `picker-view`);
@@ -234,8 +244,8 @@ What remains is concentrated in bold glyph shapes and subpixel text positioning.
 - **Styles**: selectors with specificity cascade, inheritance, `@import`, CSS variables, `rpx`,
   `calc()`, gradients, shadows, `transform` / `transition` / `@keyframes`, `@media` (width /
   height / orientation / aspect ratio / color scheme), `@font-face` (TTF / OTF);
-- **Component behavior**: `scroll-view` controlled position, scroll / edge events and custom
-  pull-to-refresh; `swiper` drag, circular mode, multiple items per screen, previous/next margins,
+- **Component behavior**: `scroll-view` controlled position, scroll / edge events, custom
+  pull-to-refresh and `scroll-x` + `scroll-y` scrolling both axes at once; `swiper` drag, circular mode, multiple items per screen, previous/next margins,
   Skyline's `direction` / `indicator-type` / `layout-type` and change / transition /
   animationfinish; `form` submit / reset; `picker` columnchange / cancel / `header-text`; the
   inline `picker-view` wheel; `navigator` and `label` with their official tap behavior; `<video>`
@@ -277,9 +287,8 @@ slots, `navigator` / `label`, `picker-view` scrolling, Skyline's swiper attribut
 shadows and pixel readback in canvas 2d, and video poster and danmu. `@supports` / `@container` /
 `@layer` turned out to be unsupported in Skyline itself, so both ends now skip them whole. Still open:
 `wx:key` in incremental invalidation and WXS event handlers (G-2), custom components in the H5
-export (G-2c), scrollbars and Skyline's `sticky` / `grid-view` / nested scrolling in `scroll-view`
-(G-4), controlled values of off-screen scroll-views (G-5), progress dragging and picture-in-picture
-in video (G-6), worklet callbacks in swiper (G-7), dashed lines and `clip` in canvas (G-9), and the
+export (G-2c), controlled values of off-screen scroll-views (G-5), picture-in-picture
+in video (G-6), dashed lines and `clip` in canvas (G-9), and the
 fallback semantics of unknown tags (G-12).
 
 **The biggest known weakness is memory**: a 600 MB–1 GB peak, almost entirely fonts. Measured
@@ -635,7 +644,7 @@ target. `<video>` still takes part in layout and hit testing, it just produces n
 
 | Category | Supported |
 |---|---|
-| Components (24 tags) | Containers: view / block / scroll-view / swiper / swiper-item<br/>Text and media: text / rich-text / icon / image / video / canvas<br/>Forms: button / input / textarea / switch / slider / progress / checkbox / checkbox-group / radio / radio-group / picker / picker-view / picker-view-column |
+| Components (24 basic tags; 76 in total, see the landing page) | Containers: view / block / scroll-view / swiper / swiper-item<br/>Text and media: text / rich-text / icon / image / video / canvas<br/>Forms: button / input / textarea / switch / slider / progress / checkbox / checkbox-group / radio / radio-group / picker / picker-view / picker-view-column |
 | Events | touchstart/move/end/cancel, longpress/longtap, tap, change, focus/input/blur/confirm, image load/error, scroll-view scroll / scrolltoupper / scrolltolower / refresher*, swiper change / transition / animationfinish, form submit / reset, picker columnchange / cancel, video play / pause / ended / timeupdate / loadedmetadata / seekcomplete / fullscreenchange / error, page onPageScroll / onReachBottom / onPullDownRefresh; six binding prefixes (bind / catch / capture-bind / capture-catch / mut-bind / bind:) with the full capture-bubble chain |
 | WXML | wx:for / wx:if / elif / else / for-item / for-index / wx:key, block, expression engine (with spread and shorthand properties), class and style bindings, template / import / include, wxs modules (`<wxs src>` / inline / require), custom components (usingComponents: one instance per use site, named and default slots) |
 | WXSS | tag / class / id / attribute / pseudo-class selectors, descendant and child combinators, specificity cascade, `:first/last/only-child`, `:nth-child(An+B)`, `:active`, `@import`, `@keyframes`, `@media`, `@font-face`, CSS variables, rpx, gradients, shadows, transform, transition/animation |

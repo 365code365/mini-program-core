@@ -71,6 +71,10 @@ impl MiniEngine {
         if sv {
             self.mark_full();
         }
+        // <snapshot> 的 takeSnapshot（host::snapshot）：离屏画，不动页面画布；回调里的 setData 照常标脏
+        if super::snapshot::tick(&mut self.app, self.renderer.as_mut(), &self.interaction) > 0 && self.app.take_data_dirty() {
+            self.page_data_dirty = true;
+        }
         if let Some(crate::ui::scroll_controller::ScrollEvent::ReachBottom) = event {
             self.app
                 .eval("if(__currentPage&&__currentPage.onReachBottom)__currentPage.onReachBottom()")
@@ -91,7 +95,8 @@ impl MiniEngine {
             }
         }
         // 新字体登记好了（@font-face / wx.loadFontFace）：文字宽度变了，整棵树重排
-        if crate::text_faces::take_changed() {
+        // textarea auto-height 的行数变了（components/input/auto_height.rs）：同样整树重排一次
+        if crate::text_faces::take_changed() | crate::renderer::components::auto_height::take_relayout() {
             for r in [self.renderer.as_mut(), self.tabbar_renderer.as_mut()].into_iter().flatten() {
                 r.invalidate_layout();
             }
@@ -169,6 +174,8 @@ impl MiniEngine {
         // 键盘弹着的整段时间里每次 pump 都整条带重画并回报「有新画面」。
         // 页面画布用内容坐标：视口还在已绘制条带内时，滚动只是换一段切片上屏
         let produced = self.redraw_as_needed(tabbar_anim, media, scroll_moved);
+        // 这一帧画到的 input / textarea 的 `focus` 属性变了：聚焦 / 失焦（engine_keyboard.rs）
+        self.apply_focus_requests();
         // 页面画过了、受控值对上账了：排着的输入接着送（engine_input_queue.rs），结果下一帧画
         self.flush_input_queue();
         // 画完再排预取：这一帧的布局是最新的（进页面第一帧画完才有布局）
@@ -304,6 +311,17 @@ impl MiniEngine {
         // 已绘制条带以外的页面画布页还给系统（engine_memory.rs）
         if scope.page != PagePass::Skip {
             self.release_idle_rows(None);
+            // `<image bindload / binderror>`：画过才有结论（own_events.rs；没有事件时只是一次 mem::take）。
+            // 回调里的 setData 只标数据脏，下一帧由失效分析定重画多大
+            let now = self.mono_ms();
+            if let Some(r) = self.renderer.as_mut() {
+                // sticky-header 的 `stickontopchange`（吸顶状态是画的时候按滚动算出来的，scroll_view.rs）
+                let n = super::own_events::dispatch_image_events(&mut self.app, r, now)
+                    + super::scroll_view::dispatch_sticky_events(&mut self.app, r, now);
+                if n > 0 {
+                    self.app.pump_jobs();
+                }
+            }
         }
         if scope.fixed {
             self.render_fixed_layer(vp);

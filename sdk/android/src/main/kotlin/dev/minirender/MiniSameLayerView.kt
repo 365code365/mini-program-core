@@ -53,12 +53,43 @@ abstract class MiniSameLayerView {
 
     internal var host: Host? = null
 
+    /** 框的设备像素尺寸（`sameLayerViews` 的 `box`；[onBox] 之前已更新） */
+    var boxWidth = 0
+        internal set
+    var boxHeight = 0
+        internal set
+
     internal interface Host {
         fun invalidate(v: MiniSameLayerView)
         fun emit(v: MiniSameLayerView, name: String, detail: JSONObject)
         fun resolve(path: String): File?
+        fun frame(v: MiniSameLayerView, w: Int, h: Int, buf: ByteBuffer)
+        fun contextEvent(payload: JSONObject)
         val context: Context
     }
+
+    /**
+     * 自己出帧（相机这类每帧都在变、在自己线程上读回的）：`w×h` RGBA 紧密排列，任何线程都可以调。
+     * 不经 [onDraw] / 主线程；交完让引擎出一帧（只重画这个框）
+     */
+    fun pushFrame(w: Int, h: Int, buf: ByteBuffer) {
+        host?.frame(this, w, h, buf)
+    }
+
+    /**
+     * 上下文对象的事件（`{context, contextId, event, data}`，逻辑层 `__dispatchContextEvent`）：
+     * 相机录到上限的 `recordTimeout` 这类
+     */
+    fun dispatchContextEvent(payload: JSONObject) {
+        host?.contextEvent(payload)
+    }
+
+    /** 框的设备像素尺寸变了（含第一次挂上，在 [onAttrs] 之前）。默认不管 */
+    open fun onBox(w: Int, h: Int) {}
+
+    /** 宿主进后台 / 回前台（相机要关掉再开）。默认不管 */
+    open fun onPause() {}
+    open fun onResume() {}
 
     /** 宿主的 Context（挂上之后才有；取缓存目录、加载图片用） */
     protected val context: Context? get() = host?.context
@@ -89,8 +120,8 @@ abstract class MiniSameLayerView {
     open val contextClass: String get() = ""
 
     /**
-     * 小程序里的路径 → 本地文件：`/images/a.png`（包根）、`images/a.png`（当前页目录，找不到再按包根）。
-     * 网络地址、`wxfile://` 返回 null
+     * 小程序里的路径 → 本地文件：`/images/a.png`（包根）、`images/a.png`（当前页目录，找不到再按包根）、
+     * `wxfile://tmp/…`（下载 / 选图的临时文件，按引擎报的 wxfile 根目录）。网络地址返回 null
      */
     fun resolvePath(path: String): File? = host?.resolve(path)
 
@@ -133,6 +164,8 @@ internal class SameLayerViews(
     /** 打开的小程序目录与当前页（`page` 事件），解析图标路径用 */
     var appDir: File? = null
     var route: String = ""
+    /** `wxfile://` 的真实根目录（`sameLayerViews` 事件的 `wxfileRoot`） */
+    var wxfileRoot: File? = null
 
     private val probes = HashMap<String, MiniSameLayerView>()
 
@@ -170,8 +203,16 @@ internal class SameLayerViews(
     }
 
     override fun resolve(path: String): File? {
-        val dir = appDir ?: return null
         val p = path.trim()
+        // 下载 / 选图得到的临时文件与用户文件（`wxfile://tmp/…`、`wxfile://usr/…`）：引擎报来的 wxfile 根目录下找，
+        // 不许 `..` 跳出去（与引擎 wxfile::to_path 同一条）。引擎库太旧、没报根目录时找不到（图标不画）
+        if (p.startsWith("wxfile://")) {
+            val rel = p.removePrefix("wxfile://")
+            val root = wxfileRoot ?: return null
+            if (rel.isEmpty() || rel.split('/').any { it == ".." || it == "." }) return null
+            return File(root, rel).takeIf { it.isFile }
+        }
+        val dir = appDir ?: return null
         if (p.isEmpty() || p.contains("://")) return null
         if (p.startsWith("/")) return File(dir, p.trimStart('/')).takeIf { it.isFile }
         val pageDir = route.substringBeforeLast('/', "")
@@ -201,6 +242,7 @@ internal class SameLayerViews(
 
     /** 主线程：`sameLayerViews` 事件 */
     fun onViews(ev: JSONObject) {
+        ev.optString("wxfileRoot").takeIf { it.isNotEmpty() }?.let { wxfileRoot = File(it) }
         val list = ev.optJSONArray("views") ?: return
         val seen = HashSet<String>()
         for (i in 0 until list.length()) {
@@ -219,10 +261,15 @@ internal class SameLayerViews(
                 v.host = this
                 slot = Slot(v, w, h)
                 slots[key] = slot
+                v.boxWidth = w
+                v.boxHeight = h
+                v.onBox(w, h)
             }
             slot.view.width = o.optDouble("width", 0.0).toFloat()
             slot.view.height = o.optDouble("height", 0.0).toFloat()
             val attrs = o.optJSONObject("attrs") ?: JSONObject()
+            // 地图的自定义气泡图（引擎离屏画好的 PNG，engine_map_callouts.rs）：并进属性，变了照样走 onAttrs
+            o.optJSONArray("callouts")?.let { attrs.put("__callouts", it.toString()) }
             if (fresh || attrs.toString() != slot.view.attrs.toString()) {
                 slot.view.attrs = attrs
                 slot.view.onAttrs(attrs)
@@ -231,6 +278,9 @@ internal class SameLayerViews(
             if (slot.w != w || slot.h != h) {
                 slot.w = w
                 slot.h = h
+                slot.view.boxWidth = w
+                slot.view.boxHeight = h
+                slot.view.onBox(w, h)
                 slot.view.invalidate()
             }
         }
@@ -257,6 +307,21 @@ internal class SameLayerViews(
         // 同一帧里多次 invalidate 只画一次
         main.post(::drawDirty)
     }
+
+    override fun frame(v: MiniSameLayerView, w: Int, h: Int, buf: ByteBuffer) {
+        val key = v.key
+        buf.rewind()
+        if (MiniEngine.nativeViewFrameRgba(key, w, h, w * 4, buf)) onEngine { }
+    }
+
+    override fun contextEvent(payload: JSONObject) {
+        val s = payload.toString()
+        onEngine { MiniEngine.nativeDispatchEvent(it, "contextEvent", s) }
+    }
+
+    /** 宿主进后台 / 回前台：转给每个实例 */
+    fun pause() = slots.values.forEach { it.view.onPause() }
+    fun resume() = slots.values.forEach { it.view.onResume() }
 
     override fun emit(v: MiniSameLayerView, name: String, detail: JSONObject) {
         val key = v.key

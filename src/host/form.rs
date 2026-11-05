@@ -5,8 +5,9 @@
 //! 选中项 value 的数组、radio-group 是选中项的 value（没选是空串）、picker 与它 `bindchange`
 //! 的 `detail.value` 同型。`bindreset` 不带数据。
 //!
-//! 重置：输入框清空、开关与勾选取消、滑块回到 `min`（与微信一致：重置不是「回到页面 data 里的值」，
-//! 页面 data 不会被改）。picker 自己不留状态，重置不动它。
+//! 重置：输入框清空、滑块回到 `min`、开关 / 勾选 / 单选回到属性里的 `checked`（页面 data 不会被改）。
+//! picker 自己不留状态（选中值只在页面 bindchange 写回 `value` 之后才变），重置后提交的就是属性值 ——
+//! 与微信的差别：微信 picker 确定之后内部值就变了（页面不 setData 也会提交新值），这里不跟（待验）。
 //!
 //! 按钮自己的 `bindtap` 照常先发（由调用方的 tap 链负责），这里只管表单那一下。
 //! 桌面窗体与 SDK 引擎共用（都经 `host::tap::handle_content_click`）。
@@ -123,9 +124,11 @@ pub(crate) fn number(v: f64) -> Value {
 
 /// 把表单里的控件拨回初始：写进 `states`，下一帧绘制按它画
 pub fn reset(hit: &FormHit, im: &mut InteractionManager) {
-    let off = |im: &mut InteractionManager, id: &str| {
+    // 开关 / 勾选 / 单选回到属性里的 `checked`（WP-B6：从前一律拨成「未选」，属性写了 checked 的
+    // 重置后反而变成没选）。属性是页面 data 给的「初始值」，页面 data 本身不被改
+    let off = |im: &mut InteractionManager, id: &str, initial: bool| {
         let value = im.get_state(id).map(|s| s.value.clone()).unwrap_or_default();
-        im.set_state(id.to_string(), ComponentState { checked: false, value });
+        im.set_state(id.to_string(), ComponentState { checked: initial, value });
     };
     for f in &hit.fields {
         match &f.control {
@@ -137,13 +140,13 @@ pub fn reset(hit: &FormHit, im: &mut InteractionManager) {
                     fi.clear_selection();
                 }
             }
-            FormControl::Switch { id, .. } => off(im, id),
+            FormControl::Switch { id, initial } => off(im, id, *initial),
             // 从前写的是 `min as i32`：min 带小数时被截断
             FormControl::Slider { id, min, .. } => im.set_slider_value(id, *min),
             FormControl::Picker { .. } | FormControl::Component { .. } => {}
             FormControl::Group { items, .. } => {
-                for (id, _, _) in items {
-                    off(im, id);
+                for (id, _, initial) in items {
+                    off(im, id, *initial);
                 }
             }
         }

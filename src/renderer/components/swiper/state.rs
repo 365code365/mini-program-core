@@ -36,6 +36,8 @@ pub struct SwiperConfig {
     pub direction: i8,
     /// Skyline `scroll-with-animation`（默认 true）：false 时页面改 `current` 直接跳过去，不走动画
     pub scroll_with_animation: bool,
+    /// 各项的 `swiper-item item-id`（一项都没写时为空、不分配）：change / animationfinish 的 `currentItemId`
+    pub item_ids: Vec<String>,
 }
 
 impl Default for SwiperConfig {
@@ -52,6 +54,7 @@ impl Default for SwiperConfig {
             current_attr: None,
             direction: 0,
             scroll_with_animation: true,
+            item_ids: Vec::new(),
         }
     }
 }
@@ -102,6 +105,8 @@ pub struct SwiperState {
     last_current_attr: Option<usize>,
     /// 上一次报 transition 时的位置
     reported_pos: f32,
+    /// 各项的 item-id（SwiperConfig 同名字段，变了才拷）
+    item_ids: Vec<String>,
 }
 
 impl SwiperState {
@@ -144,6 +149,12 @@ impl SwiperState {
     }
 
     fn detail(&self, source: &str) -> Value {
+        // 写了 swiper-item `item-id` 才带 currentItemId（老文档的 `{current, currentItemId, source}`；没写的不加这个键，
+        // 从前的 detail 一个字节不变）
+        if !self.item_ids.is_empty() {
+            let item = self.item_ids.get(self.current).cloned().unwrap_or_default();
+            return json!({ "current": self.current, "currentItemId": item, "source": source });
+        }
         json!({ "current": self.current, "source": source })
     }
 
@@ -218,6 +229,7 @@ impl SwiperStateManager {
                 item_px,
                 last_current_attr: cfg.current_attr,
                 reported_pos: 0.0,
+                item_ids: Vec::new(),
             };
             let c = cfg.current_attr.unwrap_or(0).min(s.pages() - 1);
             s.current = c;
@@ -240,6 +252,9 @@ impl SwiperStateManager {
         st.vertical = cfg.vertical;
         st.direction = cfg.direction;
         st.scroll_with_animation = cfg.scroll_with_animation;
+        if st.item_ids != cfg.item_ids {
+            st.item_ids = cfg.item_ids.clone();
+        }
         if item_px > 0.0 {
             st.item_px = item_px;
         }

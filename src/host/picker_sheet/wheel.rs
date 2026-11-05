@@ -211,7 +211,7 @@ impl PickerSheetState {
             self.move_selection(col, target as i32 - old as i32);
             relink_region(self, col);
             // 后面的列内容可能整列换了，它们手上的动画已经没有意义
-            if matches!(self.mode, SheetMode::Date | SheetMode::Region) {
+            if matches!(self.mode, SheetMode::Date | SheetMode::Region | SheetMode::Time) {
                 for s in self.wheel.settles.iter_mut().skip(col + 1) {
                     *s = None;
                 }
@@ -257,6 +257,7 @@ mod tests {
             date_range: ((1970, 1, 1), (2100, 12, 31)),
             viewport: (375.0, 667.0),
             wheel: WheelState::default(),
+            extra: SheetExtra::default(),
         }
     }
 

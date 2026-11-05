@@ -12,6 +12,8 @@ mod wheel;
 mod pull;
 /// 程序发起的定时滚动（滚到指定位置，带时长与缓动）
 mod tween;
+/// scroll-view 的分页 / 快速减速 / 关惯性与松手速度
+mod behavior;
 
 /// 视口高度常量
 pub const LOGICAL_HEIGHT: u32 = 667;
@@ -79,6 +81,8 @@ pub struct ScrollController {
     max_over_top: f32,
     /// 「下拉到位并松手」的一次性信号，宿主取走后决定是否进入刷新态
     pull_triggered: bool,
+    /// 上一次手势到达过的最大顶部越界量（松手时记下；下拉二级按它判断是否过了二级阈值，pull.rs `take_pull_peak`）
+    last_pull_peak: f32,
     /// 触发下拉刷新的阈值（逻辑 px），与微信的指示器高度一致
     pull_threshold: f32,
     pub is_dragging: bool,
@@ -109,6 +113,8 @@ pub struct ScrollController {
     tween: Option<tween::Tween>,
     /// 边界弹性（scroll-view 的 `bounces`）。关掉时拖过边界硬夹住，不出橡皮筋
     bounces: bool,
+    /// 分页 / 快速减速 / 关惯性（behavior.rs；页面滚动从不设，默认全关）
+    behavior: behavior::Behavior,
     
     /// 滚动方向
     pub direction: ScrollDirection,
@@ -129,6 +135,7 @@ impl ScrollController {
             top_inset: 0.0,
             max_over_top: 0.0,
             pull_triggered: false,
+            last_pull_peak: 0.0,
             pull_threshold: PULL_REFRESH_HEIGHT,
             is_dragging: false,
             drag_start_pos: 0.0,
@@ -147,6 +154,7 @@ impl ScrollController {
             direction: ScrollDirection::Vertical,
             tween: None,
             bounces: true,
+            behavior: Default::default(),
         }
     }
     
@@ -243,7 +251,9 @@ impl ScrollController {
         } else if self.velocity.abs() > 50.0 {
             self.is_decelerating = true;
         }
-        self.is_decelerating || self.is_bouncing
+        // 分页吸附 / 关惯性（behavior.rs；默认什么都不做）
+        self.after_release();
+        self.is_decelerating || self.is_bouncing || self.tween.is_some()
     }
 
     fn calculate_release_velocity(&self) -> f32 {

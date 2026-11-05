@@ -68,11 +68,15 @@ impl WxmlRenderer {
                 canvas.save();
                 canvas.clip_rect(rect);
             }
+            // 吸附元素（sticky.rs）：正常流跳过它们，所在滚动容器画完再按吸住的位置画。没有时只是一次判空
+            self.sticky_begin(&cache);
             // 渲染所有元素（fixed 元素会在 draw_with_interaction 中被跳过）
             // 不使用滚动偏移渲染，滚动在 present_to_buffer 中处理
             for rn in &cache.render_nodes {
                 self.draw_with_interaction(canvas, &cache.taffy, rn, 0.0, 0.0, interaction, scroll_offset, viewport_height * self.scale_factor);
             }
+            self.draw_page_stickies(canvas, &cache, interaction, scroll_offset, viewport_height * self.scale_factor);
+            self.sticky_end();
             if damaged.is_some() {
                 canvas.restore();
             }

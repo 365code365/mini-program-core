@@ -172,7 +172,13 @@ impl WxmlRenderer {
         data: &JsonValue,
         viewport: Option<(f32, f32)>,
     ) -> FramePlan {
-        self.update_layout_if_needed(nodes, data, viewport)
+        match self.update_layout_if_needed(nodes, data, viewport) {
+            // 改动落在吸住的元素原位上：吸住画在别处的那份也要重画（sticky.rs；没有吸附元素时只是一次判空）
+            FramePlan::Damage { rect, fixed_changed } => {
+                FramePlan::Damage { rect: self.sticky_widen(rect, viewport), fixed_changed }
+            }
+            plan => plan,
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -202,12 +208,16 @@ impl WxmlRenderer {
                 .map(|tr| tr.natural_line_height_for(text, fs * sf) / sf)
                 .unwrap_or(fs * crate::text::NORMAL_LINE_HEIGHT_FACTOR);
             let line_h = inherited.line_height.unwrap_or(natural_lh);
+            // 字重：按继承来的字重量（与绘制同一个字面）。从前一律按常规体量，粗体标题（`<view class="h">`）的盒子
+            // 比画出来的字窄一截，绘制按盒宽折行 —— 最后一个词掉到下一行、压在下面的元素上（组件实验室抓到的）
+            use crate::renderer::components::FontWeight as Fw;
+            let bold = matches!(inherited.weight, Fw::Bold | Fw::W600 | Fw::W700 | Fw::W800 | Fw::W900);
             let tw = match text_tr {
                 Some(tr) => tr.measure_text_weighted(
                     text,
                     fs * sf,
                     inherited.letter_spacing * sf,
-                    false,
+                    bold,
                 ),
                 None => self.measure_text(text, fs * sf),
             };
@@ -221,7 +231,7 @@ impl WxmlRenderer {
                 min_size: Size { width: min_w, height: auto() },
                 ..Default::default()
             }).unwrap();
-            return Some(RenderNode {
+            let mut bare = RenderNode {
                 tag: "#text".into(), 
                 text: text.into(), 
                 attrs: HashMap::new(),
@@ -235,11 +245,23 @@ impl WxmlRenderer {
                     letter_spacing: inherited.letter_spacing,
                     font_family: inherited.font_family.clone(),
                     opacity: 1.0,
+                    // 父级 `display:-webkit-box; -webkit-line-clamp:N` 夹的就是这段字（text_attrs.rs）
+                    line_clamp: inherited.line_clamp,
+                    // cover-view 的 white-space（默认 nowrap，见 InheritedText::white_space）
+                    white_space: inherited.white_space.unwrap_or_default(),
                     ..Default::default()
                 },
                 children: vec![], 
                 events: vec![],
-            });
+            };
+            // 父级夹了行数：换成按容器宽折行的度量叶子（只有用到 line-clamp 的裸文本走这条，text_attrs.rs）
+            if inherited.line_clamp > 0 {
+                if let Some(id) = crate::renderer::components::text_attrs::clamped_bare_leaf(taffy, text, &bare.style, sf) {
+                    let _ = taffy.remove(bare.taffy_node);
+                    bare.taffy_node = id;
+                }
+            }
+            return Some(bare);
         }
         
         if node.node_type != WxmlNodeType::Element { return None; }
@@ -274,6 +296,9 @@ impl WxmlRenderer {
         // 成熟路径（默认配色/内边距/最小高度都在那里）。
         let button_as_container = tag == "button"
             && node.children.iter().any(|c| c.node_type == WxmlNodeType::Element);
+        // `<span>` 拆不成行内 run（里面有 navigator / view 这类组件）时按普通容器建，孩子照常建（components/inline_flow.rs）
+        let span_as_container = tag == "span" && render_node.as_ref().is_some_and(|r| r.children.is_empty());
+        let button_as_container = button_as_container || span_as_container;
 
         if let Some(ref mut rn) = render_node {
             if !Self::is_leaf_component(tag) || button_as_container {
@@ -305,6 +330,8 @@ impl WxmlRenderer {
                     line_height: rn.style.line_height,
                     letter_spacing: rn.style.letter_spacing,
                     font_family: rn.style.font_family.clone(),
+                    line_clamp: crate::renderer::components::text_attrs::clamp_for_children(&rn.style),
+                    white_space: (tag == "cover-view").then_some(rn.style.white_space),
                 };
                 
                 // 子节点是否「有定位祖先」：祖先链上已经有，或者**当前节点自己**被定位。
@@ -328,7 +355,10 @@ impl WxmlRenderer {
                     let child_ids: Vec<NodeId> = children.iter().map(|c| c.taffy_node).collect();
                     // `build` 交出来的就是基础样式原样（view / block / scroll-view / 未登记标签）：
                     // 直接用，不再把选择器匹配与声明落地重做一遍（见 TagSpec::base_style_only）
-                    let reused = if spec.base_style_only { ctx.taffy.style(rn.taffy_node).ok().cloned() } else { None };
+                    // `<video>` 带子节点（盖在画面上的控件）：沿用它 build 里补的默认 300×225 与黑底（WP-E3），不重算
+                    // 吸顶容器同理：build 里补的 padding 属性与 sticky（components/sticky.rs）不能被重算盖掉（WP-D1）
+                    let keep = matches!(tag, "video" | "sticky-header" | "sticky-section" | "nested-scroll-header" | "nested-scroll-body");
+                    let reused = if spec.base_style_only || keep { ctx.taffy.style(rn.taffy_node).ok().cloned() } else { None };
                     let (mut ts, ns) = match reused {
                         Some(ts) => (ts, None),
                         None => {
@@ -345,9 +375,16 @@ impl WxmlRenderer {
                     }
                     if tag == "picker-view" {
                         // 各列横排平分、撑满高度；列里的项照常纵向排（绘制时整列按滚轮位置偏移）
-                        Self::apply_picker_view_layout(&mut ts, &children, &mut ctx);
+                        Self::apply_picker_view_layout(node, &mut ts, &children, &mut ctx);
                     }
-                    if tag == "grid-view" { crate::renderer::components::grid_view::apply_layout(&node.attributes, &mut ts, ctx.scale_factor, ctx.screen_width); }
+                    if tag == "grid-view" || tag == "grid-builder" { crate::renderer::components::grid_view::apply_layout(&node.attributes, &mut ts, ctx.scale_factor, ctx.screen_width); }
+                    if tag == "list-builder" || tag == "list-view" {
+                        crate::renderer::components::builder::apply_list_layout(tag, &node.attributes, &mut ts, &children, ctx.taffy, ctx.scale_factor);
+                    }
+                    if tag == "map" {
+                        // 自定义气泡（slot="callout"）不占流、不画在页面上，见 map_callout
+                        super::map_callout::place_slot(&children, ctx.taffy);
+                    }
                     
                     // 对于 scroll-view，使用 Overflow::Visible 让子节点能够正确布局
                     // 裁剪在渲染时通过 canvas.clip_rect 处理

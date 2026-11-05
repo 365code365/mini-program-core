@@ -1,0 +1,44 @@
+<form bindsubmit="onSubmit">
+<view class="card">
+  <view class="h">input</view>
+  <input class="ipt" name="kw" auto-focus placeholder="auto-focus：一进页面就聚焦" placeholder-style="color:#b0b4bb;font-size:26rpx" cursor-color="#e64340"
+         bindfocus="onFocus" bindblur="onBlur" bindchange="onChange" bindinput="onInput" bindconfirm="onConfirm"/>
+  <input class="ipt" name="code" focus="{{focus}}" hold-keyboard type="number" maxlength="6" value="123456" cursor="3" placeholder="受控 focus + hold-keyboard"/>
+  <view class="row"><view class="btn" bindtap="toggleFocus">focus = {{focus ? 'true' : 'false'}}</view><text class="tip">hold-keyboard：点页面别处键盘不收</text></view>
+</view>
+<view class="card">
+  <view class="h">textarea auto-height</view>
+  <textarea class="ta" name="comment" auto-height placeholder="多写几行，框会跟着长高" bindlinechange="onLine"/>
+  <textarea class="ta2" disable-default-padding placeholder="disable-default-padding"/>
+</view>
+<view class="card">
+  <view class="h">两组 radio 互不干扰</view>
+  <radio-group name="size" class="row" bindchange="onSize">
+    <label wx:for="{{['S','M','L']}}" wx:key="*this" class="opt"><radio value="{{item}}" checked="{{item === size}}"/>{{item}}</label>
+  </radio-group>
+  <radio-group name="color" class="row" bindchange="onColor">
+    <label wx:for="{{['red','green','blue']}}" wx:key="*this" class="opt"><radio value="{{item}}" color="#07c160" checked="{{item === color}}"/>{{item}}</label>
+  </radio-group>
+</view>
+<view class="card">
+  <view class="h">长列表 checkbox-group</view>
+  <scroll-view scroll-y class="fruits">
+    <checkbox-group name="fruits" bindchange="onFruits">
+      <label wx:for="{{fruits}}" wx:key="v" class="fruit"><checkbox value="{{item.v}}" checked="{{item.checked}}"/>{{item.name}}</label>
+    </checkbox-group>
+  </scroll-view>
+</view>
+<view class="card">
+  <view class="h">button · progress · icon</view>
+  <view class="row">
+    <button type="primary" size="mini" loading="{{loading}}" bindtap="submit">{{loading ? '提交中' : '提交'}}</button>
+    <button size="mini" disabled bindtap="onDisabledTap">disabled</button>
+    <button size="mini" form-type="submit">form submit</button>
+    <button size="mini" form-type="reset">reset</button>
+  </view>
+  <progress percent="{{percent}}" show-info active active-mode="forwards" duration="10" stroke-width="12rpx" border-radius="6" bindactiveend="onActiveEnd"/>
+  <view class="row"><view class="btn" bindtap="grow">进度 +30</view>
+    <icon type="success" size="48rpx"/><icon type="info" size="48rpx"/><icon type="warn" size="48rpx" color="#fa9d3b"/><icon type="search" size="48rpx"/></view>
+</view>
+</form>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

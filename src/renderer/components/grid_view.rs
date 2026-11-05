@@ -79,7 +79,8 @@ pub fn apply_layout(attrs: &std::collections::HashMap<String, String>, st: &mut 
 pub fn masonry_pass(taffy: &mut Tree, nodes: &[RenderNode], sf: f32) -> bool {
     let mut changed = false;
     for n in nodes {
-        if n.tag == "grid-view" && is_masonry(&n.attrs) && !n.children.is_empty() {
+        // grid-builder 与 grid-view 同一套布局（components::builder）
+        if (n.tag == "grid-view" || n.tag == "grid-builder") && is_masonry(&n.attrs) && !n.children.is_empty() {
             changed |= place(taffy, n, sf);
         }
         changed |= masonry_pass(taffy, &n.children, sf);

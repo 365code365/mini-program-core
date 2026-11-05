@@ -117,6 +117,22 @@ pub fn extract_events(node: &WxmlNode) -> Vec<EventBind> {
         .to_string();
     // 排序遍历：事件列表的先后会进派发顺序，别让它随进程变
     for (attr, handler) in node.attrs_sorted() {
+        // Skyline 的 `worklet:onscrollupdate` 这类（scroll-view / swiper）：登记成 `worklet:scrollupdate`，
+        // 不进捕获 / 冒泡链（没有这个名字的触摸事件），由组件事件派发按名字找（host::own_events）
+        if let Some(ev) = attr.strip_prefix("worklet:on").filter(|e| !e.is_empty()) {
+            if !handler.trim().is_empty() {
+                events.push(EventBind {
+                    event_type: format!("worklet:{ev}"),
+                    handler: handler.clone(),
+                    data: data.clone(),
+                    is_catch: false,
+                    phase: EventPhase::Bubble,
+                    mut_bind: false,
+                    owner: owner.clone(),
+                });
+            }
+            continue;
+        }
         let Some((event_type, is_catch, phase, mut_bind)) = parse_event_attr(attr) else {
             continue;
         };
@@ -133,9 +149,38 @@ pub fn extract_events(node: &WxmlNode) -> Vec<EventBind> {
             owner: owner.clone(),
         });
     }
+    if let Some(ev) = open_type_bind(node, &data, &owner) {
+        events.push(ev);
+    }
     // 属性表是 HashMap，顺序不定；排序让绑定顺序稳定（快照/测试要可复现）
     events.sort_by(|a, b| (&a.event_type, &a.handler).cmp(&(&b.event_type, &b.handler)));
     events
+}
+
+/// `<button open-type>` 的标记绑定（`__opentype`）：点击之后宿主按它找按钮（`host::builtin_tap`），
+/// 处理函数位置放 open-type 与配套属性的 JSON（不派发，没有这个名字的事件）。disabled 的按钮不做开放能力（与微信一致）
+const OPEN_TYPE_ATTRS: &[&str] = &[
+    "open-type", "lang", "session-from", "send-message-title", "send-message-path", "send-message-img", "app-parameter",
+    "show-message-card", "phone-number-no-quota-toast", "need-show-entrance", "entrance-path", "id",
+];
+fn open_type_bind(node: &WxmlNode, data: &HashMap<String, String>, owner: &str) -> Option<EventBind> {
+    if node.tag_name != "button" || bool_attr_of(node, "disabled") {
+        return None;
+    }
+    node.get_attr("open-type").map(str::trim).filter(|t| !t.is_empty())?;
+    let attrs: serde_json::Map<String, serde_json::Value> = OPEN_TYPE_ATTRS
+        .iter()
+        .filter_map(|k| node.get_attr(k).map(|v| (k.to_string(), serde_json::Value::String(v.trim().to_string()))))
+        .collect();
+    Some(EventBind {
+        event_type: "__opentype".to_string(),
+        handler: serde_json::Value::Object(attrs).to_string(),
+        data: data.clone(),
+        is_catch: false,
+        phase: EventPhase::Bubble,
+        mut_bind: false,
+        owner: owner.to_string(),
+    })
 }
 
 /// 获取节点的 class 列表

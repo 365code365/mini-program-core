@@ -67,6 +67,8 @@ pub fn measure_text_node(
         };
         tm.min_lines.max(wrap).max(1)
     };
+    // `-webkit-line-clamp` / `max-lines`：盒子最多这么多行高（多出来的行由绘制按 overflow 处理）
+    let lines = if tm.max_lines > 0 { lines.min(tm.max_lines) } else { lines };
 
     let height = known
         .height

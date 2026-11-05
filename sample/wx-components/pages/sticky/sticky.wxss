@@ -1,0 +1,8 @@
+.tabs { position: sticky; top: 0; z-index: 10; display: flex; flex-direction: row; background: #fff; border-bottom: 1rpx solid #e5e6eb; }
+.tab { flex: 1; text-align: center; padding: 22rpx 0; color: #8a8f99; }
+.tab.on { color: #07c160; font-weight: bold; }
+.box { height: 600rpx; background: #fafafa; border-radius: 12rpx; }
+.head { padding: 16rpx 24rpx; background: #07c160; color: #fff; font-weight: bold; }
+.item { padding: 22rpx 24rpx; border-bottom: 1rpx solid #eee; background: #fff; }
+.sec { margin-bottom: 16rpx; }
+.css-head { position: sticky; top: 44px; padding: 14rpx 24rpx; background: #fff3d6; color: #b26a00; font-weight: bold; }

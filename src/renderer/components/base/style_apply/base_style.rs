@@ -59,6 +59,19 @@ fn build_base_style_uncached(
     for &(name, value) in crate::renderer::components::native_placeholder::ua_declarations(&node.tag_name) {
         apply_style_property(name, &parse_inline_value(value), &mut ts, &mut ns, ctx);
     }
+    // rich-text 合成节点（`rt-h1` …）的 WebKit 默认样式：`em` 按字号换算（components/rich_text/ua.rs）。
+    // 只有 `rt-` 开头的标签才查表，别的节点只多一次前缀比较
+    if node.tag_name.starts_with("rt-") {
+        use crate::renderer::components::rich_text_ua as ua;
+        let inherited_px = ctx.inherited.font_size;
+        for &(name, value) in ua::declarations(&node.tag_name) {
+            if ua::skip(name, ctx.sibling_index) {
+                continue;
+            }
+            let v = ua::resolve(name, value, inherited_px, ns.font_size);
+            apply_style_property(name, &parse_inline_value(&v), &mut ts, &mut ns, ctx);
+        }
+    }
 
     // 应用类样式（顺序见 `declaration_order`：简写必须先落地）
     for &(name, value) in &css {
@@ -102,6 +115,19 @@ fn build_base_style_uncached(
             bottom: length(side(sides[2])),
             left: length(side(sides[3])),
         };
+    }
+
+    // ── position: sticky ──
+    // 布局上与 relative 一样占原位，但 top / bottom 不是相对偏移：它们是「离滚动容器边多远就吸住」。
+    // 留给 taffy 的话元素会被平移一次（再吸一次就多出一倍）。偏移本来就同时记在 fixed_top / fixed_bottom，
+    // 这里只把 taffy 的那份清掉；left / right（横向吸附）不支持，按 relative 平移照旧
+    if ns.is_sticky {
+        ts.inset.top = LengthPercentageAuto::auto();
+        ts.inset.bottom = LengthPercentageAuto::auto();
+        if ns.fixed_top.is_none() && ns.fixed_bottom.is_none() {
+            // 没写 top / bottom 的 sticky 在浏览器里不吸，与 relative 一样
+            ns.is_sticky = false;
+        }
     }
 
     // ── 绝对定位的包含块修正（CSS 语义）──

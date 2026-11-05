@@ -1,0 +1,7 @@
+.clamp2 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 44rpx; }
+.ml { line-height: 44rpx; height: 140rpx; }
+.rt-title { color: #07c160; }
+.rt-box { background: #eef9f2; }
+.sp { width: 100%; font-size: 28rpx; line-height: 44rpx; }
+.ico { width: 40rpx; height: 40rpx; }
+.cv { width: 400rpx; background: #1f2329; color: #fff; padding: 8rpx 16rpx; overflow: hidden; }

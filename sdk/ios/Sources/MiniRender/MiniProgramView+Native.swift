@@ -7,6 +7,10 @@ extension MiniProgramView {
     func makeSameLayer() -> SameLayerViews {
         let s = SameLayerViews(run: { [weak self] b in self?.onEngine(b) }, scale: { [weak self] in self?.window?.screen.scale ?? UIScreen.main.scale })
         s.factories["map"] = { MiniMapView() }
+        // 相机 / 推流 / voip-room 自己那一格（AVCaptureSession → 同层渲染）。宿主 Info.plist 要有 NSCameraUsageDescription / NSMicrophoneUsageDescription
+        s.factories["camera"] = { MiniCameraView(tag: "camera") }
+        s.factories["live-pusher"] = { MiniLivePusherView() }
+        s.factories["voip-room"] = { MiniCameraView(tag: "voip-room") }
         return s
     }
 

@@ -17,10 +17,14 @@ use std::collections::HashMap;
 
 /// 自定义组件的展开：实例键、带类型的属性、出现位置的收集
 mod component;
+/// 手势组件（虚组件）：模板根节点的触摸绑定并到唯一的子节点上
+mod gesture_merge;
 /// 输出单个元素
 mod emit;
 /// `wx:for` 列表渲染
 mod for_loop;
+/// 在模板阶段生成孩子的组件：list-builder / grid-builder 按 list 展开、rich-text 的 nodes 转子树
+mod builder;
 /// `<slot>`：把使用方的子节点放进组件模板
 mod slot;
 /// `<template is>` 与 `<include>` 的展开
@@ -41,7 +45,7 @@ mod tests;
 
 use scope::{Cx, Frame, Seg};
 
-pub use component::{camel_case, instance_key, is_property_attr, Occurrence};
+pub use component::{camel_case, instance_key, is_property_attr, worklet_prop, Occurrence};
 pub use slot::SLOT_CONTENT_ATTR;
 pub use wxs_scope::{bundle_of as wxs_bundle_of, WXS_BUNDLE_ATTR};
 pub use for_loop::KEYED_ID_ATTR;

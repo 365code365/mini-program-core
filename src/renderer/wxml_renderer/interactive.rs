@@ -142,11 +142,9 @@ impl WxmlRenderer {
         target: &RenderNode,
         interaction: &mut InteractionManager,
         component_id: &str,
-        x: f32,
-        y: f32,
-        w: f32,
-        h: f32,
+        (x, y, w, h): (f32, f32, f32, f32),
         sf: f32,
+        own: super::self_anim::SelfAnim,
     ) {
         match node.tag.as_str() {
             "textarea" => {
@@ -172,6 +170,11 @@ impl WxmlRenderer {
                 // 回写折行结果：↑↓ / Home / End 与点击定位光标都按看到的行走（没聚焦的也记，
                 // 第一次点进去就要用）
                 if let Some(layout) = layout {
+                    // 行数变了发 linechange、auto-height 长高（components/input/auto_height.rs）
+                    let prev = interaction.text_layouts.get(component_id).map(|l| l.lines.len());
+                    crate::renderer::components::auto_height::after_draw(
+                        node, component_id, prev, layout.lines.len(), layout.line_height, sf, self.screen_width,
+                    );
                     interaction.record_text_layout(component_id, layout);
                 }
             }
@@ -225,16 +228,11 @@ impl WxmlRenderer {
             }
             "button" => {
                 let pressed = interaction.is_button_pressed(component_id);
-                ButtonComponent::draw_with_state(
-                    target,
-                    canvas,
-                    self.text_renderer.as_deref(),
-                    x,
-                    y,
-                    w,
-                    h,
-                    sf,
-                    pressed,
+                ButtonComponent::draw_full(target, canvas, self.text_renderer.as_deref(), (x, y, w, h), sf, pressed, own.spin);
+            }
+            "progress" => {
+                crate::renderer::components::ProgressComponent::draw_pct(
+                    target, canvas, self.text_renderer.as_deref(), (x, y, w, h), sf, own.percent,
                 );
             }
             _ => {

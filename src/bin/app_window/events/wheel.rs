@@ -229,11 +229,14 @@ fn pick_target(
         );
     }
     for area in interaction.scroll_areas_at(x, y, fixed) {
-        if area.is_horizontal != horizontal {
+        // 横竖都能滚的：横向位移交给它的横向控制器（键 `"{id}#x"`，ui/interaction/scroll_2d.rs）
+        let both = interaction.scroll_is_2d(&area.id);
+        if area.is_horizontal != horizontal && !both {
             continue; // 轴不匹配：纵向滑动不该驱动横向列表，反之亦然
         }
-        match interaction.get_scroll_controller(&area.id) {
-            Some(c) if can_take(c, step) => return Some(area.id.clone()),
+        let key = if both && horizontal { mini_render::ui::interaction::scroll_x_key(&area.id) } else { area.id.clone() };
+        match interaction.get_scroll_controller(&key) {
+            Some(c) if can_take(c, step) => return Some(key),
             other => {
                 if log {
                     eprintln!(
@@ -408,6 +411,20 @@ mod tests {
             before,
             page.get_position()
         );
+    }
+
+    /// 横竖都能滚的 scroll-view：横向位移进它的横向控制器（`"{id}#x"`），纵向进主控制器，页面都不动
+    #[test]
+    fn two_axis_area_takes_both_directions() {
+        let mut im = InteractionManager::new();
+        im.register_element(area("grid", 0.0, 400.0, false, 900.0));
+        im.ensure_scroll_x("grid", 1200.0, 375.0);
+        let mut page = ScrollController::new(1400.0, 667.0);
+        handle(wheel_right(50.0), (187.0, 200.0), &mut im, &mut page, 2.0, false);
+        handle(wheel_down(40.0), (187.0, 200.0), &mut im, &mut page, 2.0, false);
+        assert!(im.get_scroll_controller("grid#x").unwrap().get_position() > 40.0, "横向进横向控制器");
+        assert!(im.get_scroll_controller("grid").unwrap().get_position() > 30.0, "纵向进主控制器");
+        assert_eq!(page.get_position(), 0.0, "页面不动");
     }
 
     /// 指针停在弹窗遮罩上时页面锁住（覆盖层自己的 scroll-view 仍可滚）

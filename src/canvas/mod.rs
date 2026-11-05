@@ -99,6 +99,8 @@ pub fn scaled_image_cache_bytes() -> (usize, usize) {
 }
 
 // ── 按职责切开的几片（都是 `impl Canvas`）──
+/// 填充规则（nonzero / even-odd，`<canvas>` 的 fill / clip 用）
+pub mod fill_rule;
 /// 图片绘制与缩放缓存
 mod images;
 /// 路径光栅化

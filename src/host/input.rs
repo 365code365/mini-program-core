@@ -22,8 +22,13 @@ use super::gesture::{Axis, DragGesture, GestureAction};
 use super::touch::TouchOut;
 use crate::renderer::WxmlRenderer;
 use crate::runtime::MiniApp;
-use crate::ui::interaction::InteractionManager;
+use crate::ui::interaction::{scroll_x_key, InteractionManager};
 use crate::ui::ScrollController;
+
+/// 惯性收尾、滚动接管、抬手收尾（从这里原样搬出：本文件超过 500 行）
+#[path = "input_end.rs"]
+mod end;
+pub use end::{end_drags, scroll_took_over, stop_running_flings};
 
 /// 手势仲裁这一步对宿主产生的副作用（各宿主用自己的方式落地）
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -160,50 +165,6 @@ pub fn scroll_candidate_at(
     Some((el.id, axis))
 }
 
-/// 停掉正在跑的惯性/回弹（页面与所有 `scroll-view`）。返回是否真的停了什么。
-///
-/// 惯性滚动中按下：那一下只是**停住**，不算点击（iOS/微信一致）。
-pub fn stop_running_flings(
-    scroll: &mut ScrollController,
-    interaction: &mut InteractionManager,
-) -> bool {
-    let mut stopped = false;
-    if scroll.is_animating() {
-        scroll.stop();
-        stopped = true;
-    }
-    for c in interaction.scroll_controllers.values_mut() {
-        if c.is_animating() {
-            c.stop();
-            stopped = true;
-        }
-    }
-    stopped
-}
-
-/// 滚动是否已经接管这次触摸（页面滚动位置变了，或某个 `scroll-view` 正在被拖）。
-///
-/// 接管方要给触摸序列补一次 `touchcancel` —— 与浏览器/Skyline 的手势竞争一致。
-pub fn scroll_took_over(
-    scroll: &ScrollController,
-    interaction: &InteractionManager,
-    scroll_pos_at_press: f32,
-) -> bool {
-    if (scroll.get_position() - scroll_pos_at_press).abs() > 0.5 {
-        return true;
-    }
-    // swiper 接手了这次拖动：与滚动接管一样补 touchcancel、不再算点击
-    if crate::renderer::components::swiper_is_dragging() {
-        return true;
-    }
-    interaction
-        .dragging_scroll_area
-        .as_ref()
-        .and_then(|id| interaction.get_scroll_controller(id))
-        .map(|c| c.is_dragging && c.get_position() > 0.0 || c.is_animating())
-        .unwrap_or(false)
-}
-
 /// 建立本次触摸的手势候选：**归属不在按下时决定**，等第一次明显位移再按主方向锁定。
 ///
 /// 微信/浏览器都是这个语义：横向 `scroll-view` 里竖着划应该滚页面，纵向列表里横着划
@@ -255,11 +216,19 @@ pub fn begin_gesture(
     let slider = interaction.slider_at(x, hy, on_fixed_layer);
     // 视频显示着的进度条（横着拖跟手，host::video::seek_target_at）
     let video_seek = super::video::seek_target_at(renderer, interaction, x, hy, on_fixed_layer);
+    // draggable-sheet 的面板（面板与列表谁接手，gesture_native.rs）
+    let sheet = super::gesture_native::sheet_at(renderer, interaction, x, hy, candidate.as_ref().map(|c| c.0.as_str()));
+    let sv = candidate.as_ref().and_then(|(id, _)| interaction.scroll_views.get(id));
+    let min_drag = sv.map(|s| s.min_drag).unwrap_or(0.0);
+    let free_area = sv.is_some_and(|s| s.both_axes);
     DragGesture::new((x, y), candidate, catch_move, page_scrollable)
+        .with_min_drag(min_drag)
+        .with_free_area(free_area)
         .allow_edge_back(allow_edge_back)
         .with_swiper(swiper, swiper_inner)
         .with_slider(slider)
         .with_video_seek(video_seek)
+        .with_sheet(sheet)
 }
 
 /// 把手势仲裁的结果落到滚动控制器/侧滑返回上（方向锁定 + 嵌套传递都在这里生效）。
@@ -294,11 +263,19 @@ pub fn apply_gesture_move(
                 // 「短列表挡住整页滚动」正是这么来的。
                 // 开了自定义下拉刷新的 scroll-view 例外：内容再短也要能被拉下来（拉的是它的刷新区）
                 let refresher = interaction.scroll_views.get(id).map(|s| s.refresher_enabled).unwrap_or(false);
-                let cannot_scroll = !(refresher && axis == Axis::Vertical)
-                    && interaction
-                        .get_scroll_controller(id)
-                        .map(|c| c.get_max_scroll() <= 0.5)
-                        .unwrap_or(true);
+                // ScrollViewContext.scrollEnabled = false：这个 scroll-view 不滚（手势交给外面）
+                let disabled = interaction.scroll_views.get(id).and_then(|s| s.ctx.scroll_enabled) == Some(false);
+                // 横竖都能滚的：两个轴都滚不了才算不可滚（scroll_2d.rs）
+                let both = interaction.scroll_is_2d(id);
+                let x_scrollable = both
+                    && interaction.get_scroll_controller(&scroll_x_key(id)).is_some_and(|c| c.get_max_scroll() > 0.5);
+                let cannot_scroll = disabled
+                    || !(refresher && axis == Axis::Vertical)
+                        && !x_scrollable
+                        && interaction
+                            .get_scroll_controller(id)
+                            .map(|c| c.get_max_scroll() <= 0.5)
+                            .unwrap_or(true);
                 if cannot_scroll {
                     if log {
                         let max = interaction.get_scroll_controller(id).map(|c| c.get_max_scroll());
@@ -307,12 +284,29 @@ pub fn apply_gesture_move(
                     action = g.handoff_to_page();
                     continue;
                 }
-                if let Some(c) = interaction.get_scroll_controller_mut(id) {
+                // type="nested"：手指上推、外层的头还没滚完 —— 这次拖动先归外层（host/nested_scroll.rs）
+                let nested = if both { None } else { super::nested_scroll::switch_to(interaction, g.start(), scroll.get_position(), id, y - sy) };
+                let id = match (axis, nested) {
+                    (Axis::Vertical, Some(outer)) => {
+                        g.retarget_area(outer.clone());
+                        outer
+                    }
+                    _ => id.clone(),
+                };
+                // 双向的主控制器是纵向的：不管先动的是哪个方向都按 y 推，横向那个按 x 推
+                let horizontal = axis == Axis::Horizontal && !both;
+                if let Some(c) = interaction.get_scroll_controller_mut(&id) {
                     // 从**按下点**开始拖：锁定那一刻内容不该跳一下
-                    c.begin_drag(if axis == Axis::Horizontal { sx } else { sy }, clock_ms);
-                    c.update_drag(if axis == Axis::Horizontal { x } else { y }, clock_ms);
+                    c.begin_drag(if horizontal { sx } else { sy }, clock_ms);
+                    c.update_drag(if horizontal { x } else { y }, clock_ms);
                 }
-                interaction.dragging_scroll_area = Some(id.clone());
+                if both {
+                    if let Some(c) = interaction.get_scroll_controller_mut(&scroll_x_key(&id)) {
+                        c.begin_drag(sx, clock_ms);
+                        c.update_drag(x, clock_ms);
+                    }
+                }
+                interaction.dragging_scroll_area = Some(id);
                 eff.needs_redraw = true;
                 // 锁定这一步也只是推动了 scroll-view（与下面 UpdateArea 同一条局部重画的路）。
                 // 从前这里整帧：每次手指一按下开拖，第一帧整页重画（兴趣圈帖子页，诊断 20261025-100253-98de9a）
@@ -320,11 +314,35 @@ pub fn apply_gesture_move(
                 break;
             }
             GestureAction::UpdateArea { ref id, axis } => {
+                // type="nested" 的里外层换手（host/nested_scroll.rs；页面上没有 nested 外层时只是一次判空）
+                let (_, step) = g.delta();
+                let both = interaction.scroll_is_2d(id);
+                if axis == Axis::Vertical && !both {
+                    if let Some(to) = super::nested_scroll::switch_to(interaction, g.start(), scroll.get_position(), id, step) {
+                        super::nested_scroll::hand_over(interaction, id, &to, y - step, clock_ms);
+                        if let Some(c) = interaction.get_scroll_controller_mut(&to) {
+                            c.update_drag(y, clock_ms);
+                        }
+                        g.retarget_area(to);
+                        eff.needs_redraw = true;
+                        eff.area_scrolled = true;
+                        break;
+                    }
+                }
                 let mut moved = false;
                 if let Some(c) = interaction.get_scroll_controller_mut(id) {
                     let before = c.get_position();
-                    c.update_drag(if axis == Axis::Horizontal { x } else { y }, clock_ms);
+                    c.update_drag(if axis == Axis::Horizontal && !both { x } else { y }, clock_ms);
                     moved = c.get_position() != before;
+                }
+                // 双向的横向那一半：它动了，这一步就是在滚这个 scroll-view，不交给页面
+                let mut x_moved = false;
+                if both {
+                    if let Some(c) = interaction.get_scroll_controller_mut(&scroll_x_key(id)) {
+                        let before = c.get_position();
+                        c.update_drag(x, clock_ms);
+                        x_moved = c.get_position() != before;
+                    }
                 }
                 // 内层到边界后还在往同一方向推 → 把这次手势交给页面继续
                 // （手指往下推时内容已经到顶、往上推时已经到底）。
@@ -346,7 +364,7 @@ pub fn apply_gesture_move(
                     .unwrap_or(true);
                 eff.needs_redraw = true;
                 eff.area_scrolled = true;
-                if axis == Axis::Vertical && keep_pushing {
+                if axis == Axis::Vertical && keep_pushing && !x_moved {
                     eff.area_scrolled = false;
                     // 内层没动（不可滚 / 早已在边界上）就不用重画：从前这里每一次移动都整帧。
                     // uni-app 页面根是 `<scroll-view class="page">`，内容不满一屏时它不可滚、页面也不可滚 ——
@@ -357,11 +375,7 @@ pub fn apply_gesture_move(
                     // （engine_damage `scroll_area_damage` 只看位置，不看还在不在拖）。从前这一步整帧：
                     // 兴趣圈帖子页每次拖到底 / 顶再推，那一帧整页重画（诊断 20261025-100253-98de9a）
                     eff.area_scrolled = moved;
-                    if let Some(id) = interaction.dragging_scroll_area.take() {
-                        if let Some(c) = interaction.get_scroll_controller_mut(&id) {
-                            c.end_drag();
-                        }
-                    }
+                    interaction.end_area_drag();
                     action = g.handoff_to_page();
                     continue;
                 }
@@ -382,11 +396,7 @@ pub fn apply_gesture_move(
             GestureAction::BeginEdgeBack => {
                 // 手势升级成侧滑返回：先把可能已经开始的滚动收掉，
                 // 否则页面会一边被推出去一边继续上下滚。
-                if let Some(id) = interaction.dragging_scroll_area.take() {
-                    if let Some(c) = interaction.get_scroll_controller_mut(&id) {
-                        c.end_drag();
-                    }
-                }
+                interaction.end_area_drag();
                 scroll.end_drag();
                 let (sx, _) = g.start();
                 let mut eb = EdgeBack::new(sx, clock_ms, viewport_width);
@@ -443,36 +453,4 @@ pub fn apply_gesture_move(
     }
     *gesture = Some(g);
     eff
-}
-
-/// 抬手时收尾正在进行的拖动：清按压态、结束 `scroll-view` 拖拽、结束页面拖拽。
-///
-/// 返回页面滚动是否进入了惯性/回弹动画（宿主据此决定要不要继续出帧）。
-pub fn end_drags(
-    interaction: &mut InteractionManager,
-    scroll: &mut ScrollController,
-    edge_back: &mut Option<EdgeBack>,
-    gesture: &mut Option<DragGesture>,
-) -> bool {
-    interaction.clear_button_pressed();
-    match gesture.as_ref().map(|g| g.target().clone()) {
-        Some(crate::host::gesture::GestureTarget::Swiper { id, .. }) => crate::renderer::components::swiper_drag_end(&id),
-        // 拖过视频的进度条：跳到松手的位置（一次）
-        Some(crate::host::gesture::GestureTarget::VideoSeek { .. }) => {
-            crate::renderer::components::video_ui::seek_end();
-        }
-        _ => crate::renderer::components::video_ui::disarm_seek(),
-    }
-    if let Some(id) = interaction.dragging_scroll_area.take() {
-        if let Some(c) = interaction.get_scroll_controller_mut(&id) {
-            c.end_drag();
-        }
-    }
-    let animating = scroll.end_drag();
-    // 侧滑返回：松手进收尾动画（推到底真返回 / 不够阈值滑回去），由宿主逐帧推进
-    if let Some(eb) = edge_back {
-        eb.release();
-    }
-    *gesture = None;
-    animating
 }

@@ -355,7 +355,7 @@ impl MiniApp {
     /// 别的种类每帧都被取空，不算进来：没人取的种类会让宿主一直空转
     pub fn has_pending_host_work(&self) -> bool {
         self.bridge.has_pending_events()
-            || self.host_requests.iter().any(|(k, _)| k == "selectorQuery" || k == "scrollView")
+            || self.host_requests.iter().any(|(k, _)| k == "selectorQuery" || k == "scrollView" || k == "snapshot")
     }
 
     /// 取走「网络响应导致需要重绘」的标记

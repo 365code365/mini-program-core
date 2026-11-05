@@ -24,6 +24,8 @@ pub struct KeyboardShift {
     /// 键盘是为哪个输入框弹的（组件 id、所在页的栈深）：失焦之后键盘落下的那次高度变化
     /// 也要送到它的 `bindkeyboardheightchange`（页面靠它把列表恢复原高）
     input: Option<(String, usize)>,
+    /// 宿主最近一次报的键盘高度（逻辑像素，0 = 收着）：bindfocus 的 `detail.height`
+    pub(super) height: f64,
 }
 
 impl MiniEngine {
@@ -79,6 +81,7 @@ impl MiniEngine {
         let v: serde_json::Value = serde_json::from_str(payload).unwrap_or_default();
         let height = v.get("height").and_then(|h| h.as_f64()).unwrap_or(0.0).max(0.0);
         let duration = v.get("duration").and_then(|d| d.as_f64()).unwrap_or(if height > 0.0 { UP_MS } else { DOWN_MS });
+        self.kb.height = height;
         let focused = self.interaction.focused_input.as_ref().map(|f| f.id.clone());
         let depth = self.page_stack.len();
         // 聚焦中的优先；没有聚焦的（已失焦、键盘正在落下）只认同一页上刚才那个
@@ -91,6 +94,34 @@ impl MiniEngine {
         let r = self.renderer.take();
         crate::host::tap::dispatch_input_detail(&mut self.app, r.as_ref(), &id, "keyboardheightchange", detail);
         self.renderer = r;
+    }
+
+    /// 输入框结果派给逻辑层（`apply_interaction` 调，与桌面窗体同一条 `host::tap::dispatch_input_event`）：
+    /// - focus 的 `detail.height` 是键盘高度：键盘已经弹着（从一个输入框换到另一个）就是宿主上次报的高度，
+    ///   还没报来是 0（报来之后另有 bindkeyboardheightchange）；
+    /// - 按「完成」收键盘也是失焦：confirm 之后补一个 blur（confirm-hold 的不补）
+    pub(super) fn dispatch_input_result(&mut self, res: &crate::ui::interaction::InteractionResult, id: &str, kind: &str, value: &str) {
+        use crate::ui::interaction::InteractionResult as R;
+        let r = self.renderer.take();
+        if kind == "focus" {
+            let detail = serde_json::json!({ "value": value, "height": self.kb.height });
+            crate::host::tap::dispatch_input_detail(&mut self.app, r.as_ref(), id, "focus", detail);
+        } else {
+            crate::host::tap::dispatch_input_event(&mut self.app, r.as_ref(), id, kind, value);
+        }
+        if matches!(res, R::InputConfirm { keep_focus: false, .. }) {
+            crate::host::tap::dispatch_input_event(&mut self.app, r.as_ref(), id, "blur", value);
+        }
+        self.renderer = r;
+    }
+
+    /// 每帧画完：`focus` / `auto-focus` 属性排的聚焦 / 失焦（host/input_focus.rs）走与点击同一条派发 ——
+    /// bindfocus / bindblur、`inputFocus` / `inputBlur` 让宿主弹 / 收键盘
+    pub(super) fn apply_focus_requests(&mut self) {
+        let results = super::input_focus::take_attr_focus(&mut self.interaction, self.renderer.as_ref());
+        for r in results {
+            self.apply_interaction(r);
+        }
     }
 
     /// 画面上导航栏以下的点（逻辑像素）对应「没顶起时」的位置：触摸、命中都按没顶起的坐标算

@@ -192,7 +192,21 @@ pub fn install_launch_context(app: &crate::runtime::MiniApp, app_id: &str, launc
 /// 宿主接了哪些原生组件，告诉逻辑层（`app.js` 执行之前调一次）：
 /// - `__sameLayerLive`：`<live-player>` 走同层渲染，`LivePlayerContext` 的播放命令交给引擎（host-objects.js）
 pub fn install_native_flags(app: &crate::runtime::MiniApp, opts: &EngineOptions) {
-    if let Err(e) = app.eval(&format!("globalThis.__sameLayerLive = {};", opts.same_layer_live())) {
+    // - `__sameLayerCamera`：`<camera>` 走通用同层渲染，onCameraFrame 由引擎从宿主交来的画面里取（host/engine_camera.rs）；
+    // - `__hostComponents`：宿主接了的原生组件（同层 + 盖上去的），canIUse 据此回 true
+    let mut hosted: Vec<String> = opts.same_layer.clone();
+    for t in &opts.native_components {
+        if !hosted.contains(t) {
+            hosted.push(t.clone());
+        }
+    }
+    let script = format!(
+        "globalThis.__sameLayerLive = {}; globalThis.__sameLayerCamera = {}; globalThis.__hostComponents = {};",
+        opts.same_layer_live(),
+        opts.same_layer_views().iter().any(|t| t == "camera"),
+        json!(hosted),
+    );
+    if let Err(e) = app.eval(&script) {
         eprintln!("⚠️  安装原生组件开关失败: {e}");
     }
 }

@@ -9,7 +9,7 @@ pub(super) fn run_command(ctx: &mut Canvas2DContext, cmd: &serde_json::Value) {
     let cmd_type = cmd.get("type").and_then(|v| v.as_str()).unwrap_or("");
     let n = |k: &str| cmd.get(k).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
     match cmd_type {
-        "clip" => return ctx.clip(),
+        "clip" => return ctx.clip_with_rule(even_odd(cmd)),
         "setLineDash" => {
             let segs: Vec<f32> = cmd
                 .get("segments")
@@ -96,8 +96,14 @@ fn run_inner(ctx: &mut Canvas2DContext, cmd: &serde_json::Value, cmd_type: &str)
             let cc = cmd.get("counterclockwise").and_then(|v| v.as_bool()).unwrap_or(false);
             ctx.arc(x, y, r, s, e, cc);
         }
-        "fill" => ctx.fill(),
+        "fill" => ctx.fill_with_rule(even_odd(cmd)),
         "stroke" => ctx.stroke(),
+        "roundRect" => {
+            let n = |k: &str| cmd.get(k).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+            let r = cmd.get("radii").and_then(|v| v.as_array());
+            let ri = |i: usize| r.and_then(|a| a.get(i)).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+            ctx.round_rect(n("x"), n("y"), n("width"), n("height"), [ri(0), ri(1), ri(2), ri(3)]);
+        }
         "save" => ctx.save(),
         "restore" => ctx.restore(),
         "translate" => {
@@ -150,26 +156,15 @@ fn run_inner(ctx: &mut Canvas2DContext, cmd: &serde_json::Value, cmd_type: &str)
             let a = |k: &str| cmd.get(k).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
             ctx.bezier_curve_to(a("cp1x"), a("cp1y"), a("cp2x"), a("cp2y"), a("x"), a("y"));
         }
-        "fillText" => {
+        "fillText" | "strokeText" => {
             let text = cmd.get("text").and_then(|v| v.as_str()).unwrap_or("");
             let x = cmd.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
             let y = cmd.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
-            ctx.fill_text(text, x, y);
+            // maxWidth 没给 / 是 null：不压缩（JSON 里 undefined 的字段本来就没有）
+            let mw = cmd.get("maxWidth").and_then(|v| v.as_f64()).map(|v| v as f32);
+            if cmd_type == "fillText" { ctx.fill_text_max(text, x, y, mw) } else { ctx.stroke_text_max(text, x, y, mw) }
         }
-        "strokeText" => {
-            let text = cmd.get("text").and_then(|v| v.as_str()).unwrap_or("");
-            let x = cmd.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
-            let y = cmd.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
-            ctx.stroke_text(text, x, y);
-        }
-        "drawImage" => {
-            let src = cmd.get("src").and_then(|v| v.as_str()).unwrap_or("");
-            let dx = cmd.get("dx").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
-            let dy = cmd.get("dy").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
-            let dw = cmd.get("dWidth").and_then(|v| v.as_f64()).unwrap_or(100.0) as f32;
-            let dh = cmd.get("dHeight").and_then(|v| v.as_f64()).unwrap_or(100.0) as f32;
-            ctx.draw_image(src, dx, dy, dw, dh);
-        }
+        "drawImage" => super::image_src::draw_image_cmd(ctx, cmd),
         // ── 2D 新接口（`type="2d"`）的那几条，见 fx2d.rs / extra2d.rs ──
         "setFillGradient" | "setStrokeGradient" => {
             if let Some(src) = gradient_source(cmd) {
@@ -213,8 +208,13 @@ fn run_inner(ctx: &mut Canvas2DContext, cmd: &serde_json::Value, cmd_type: &str)
     }
 }
 
+/// `fill('evenodd')` / `clip('evenodd')`：指令里带 `rule`，没带就是 nonzero
+fn even_odd(cmd: &serde_json::Value) -> bool {
+    cmd.get("rule").and_then(|v| v.as_str()) == Some("evenodd")
+}
+
 /// `pre`：JS 侧算好的「CSS 尺寸 / canvas 尺寸」（见 extra2d.rs 的坐标约定），没给按 1
-fn pre(cmd: &serde_json::Value) -> (f32, f32) {
+pub(super) fn pre(cmd: &serde_json::Value) -> (f32, f32) {
     let a = cmd.get("pre").and_then(|v| v.as_array());
     let g = |i: usize| a.and_then(|a| a.get(i)).and_then(|v| v.as_f64()).unwrap_or(1.0) as f32;
     (g(0), g(1))
@@ -244,14 +244,13 @@ fn gradient_source(cmd: &serde_json::Value) -> Option<fx2d::Source> {
 /// `{src, repetition}`：图片按包内路径 / `wxfile://` 解析（与 `<image>` 同一套）
 fn pattern_source(cmd: &serde_json::Value) -> Option<fx2d::Source> {
     let src = cmd.get("src")?.as_str()?;
-    let path = crate::assets::resolve(src)?;
-    let img = image::open(path).ok()?.to_rgba8();
-    let (w, h) = img.dimensions();
+    // 与 drawImage 同一份图源（解码一次进缓存；SVG / data: URI 也认，见 image_src.rs）
+    let img = super::image_src::source(src)?;
     let rep = cmd.get("repetition").and_then(|v| v.as_str()).unwrap_or("repeat");
     Some(fx2d::Source::Pattern {
-        rgba: Arc::new(img.into_raw()),
-        w,
-        h,
+        rgba: img.rgba.clone(),
+        w: img.w,
+        h: img.h,
         repeat_x: rep == "repeat" || rep == "repeat-x" || rep.is_empty(),
         repeat_y: rep == "repeat" || rep == "repeat-y" || rep.is_empty(),
     })

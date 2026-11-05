@@ -38,20 +38,25 @@ pub(super) fn feed_attrs(attrs: &HashMap<String, String>, key: &str) -> HashMap<
     };
     a.insert("object-fit".into(), fit.into());
     a.insert("loop".into(), "false".into());
+    // orientation（vertical 默认 / horizontal）与 mode（live 默认 / RTC）规范成合法值透传给宿主：
+    // 画面方向、低延时拉流是宿主播放器的事（引擎按宿主交来的帧画，不自己转）
+    let pick = |k: &str, ok: &[&str], dflt: &str| attrs.get(k).map(|s| s.trim()).filter(|s| ok.contains(s)).unwrap_or(dflt).to_string();
+    a.insert("orientation".into(), pick("orientation", &["vertical", "horizontal"], "vertical"));
+    a.insert("mode".into(), pick("mode", &["live", "RTC"], "live"));
     let muted = video_ui::effective_muted(key, video_ui::attr_flag(attrs, "muted", false));
     a.insert("muted".into(), muted.to_string());
     a
 }
 
-/// 播放器事件 → 直播状态码（官方 live-player 的 statechange 码表里对应的那几个）
+/// 播放器事件 → 直播状态码（官方 live-player 现行的 statechange 码表里对应的那几个，message 用表里的说明）。
+/// 现行表里没有「播放结束」（旧版的 2006 已经删了）：直播流断了宿主报 `error` → -2301，`ended` 不再报码
 fn state_codes(name: &str, first: bool) -> &'static [(i32, &'static str)] {
     match name {
-        "loadedmetadata" => &[(2001, "已经连接服务器"), (2002, "已经连接服务器，开始拉流"), (2008, "解码器启动"), (2009, "视频分辨率改变")],
-        "play" if first => &[(2003, "网络接收到首个视频数据包（IDR）"), (2004, "视频播放开始")],
+        "loadedmetadata" => &[(2001, "已经连接服务器"), (2002, "已经连接服务器，开始拉流"), (2008, "视频解码器启动"), (2009, "视频分辨率改变")],
+        "play" if first => &[(2003, "视频首帧渲染事件"), (2004, "视频播放开始")],
         "play" => &[(2004, "视频播放开始")],
-        "waiting" => &[(2007, "视频播放 loading")],
-        "ended" => &[(2006, "视频播放结束")],
-        "error" => &[(-2301, "网络断连，且经多次重连抢救无效，更多重试请自行重启播放")],
+        "waiting" => &[(2007, "视频播放Loading")],
+        "error" => &[(-2301, "网络断连，且经多次重连无效，请自行重启拉流")],
         _ => &[],
     }
 }
@@ -85,9 +90,11 @@ impl MiniEngine {
             st.net_ms = now;
             let s = host_feed::state(key);
             // 系统播放器不报码率 / 帧率：只给得出来的画面尺寸，其余按 0（字段齐全，页面按微信的结构读不会出错）
+            // 键按官方「网络状态数据」表给全（netQualityLevel 0 = 未定义）
             out.push(("netstatus", json!({ "info": {
                 "videoBitrate": 0, "audioBitrate": 0, "videoFPS": 0, "videoGOP": 0, "netSpeed": 0, "netJitter": 0,
-                "videoWidth": s.width, "videoHeight": s.height,
+                "netQualityLevel": 0, "videoWidth": s.width, "videoHeight": s.height, "videoCache": 0, "audioCache": 0,
+                "vDecCacheSize": 0, "vSumCacheSize": 0, "avPlayInterval": 0, "avRecvInterval": 0, "audioCacheThreshold": 0,
             }})));
         }
         STATE.with(|s| s.borrow_mut().insert(key.to_string(), st));
@@ -180,4 +187,28 @@ fn snapshot(key: &str, req: &Value) -> Result<Value, String> {
     }
     image::save_buffer(&path, &rgba, w, h, image::ExtendedColorType::Rgba8).map_err(|e| e.to_string())?;
     Ok(json!({ "tempImagePath": uri, "width": w, "height": h }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn 透传的_orientation_mode_规范成合法值() {
+        let a: HashMap<String, String> = [("orientation", "horizontal"), ("mode", "RTC"), ("object-fit", "fillCrop")].iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+        let f = feed_attrs(&a, "e4-a");
+        assert_eq!((f["orientation"].as_str(), f["mode"].as_str(), f["object-fit"].as_str()), ("horizontal", "RTC", "cover"));
+        let b: HashMap<String, String> = [("mode", "rtc")].iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+        let f = feed_attrs(&b, "e4-b");
+        assert_eq!((f["orientation"].as_str(), f["mode"].as_str()), ("vertical", "live"), "非法值 / 没写：官方默认");
+    }
+
+    #[test]
+    fn 状态码按现行码表() {
+        let codes = |n: &str, first: bool| state_codes(n, first).iter().map(|c| c.0).collect::<Vec<_>>();
+        assert_eq!(codes("play", true), [2003, 2004]);
+        assert_eq!(state_codes("play", true)[0].1, "视频首帧渲染事件");
+        assert!(codes("ended", false).is_empty(), "2006 不在现行表里");
+        assert_eq!(codes("error", false), [-2301]);
+    }
 }

@@ -62,6 +62,8 @@ targets:
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
         NSLocationWhenInUseUsageDescription: 演示 wx.getLocation（示例返回固定坐标，不真的定位）
+        NSCameraUsageDescription: 演示 <camera> / <live-pusher>（SDK 自带的相机，画面画进小程序页面）
+        NSMicrophoneUsageDescription: 演示 <camera> 录像与 <live-pusher> 推流的声音
         # 外部 App / H5 拉起小程序：minirender://open?appid=…&path=…（与 Android 示例的 LinkActivity 同一种链接）
         CFBundleURLTypes:
           - CFBundleURLName: dev.minirender.example.link

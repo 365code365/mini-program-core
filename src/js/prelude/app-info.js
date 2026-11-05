@@ -44,11 +44,20 @@
                 'radio', 'radio-group', 'picker', 'picker-view', 'picker-view-column', 'form', 'navigator', 'label', 'map',
                 // 渲染器补的（components::registry / grid_view / native_placeholder）与 movable-area（带默认样式的容器）
                 'grid-view', 'list-view', 'cover-view', 'cover-image', 'span', 'movable-area',
+                // 列表构造器（按 list 展开 slot:item，itembuild / itemdispose 按可见窗派发：components::builder）
+                'list-builder', 'grid-builder',
+                // 吸顶（吸住、推走、只重画自己那块：wxml_renderer/sticky.rs）。nested-scroll-header / body 只按容器画、没有里外衔接，不登记
+                'sticky-header', 'sticky-section',
                 // 引擎内置组件（builtin_components，页面用到才注入；单测核对这里一个不漏）
                 'page-container', 'match-media', 'root-portal', 'page-meta', 'navigation-bar', 'draggable-sheet',
                 'audio', 'editor', 'movable-view',
                 'tap-gesture-handler', 'double-tap-gesture-handler', 'long-press-gesture-handler', 'pan-gesture-handler',
-                'horizontal-drag-gesture-handler', 'vertical-drag-gesture-handler', 'scale-gesture-handler', 'force-press-gesture-handler'];
+                'horizontal-drag-gesture-handler', 'vertical-drag-gesture-handler', 'scale-gesture-handler', 'force-press-gesture-handler',
+                // 2026-11-03 WP-C：开放数据 / 容器转场 / 共享元素（builtin_components），snapshot（渲染器当容器画、takeSnapshot 走 host::snapshot），
+                // 开放能力组件（挂上即按官方「加载失败」回 error，见 open-capability.js）
+                'open-data', 'open-container', 'share-element', 'snapshot',
+                'ad', 'ad-custom', 'official-account', 'official-account-publish', 'store-product', 'store-coupon', 'store-gift',
+                'store-home', 'functional-page-navigator'];
             wx.canIUse = function(schema) {
                 var parts = String(schema || '').split('.');
                 var head = parts[0];
@@ -56,6 +65,8 @@
                 // nb.request / gb.xxx 等别名开头（api-alias.js）与 wx. 同样处理
                 if ((head === 'wx' || (typeof __wxIsAlias === 'function' && __wxIsAlias(head))) && parts.length > 1) head = parts[1];
                 if (__CANIUSE_COMPONENTS.indexOf(head) >= 0) return true;
+                // 宿主接了的原生组件（camera / live-pusher / voip-room / web-view …，engine_options.rs install_native_flags）
+                if (Array.isArray(globalThis.__hostComponents) && globalThis.__hostComponents.indexOf(head) >= 0) return true;
                 var f = (typeof __wxImpl === 'object' ? __wxImpl : wx)[head];
                 if (typeof f === 'function') return !f.__default;
                 return f !== undefined && f !== null;

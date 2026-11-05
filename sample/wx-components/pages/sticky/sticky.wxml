@@ -1,0 +1,24 @@
+<view class="card"><view class="h">页面里的 position: sticky</view><text class="tip">往下滑：Tab 栏吸在顶上；下面的 scroll-view 里，分组头被下一组推走。</text></view>
+<view class="tabs">
+  <view wx:for="{{tabs}}" wx:key="*this" class="tab {{tab === index ? 'on' : ''}}" data-i="{{index}}" bindtap="onTab">{{item}}</view>
+</view>
+<view class="card">
+  <view class="h">scroll-view + sticky-section + sticky-header</view>
+  <scroll-view scroll-y type="custom" class="box">
+    <sticky-section wx:for="{{groups}}" wx:key="name" push-pinned-header>
+      <sticky-header data-name="{{item.name}}" bindstickontopchange="onStick">
+        <view class="head" data-name="{{item.name}}" bindtap="onTapHead">{{item.name}}</view>
+      </sticky-header>
+      <view wx:for="{{item.items}}" wx:for-item="it" wx:key="*this" class="item">{{it}}</view>
+    </sticky-section>
+  </scroll-view>
+  <text class="tip">offset-top 默认 0；allow-overlapping=false 时后一个头顶上来叠在前一个下面。</text>
+</view>
+<view class="card">
+  <view class="h">CSS sticky + 被父容器推走</view>
+  <view wx:for="{{groups}}" wx:key="name" class="sec">
+    <view class="css-head">{{item.name}}（top: 44px）</view>
+    <view wx:for="{{item.items}}" wx:for-item="it" wx:key="*this" class="item">{{it}}</view>
+  </view>
+</view>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

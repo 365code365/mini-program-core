@@ -5,27 +5,14 @@
 //! 外观按微信默认样式（官方 picker-view 的 `mask-style` / `indicator-style` 未设时）：
 //! 指示条高度 = 项高（第一项的布局高度，没有项时 34px），上下边框 1px #e5e5e5；
 //! 遮罩是 `linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.6))`，下半片反向。
-//! `indicator-style` 只认 `height`（其余属性不画），`mask-style` 未实现（按默认遮罩画）。
+//! `indicator-style` / `indicator-class` 认 height、background-color、border，`mask-style` / `mask-class`
+//! 认纯色与 none（`components::picker_view_style`）；写了选中框高度时列里的项高跟着它（`apply_picker_view_layout`）。
+//! 没做：Skyline 写在 picker-view-column 上的 indicator-style（按 picker-view 上的画）、渐变蒙层的自定义颜色。
 
 use super::*;
 use crate::renderer::components::picker_view;
+use crate::renderer::components::picker_view_style::{MaskStyle, PickerDecor};
 use crate::Paint;
-
-/// 指示条高度（逻辑像素）：`indicator-style` 里写了 height 用它，否则用第一项的高
-fn indicator_height(node: &RenderNode, item_h: f32) -> f32 {
-    node.attrs
-        .get("indicator-style")
-        .and_then(|s| {
-            s.split(';').find_map(|d| {
-                let (k, v) = d.split_once(':')?;
-                if k.trim() != "height" {
-                    return None;
-                }
-                v.trim().trim_end_matches("px").trim().parse::<f32>().ok()
-            })
-        })
-        .unwrap_or(item_h)
-}
 
 impl WxmlRenderer {
     /// 带交互的路径（顶层 / 子节点两种上下文都走这里）：画、登记列的手势候选、登记 picker-view 自己的绑定
@@ -80,7 +67,8 @@ impl WxmlRenderer {
         let default_item = 34.0 * sf;
         let item_of = |c: &(f32, f32, f32, f32, f32, usize)| if c.4 > 0.5 { c.4 } else { default_item };
         let first_item = cols.first().map(item_of).unwrap_or(default_item);
-        let ind_h = indicator_height(node, first_item / sf) * sf;
+        let decor = PickerDecor::from_attrs(&node.attrs);
+        let ind_h = decor.ind_h.map(|h| h * sf).unwrap_or(first_item);
         let band_top = y + (h - ind_h) / 2.0;
         let value = node.attrs.get("value").map(|s| s.as_str()).unwrap_or("");
         let immediate = super::scroll_views::bool_attr(&node.attrs, "immediate-change");
@@ -131,15 +119,40 @@ impl WxmlRenderer {
         if register && picker_view::needs_frame() {
             self.mark_animating();
         }
-        Self::draw_picker_mask(canvas, x, y, w, h, band_top, ind_h, sf);
+        Self::draw_picker_mask(canvas, (x, y, w, h), band_top, ind_h, sf, &decor);
     }
 
-    /// 上下遮罩（逐行画渐变）与指示条两根线
-    #[allow(clippy::too_many_arguments)]
-    fn draw_picker_mask(canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, band_top: f32, ind_h: f32, sf: f32) {
+    /// 上下遮罩（逐行画渐变）与指示条两根线（样式见 `picker_view_style`）
+    fn draw_picker_mask(canvas: &mut Canvas, (x, y, w, h): (f32, f32, f32, f32), band_top: f32, ind_h: f32, sf: f32, decor: &PickerDecor) {
         let top_h = (band_top - y).max(0.0);
         let bottom_y = band_top + ind_h;
         let bottom_h = (y + h - bottom_y).max(0.0);
+        // 选中框的底色画在项上面（WebView 版选中框是盖在内容上的一层），写半透明色才看得见字
+        if let Some(bg) = decor.ind_bg {
+            canvas.draw_rect(&GeoRect::new(x, band_top, w, ind_h), &Paint::new().with_color(bg));
+        }
+        match decor.mask {
+            MaskStyle::None => {}
+            MaskStyle::Solid(c) => {
+                let p = Paint::new().with_color(c);
+                canvas.draw_rect(&GeoRect::new(x, y, w, top_h), &p);
+                canvas.draw_rect(&GeoRect::new(x, bottom_y, w, bottom_h), &p);
+            }
+            MaskStyle::Default => Self::draw_default_mask(canvas, (x, y, w), (top_h, bottom_y, bottom_h)),
+        }
+        let (lw, color) = match decor.ind_border {
+            Some((bw, c)) => (bw * sf, c),
+            None => ((1.0 * sf).max(1.0), Color::from_hex(0xE5E5E5)),
+        };
+        if lw > 0.0 {
+            let line = Paint::new().with_color(color);
+            canvas.draw_rect(&GeoRect::new(x, band_top, w, lw), &line);
+            canvas.draw_rect(&GeoRect::new(x, bottom_y - lw, w, lw), &line);
+        }
+    }
+
+    /// 默认蒙层：上下两片白色渐隐（逐行画）
+    fn draw_default_mask(canvas: &mut Canvas, (x, y, w): (f32, f32, f32), (top_h, bottom_y, bottom_h): (f32, f32, f32)) {
         let rows = |canvas: &mut Canvas, y0: f32, hh: f32, top_alpha: f32, bottom_alpha: f32| {
             let n = hh.ceil() as i32;
             for r in 0..n {
@@ -151,17 +164,32 @@ impl WxmlRenderer {
         };
         rows(canvas, y, top_h, 0.95, 0.6);
         rows(canvas, bottom_y, bottom_h, 0.6, 0.95);
-        let line = Paint::new().with_color(Color::from_hex(0xE5E5E5));
-        let lw = (1.0 * sf).max(1.0);
-        canvas.draw_rect(&GeoRect::new(x, band_top, w, lw), &line);
-        canvas.draw_rect(&GeoRect::new(x, bottom_y - lw, w, lw), &line);
     }
 }
 
 impl WxmlRenderer {
     /// picker-view 的布局补丁（微信内置样式：`display:flex`，列 `flex:1`）。
     /// 建树时基础样式会盖掉组件 build 里设的布局，所以在 `layout::build_tree` 里补
-    pub(super) fn apply_picker_view_layout(ts: &mut taffy::style::Style, children: &[RenderNode], ctx: &mut ComponentContext) {
+    pub(super) fn apply_picker_view_layout(
+        node: &crate::parser::wxml::WxmlNode,
+        ts: &mut taffy::style::Style,
+        children: &[RenderNode],
+        ctx: &mut ComponentContext,
+    ) {
+        // 写了选中框高度（indicator-style / indicator-class 的 height）：列里每一项的高度设成它
+        // （WebView 版按选中框高当项高；没写时项按自己的布局高，沿用从前）
+        let ind_h = PickerDecor::resolve(&node.attributes, ctx.stylesheet, ctx.screen_width).ind_h;
+        if let Some(h) = ind_h {
+            let px = length(h * ctx.scale_factor);
+            for item in children.iter().filter(|c| c.tag == "picker-view-column").flat_map(|c| c.children.iter()) {
+                if let Ok(mut style) = ctx.taffy.style(item.taffy_node).cloned() {
+                    style.size.height = px;
+                    style.min_size.height = px;
+                    style.max_size.height = px;
+                    ctx.taffy.set_style(item.taffy_node, style).ok();
+                }
+            }
+        }
         ts.flex_direction = FlexDirection::Row;
         ts.flex_wrap = FlexWrap::NoWrap;
         ts.align_items = Some(AlignItems::STRETCH);

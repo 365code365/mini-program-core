@@ -15,6 +15,14 @@ pub(super) enum AreaDamage {
 }
 
 impl MiniEngine {
+    /// 页面级吸附元素（`position: sticky` / sticky-header）这一帧要重画的那几块：上次画的 ∪ 这次要画的
+    /// （物理像素，画布坐标；`wxml_renderer/sticky.rs`）。页面滚动时吸住的元素在内容坐标里每帧都在动，
+    /// 只重画这两块，不退回整条带。没有吸附元素 / 没吸住时为空（照旧只合成）
+    pub(super) fn sticky_due(&mut self) -> Vec<GeoRect> {
+        let (scroll, vp) = (self.scroll.get_position(), self.viewport_height());
+        self.renderer.as_mut().map(|r| r.sticky_damage(scroll, vp)).unwrap_or_default()
+    }
+
     /// 相对上次画进页面画布时，哪些 scroll-view 的位置变了（与桌面 `scroll_area_damage` 一致）
     pub(super) fn scroll_area_damage(&self) -> AreaDamage {
         let mut acc = None;
@@ -28,7 +36,8 @@ impl MiniEngine {
             }
             moved_any = true;
             // 本帧没登记（滚出视口了）的不知道画在哪
-            let Some((b, fixed)) = self.interaction.scroll_area_bounds(id) else {
+            // clip=false 的连盒子外画着的那圈一起（scroll_area_damage_bounds）
+            let Some((b, fixed)) = self.interaction.scroll_area_damage_bounds(id) else {
                 return AreaDamage::Full;
             };
             let s = self.dpr;

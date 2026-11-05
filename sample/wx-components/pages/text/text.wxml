@@ -1,0 +1,29 @@
+<view class="card">
+  <view class="h">-webkit-line-clamp: 2</view>
+  <view class="clamp2">{{long}}</view>
+</view>
+<view class="card">
+  <view class="h">max-lines="2" overflow="{{overflow}}"</view>
+  <view class="row"><view wx:for="{{modes}}" wx:key="*this" class="btn {{overflow === item ? '' : 'gray'}}" data-m="{{item}}" bindtap="onMode">{{item}}</view></view>
+  <view class="ml"><text max-lines="2" overflow="{{overflow}}">{{long}}</text></view>
+</view>
+<view class="card">
+  <view class="h">decode 与 space</view>
+  <text decode>decode：&lt;b&gt; &amp; &apos;单引号&apos; 中&nbsp;&nbsp;间</text>
+  <view><text space="emsp">space=emsp：一  二  三</text></view>
+  <view><text space="nbsp">space=nbsp：一  二  三</text></view>
+  <view><text>不写 space：一  二  三</text></view>
+</view>
+<view class="card">
+  <rich-text nodes="{{html}}" bindtap="onRichTap"></rich-text>
+  <rich-text nodes="{{nodes}}"></rich-text>
+</view>
+<view class="card">
+  <view class="h">span 行内混排</view>
+  <span class="sp"><image class="ico" src="/images/star.svg"></image><text>图标后面的文字接在同一行，放不下时折到下一行接着排，而不是整段掉下去。</text></span>
+</view>
+<view class="card">
+  <view class="h">cover-view 默认 nowrap + line-height 1.2</view>
+  <cover-view class="cv">cover-view 里的文字默认不换行，超出部分被裁掉</cover-view>
+</view>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

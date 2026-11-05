@@ -28,6 +28,8 @@ pub struct ScrollViewInfo {
     /// 声明它的组件实例键（页面里是空串）：判断 `refresher-triggered` 是不是被 setData 过
     pub owner: String,
     pub horizontal: bool,
+    /// 横竖两个方向都能滚（[`scroll_both`]；`horizontal` 此时为 false，横向在 `"{id}#x"` 控制器上）
+    pub both: bool,
     /// 有没有写 `scroll-x` / `scroll-y`（都没写就不能滚）
     pub scrollable: bool,
     pub bounds: GeoRect,
@@ -40,6 +42,8 @@ pub struct ScrollViewInfo {
     pub enhanced: bool,
     /// `enable-back-to-top`：点状态栏（iOS）/ 双击标题栏（安卓）时滚回顶部，只对纵向生效
     pub back_to_top: bool,
+    /// 画滚动条（`enhanced` + `show-scrollbar`，或 Context 的 showScrollbar；scrollbar.rs）
+    pub scrollbar: bool,
     pub refresher: Option<RefresherConfig>,
     /// `scroll-into-view` 绑定的根字段名（`INTO_VIEW_KEYS_ATTR`）：同一帧里改过又改回原值也要再滚（host/scroll_view.rs）
     pub into_keys: Vec<String>,
@@ -57,6 +61,23 @@ pub struct RefresherConfig {
     pub triggered: bool,
     /// `refresher-triggered` 绑定表达式里的根字段名（模板展开时记下，见 `REFRESHER_KEYS_ATTR`）
     pub triggered_keys: Vec<String>,
+    /// 下拉二级（Skyline `refresher-two-level-enabled`）；没开为 None
+    pub two_level: Option<TwoLevelConfig>,
+}
+
+/// 下拉二级的配置（官方 scroll-view「下拉二级」一节，都是逻辑 px）
+#[derive(Debug, Clone, Copy)]
+pub struct TwoLevelConfig {
+    /// `refresher-two-level-threshold`（默认 150）：拉过它松手打开二级
+    pub threshold: f32,
+    /// `refresher-two-level-close-threshold`（默认 80）：二级里往上推过它松手关闭
+    pub close_threshold: f32,
+    /// `refresher-two-level-scroll-enabled`（默认 false）：二级状态下能不能拖（能拖才能滑动关闭）
+    pub scroll_enabled: bool,
+    /// `refresher-two-level-triggered` 的当前值（页面受控开 / 关）
+    pub triggered: bool,
+    /// 盒子高（逻辑 px）：二级打开时内容推下去这么多
+    pub height: f32,
 }
 
 pub use crate::parser::template::REFRESHER_KEYS_ATTR;
@@ -66,11 +87,22 @@ pub fn bool_attr(attrs: &HashMap<String, String>, name: &str) -> bool {
     attrs.get(name).map(|v| crate::renderer::components::attr_is_true(v)).unwrap_or(false)
 }
 
+/// Skyline `clip`（默认 true）：false 时内容不裁到盒子，滚到盒子外、溢出盒子的部分照画
+pub fn clips(attrs: &HashMap<String, String>) -> bool {
+    attrs.get("clip").map(|v| crate::renderer::components::attr_is_true(v)).unwrap_or(true)
+}
+
 /// 滚动方向：`(横向, 可滚)`。两个都写时按纵向（单轴控制器）
 pub fn scroll_axes(attrs: &HashMap<String, String>) -> (bool, bool) {
     let x = bool_attr(attrs, "scroll-x");
     let y = bool_attr(attrs, "scroll-y");
     (x && !y, x || y)
+}
+
+/// `scroll-x` 与 `scroll-y` 都写了：横竖两个方向同时滚（主控制器管纵向，横向另一个，ui/interaction/scroll_2d.rs）。
+/// 布局照纵向（子节点竖排，宽出盒子的那部分横着滚出来），与 WebView 下块级子节点的排法一致
+pub fn scroll_both(attrs: &HashMap<String, String>) -> bool {
+    bool_attr(attrs, "scroll-x") && bool_attr(attrs, "scroll-y")
 }
 
 /// Skyline `padding="[上, 右, 下, 左]"`（px）：scroll-view 内容区的内边距（不是四个数就不动）
@@ -125,11 +157,19 @@ impl WxmlRenderer {
                 .get(REFRESHER_KEYS_ATTR)
                 .map(|s| s.split(',').filter(|k| !k.is_empty()).map(str::to_string).collect())
                 .unwrap_or_default(),
+            two_level: bool_attr(a, "refresher-two-level-enabled").then(|| TwoLevelConfig {
+                threshold: len("refresher-two-level-threshold", 150.0).max(1.0),
+                close_threshold: len("refresher-two-level-close-threshold", 80.0).max(1.0),
+                scroll_enabled: bool_attr(a, "refresher-two-level-scroll-enabled"),
+                triggered: bool_attr(a, "refresher-two-level-triggered"),
+                height: bounds.height,
+            }),
         });
         let info = ScrollViewInfo {
             component_id: component_id.to_string(),
             owner: a.get(crate::parser::template::COMPONENT_OWNER_ATTR).cloned().unwrap_or_default(),
             horizontal,
+            both: scroll_both(a),
             scrollable,
             bounds: *bounds,
             content_width: content.0,
@@ -138,7 +178,9 @@ impl WxmlRenderer {
             upper_threshold: len("upper-threshold", 50.0),
             lower_threshold: len("lower-threshold", 50.0),
             enhanced: bool_attr(a, "enhanced"),
-            back_to_top: bool_attr(a, "enable-back-to-top") && !horizontal,
+            // 没显式写 false、占屏 90% 以上时自动开（scroll_behavior.rs）
+            back_to_top: self.back_to_top(a, bounds, horizontal),
+            scrollbar: self.apply_scroll_behavior(node, component_id, interaction),
             refresher,
             into_keys: a
                 .get(crate::parser::template::INTO_VIEW_KEYS_ATTR)
@@ -146,19 +188,25 @@ impl WxmlRenderer {
                 .unwrap_or_default(),
         };
         if scrollable {
-            self.apply_controlled_position(node, taffy, &info, interaction);
+            if info.both {
+                // 双向：横向那一半的受控位置（scroll-left / scroll-into-view 的横向，scroll_2d_attrs.rs）
+                self.apply_controlled_left(node, taffy, &info, interaction);
+            }
+            let controlled = self.apply_controlled_position(node, taffy, &info, interaction);
+            // scroll-anchoring / reverse 贴底（scroll_behavior.rs）
+            self.keep_scroll_anchor(node, taffy, component_id, horizontal, controlled, interaction);
         }
         self.scroll_views.push(info);
     }
 
-    /// `scroll-into-view`（优先）/ `scroll-top` / `scroll-left`：值变了才动
+    /// `scroll-into-view`（优先）/ `scroll-top` / `scroll-left`：值变了才动。返回这一帧动没动
     fn apply_controlled_position(
         &self,
         node: &RenderNode,
         taffy: &Tree,
         info: &ScrollViewInfo,
         interaction: &mut InteractionManager,
-    ) {
+    ) -> bool {
         let a = &node.attrs;
         let sw = self.screen_width;
         let into = a.get("scroll-into-view").map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
@@ -167,6 +215,7 @@ impl WxmlRenderer {
         let animate = bool_attr(a, "scroll-with-animation");
         let st = interaction.scroll_views.entry(info.component_id.clone()).or_default();
         st.refresher_enabled = info.refresher.is_some();
+        st.nested_outer = a.get("type").is_some_and(|t| t.trim() == "nested") && !info.horizontal;
         let first = !st.seen;
         st.seen = true;
         let into_changed = into.is_some() && st.last_into_view != into;
@@ -184,12 +233,12 @@ impl WxmlRenderer {
         // Skyline `reverse`：初始停在末尾（聊天列表那种从底部开始的写法）
         let reverse_first = first && target.is_none() && bool_attr(a, "reverse");
         if target.is_none() && !reverse_first {
-            return;
+            return false;
         }
         if let Some(c) = interaction.get_scroll_controller_mut(&info.component_id) {
             // 手指正拖着的时候不跟它抢（受控值在松手后的下一次变化才生效）
             if c.is_dragging {
-                return;
+                return false;
             }
             let target = target.unwrap_or_else(|| c.get_max_scroll());
             if animate && !first {
@@ -197,7 +246,9 @@ impl WxmlRenderer {
             } else {
                 c.set_position(target);
             }
+            return true;
         }
+        false
     }
 
     /// `scroll-into-view` 的目标位置：在子树里找 `id`，按 `scroll-into-view-alignment`
@@ -262,7 +313,7 @@ pub(super) fn place_refresher_slot(node: &crate::parser::WxmlNode, children: &[R
 
 /// 在子树里按 `id` 找节点，返回相对 scroll-view 内容原点的 (x, y, w, h)（物理像素）。
 /// 不进嵌套的 scroll-view —— 那是它自己的内容
-fn find_anchor(list: &[RenderNode], taffy: &Tree, id: &str, ox: f32, oy: f32) -> Option<(f32, f32, f32, f32)> {
+pub(super) fn find_anchor(list: &[RenderNode], taffy: &Tree, id: &str, ox: f32, oy: f32) -> Option<(f32, f32, f32, f32)> {
     for n in list {
         let Ok(l) = taffy.layout(n.taffy_node) else { continue };
         let (x, y) = (ox + l.location.x, oy + l.location.y);
@@ -276,4 +327,54 @@ fn find_anchor(list: &[RenderNode], taffy: &Tree, id: &str, ox: f32, oy: f32) ->
         }
     }
     None
+}
+
+impl WxmlRenderer {
+    /// `clip="{{false}}"`：滚动时盒子外也画着的范围（逻辑 px，页面内容坐标）与「画到哪算不准」（里面有 transform / 动画）。
+    ///
+    /// 主轴：内容在盒子两侧各多画一个盒子长（scroll_live.rs / draw_interactive.rs 的 `ext`，与 swiper clip=false 同一个约定）；
+    /// 交叉轴：子树的溢出并集（阴影那圈也算，自己裁剪的子节点只算它的盒子）。与滚动位置无关，一个矩形管前后两帧。
+    /// 裁到盒子的（默认）返回 `(None, false)`
+    pub(super) fn clip_false_paint(&self, taffy: &Tree, node: &RenderNode, bounds: &GeoRect) -> (Option<GeoRect>, bool) {
+        if clips(&node.attrs) {
+            return (None, false);
+        }
+        fn walk(t: &Tree, n: &RenderNode, ox: f32, oy: f32, e: &mut [f32; 4], unbounded: &mut bool) {
+            if n.style.is_fixed {
+                return;
+            }
+            if n.style.transform.is_some() || n.style.animation.is_some() {
+                *unbounded = true;
+                return;
+            }
+            let Ok(l) = t.layout(n.taffy_node) else { return };
+            let (x, y) = (ox + l.location.x, oy + l.location.y);
+            let r = super::invalidate_grow::inflate(GeoRect::new(x, y, l.size.width, l.size.height), &n.style);
+            *e = [e[0].min(r.x), e[1].min(r.y), e[2].max(r.x + r.width), e[3].max(r.y + r.height)];
+            let clips = n.style.overflow != crate::renderer::components::Overflow::Visible
+                || crate::renderer::components::spec_for(n.tag.as_str()).clips;
+            if !clips {
+                for c in &n.children {
+                    walk(t, c, x, y, e, unbounded);
+                }
+            }
+        }
+        let mut e = [0.0f32; 4];
+        let mut unbounded = false;
+        for c in &node.children {
+            walk(taffy, c, 0.0, 0.0, &mut e, &mut unbounded);
+        }
+        let sf = self.scale_factor;
+        let (bw, bh) = (bounds.width, bounds.height);
+        // 双向又不裁：横向不剔除子节点，盒子外画到哪随两个轴的位置变，不算这一块，滚动按整帧（少见的组合）
+        if scroll_both(&node.attrs) {
+            return (Some(*bounds), true);
+        }
+        let (x0, x1, y0, y1) = if scroll_axes(&node.attrs).0 {
+            (bounds.x - bw, bounds.x + 2.0 * bw, bounds.y + e[1] / sf, bounds.y + e[3] / sf)
+        } else {
+            (bounds.x + e[0] / sf, bounds.x + e[2] / sf, bounds.y - bh, bounds.y + 2.0 * bh)
+        };
+        (Some(GeoRect::new(x0, y0, (x1 - x0).max(0.0), (y1 - y0).max(0.0))), unbounded)
+    }
 }

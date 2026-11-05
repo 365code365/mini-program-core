@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- wx.request / 网络图片 -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- <camera> / <live-pusher> / <voip-room>：SDK 自带的相机（CameraPipe），第一次用时申请；录像、推流要麦克风 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:label="灵犀原生"

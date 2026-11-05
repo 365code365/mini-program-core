@@ -35,6 +35,10 @@ pub struct FocusedInput {
     pub confirm_type: String,
     /// `confirm-hold`：按确认后保持聚焦、键盘不收
     pub confirm_hold: bool,
+    /// `hold-keyboard`：聚焦时点页面别处不失焦、不收键盘（官方 input / textarea）
+    pub hold_keyboard: bool,
+    /// 聚焦那一刻的值：失焦时与它比，变了才发 input 的 `bindchange`（edit_note.rs）
+    pub value_at_focus: String,
     /// 光标正好在软换行处时，画在**上一行行尾**而不是下一行行首。
     ///
     /// 同一个字符下标在软换行处对应两个位置（上一行末 / 下一行首），只靠下标分不出来：
@@ -299,9 +303,16 @@ pub struct InteractionManager {
     /// 知道（要量字宽）。所以绘制时写回这里，编辑时读 —— 与单行输入框回写 `text_offset`
     /// 同一个路子。没聚焦的也记：第一次点进去就要按行定位，那时还没有 `FocusedInput`。
     pub text_layouts: HashMap<String, TextLayout>,
+    /// `focus` 属性变了要聚焦 / 失焦（focus_attr.rs），这一帧画完由宿主取走
+    focus_request: Option<FocusRequest>,
 }
 
 // ── 按职责切开的几片（都是 `impl InteractionManager`）──
+/// input / textarea 的 `focus` / `auto-focus` 属性
+mod focus_attr;
+/// bindinput 的 cursor / keyCode、失焦的 cursor 与 bindchange 判定（线程局部，派发时取）
+pub mod edit_note;
+pub use focus_attr::FocusRequest;
 /// 点击动画与过渡计时
 mod anim;
 /// 交互元素表与组件状态
@@ -322,6 +333,9 @@ mod focused_edit;
 mod key_names;
 /// 视觉行：折行结果、按行移动光标、点击定位、按词移动
 pub mod text_lines;
+/// 横竖两个方向同时滚的 scroll-view：横向控制器（键 `"{id}#x"`）
+mod scroll_2d;
+pub use scroll_2d::{scroll_base_id, scroll_x_key, SCROLL_X_SUFFIX};
 
 pub use edit_history::{EditHistory, EditKind};
 pub use slider::{DraggingSlider, SliderSpec};
@@ -351,6 +365,7 @@ impl InteractionManager {
             is_selecting_text: false,
             selection_anchor: None,
             text_layouts: HashMap::new(),
+            focus_request: None,
         }
     }
 

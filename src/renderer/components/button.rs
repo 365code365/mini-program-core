@@ -253,6 +253,7 @@ impl ButtonComponent {
         Self::draw_with_state(node, canvas, text_renderer, x, y, w, h, sf, false);
     }
     
+    #[allow(clippy::too_many_arguments)]
     pub fn draw_with_state(
         node: &RenderNode, 
         canvas: &mut Canvas, 
@@ -262,7 +263,24 @@ impl ButtonComponent {
         w: f32, 
         h: f32, 
         sf: f32,
+        pressed: bool,
+    ) {
+        // 不带动画时钟的路径（画廊 / 离屏）：转圈停在第 0 格
+        let spin = is_loading(node).then_some(0);
+        Self::draw_full(node, canvas, text_renderer, (x, y, w, h), sf, pressed, spin);
+    }
+
+    /// 同上，`spin` 是 loading 转圈此刻在第几格（0~11，`None` = 不画转圈）。
+    /// 带交互的绘制路径按动画时钟给（`wxml_renderer/self_anim.rs`），每格 1/12 秒
+    #[allow(clippy::too_many_arguments)]
+    pub fn draw_full(
+        node: &RenderNode,
+        canvas: &mut Canvas,
+        text_renderer: Option<&TextRenderer>,
+        (x, y, w, h): (f32, f32, f32, f32),
+        sf: f32,
         _pressed: bool,
+        spin: Option<u32>,
     ) {
         let style = &node.style;
         // 点击态不再在这里另外压暗、盖一层黑。微信的按压就是 `hover-class`
@@ -328,19 +346,68 @@ impl ButtonComponent {
             let color = style.text_color.unwrap_or(Color::WHITE);
             let size = style.font_size * sf;
             let tw = tr.measure_text(&node.text, size);
+            // loading：文字前面一个转圈（微信 `wx-button[loading]:before`：18px、右边距 .34em，与文字一起居中）
+            let (spin_w, gap) = match spin {
+                Some(_) => (spinner_size(style.font_size) * sf, if node.text.is_empty() { 0.0 } else { 0.34 * size }),
+                None => (0.0, 0.0),
+            };
+            let total = spin_w + gap + tw;
             
             // 根据 text-align 计算 x 位置
-            let tx = match style.text_align {
-                TextAlign::Center => x + (w - tw) / 2.0,
-                TextAlign::Right => x + w - tw - 8.0 * sf, // 右边留点 padding
+            let left = match style.text_align {
+                TextAlign::Center => x + (w - total) / 2.0,
+                TextAlign::Right => x + w - total - 8.0 * sf, // 右边留点 padding
                 TextAlign::Left | TextAlign::Justify => x + 8.0 * sf, // 左边留点 padding
             };
+            let tx = left + spin_w + gap;
             
             // 垂直居中
             let ty = y + (h - size) / 2.0 + size;
+
+            if let Some(step) = spin {
+                draw_spinner(canvas, left, y + (h - spin_w) / 2.0, spin_w, step, color);
+            }
             
             let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill);
             tr.draw_text(canvas, &node.text, tx, ty, size, &paint);
         }
+    }
+}
+
+/// `loading` 属性为真
+pub fn is_loading(node: &RenderNode) -> bool {
+    node.attrs.get("loading").is_some_and(|s| crate::renderer::components::attr_is_true(s))
+}
+
+/// 转圈边长（逻辑像素）：微信默认按钮是 18px；字号更小（mini 按钮 13px）时跟字号走，别比字还大
+fn spinner_size(font_size: f32) -> f32 {
+    font_size.min(18.0)
+}
+
+/// WeUI 的 loading 图标：12 根辐条，透明度由浅到深，每过一格整体转 30°（`steps(12)`，1 秒一圈）
+fn draw_spinner(canvas: &mut Canvas, x: f32, y: f32, size: f32, step: u32, color: Color) {
+    let (cx, cy) = (x + size / 2.0, y + size / 2.0);
+    let (r_in, len, sw) = (size * 0.24, size * 0.24, (size * 0.085).max(1.0));
+    for i in 0..12u32 {
+        // 第 step 格时最深的那根落在 12 点方向，逆时针依次变浅
+        let k = (i + 12 - step % 12) % 12;
+        let alpha = (color.a as f32 * (0.25 + 0.75 * (12 - k) as f32 / 12.0)) as u8;
+        let a = (i as f32) * std::f32::consts::TAU / 12.0 - std::f32::consts::FRAC_PI_2;
+        let (dx, dy) = (a.cos(), a.sin());
+        let mut path = Path::new();
+        let (x0, y0) = (cx + dx * r_in, cy + dy * r_in);
+        let (x1, y1) = (cx + dx * (r_in + len), cy + dy * (r_in + len));
+        // 辐条：沿方向的细长圆角矩形，用两端各半宽的法向偏移拼出四边形
+        let (nx, ny) = (-dy * sw / 2.0, dx * sw / 2.0);
+        path.move_to(x0 + nx, y0 + ny);
+        path.line_to(x1 + nx, y1 + ny);
+        path.line_to(x1 - nx, y1 - ny);
+        path.line_to(x0 - nx, y0 - ny);
+        path.close();
+        let paint = Paint::new()
+            .with_color(Color::new(color.r, color.g, color.b, alpha))
+            .with_style(PaintStyle::Fill)
+            .with_anti_alias(true);
+        canvas.draw_path(&path, &paint);
     }
 }

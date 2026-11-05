@@ -1,0 +1,38 @@
+<live-pusher id="pusher" class="pusher" url="{{url}}" mode="SD" enable-mic="{{mic}}" device-position="{{position}}" local-mirror="auto"
+  beauty="{{beauty}}" whiteness="{{whiteness}}" filter="{{filter}}" picture-in-picture-mode="{{pip}}"
+  bindstatechange="onState" bindnetstatus="onNet" binderror="onError"
+  bindbgmstart="onBgmStart" bindbgmprogress="onBgmProgress" bindbgmcomplete="onBgmComplete"
+  bindenterpictureinpicture="onPipEnter" bindleavepictureinpicture="onPipLeave"></live-pusher>
+<view class="card">
+  <text class="title">推流地址（rtmp）</text>
+  <input class="url" value="{{url}}" bindinput="onUrl" />
+  <text class="hint">画面由宿主的相机采集，同层渲染进页面；推流是宿主硬编 H.264 + AAC 后经 RTMP 发出（Android）。本机验收：电脑上 `ffmpeg -listen 1 -i rtmp://0.0.0.0:1935/live/nc -c copy out.flv`，手机 `adb reverse tcp:1935 tcp:1935`。</text>
+</view>
+<view class="card">
+  <text class="title">LivePusherContext</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="cmd" data-m="start">start</view>
+    <view class="btn-s" bindtap="cmd" data-m="stop">stop</view>
+    <view class="btn-s" bindtap="cmd" data-m="pause">pause</view>
+    <view class="btn-s" bindtap="cmd" data-m="resume">resume</view>
+    <view class="btn-o" bindtap="cmd" data-m="switchCamera">switchCamera</view>
+    <view class="btn-o" bindtap="cmd" data-m="toggleTorch">toggleTorch</view>
+    <view class="btn-o" bindtap="snap">snapshot</view>
+    <view class="btn-o" bindtap="bgm">playBGM</view>
+    <view class="btn-o" bindtap="cmd" data-m="stopBGM">stopBGM</view>
+  </view>
+  <view class="btns">
+    <view class="btn-o" bindtap="beautyOn">美颜 9 · 美白 5</view>
+    <view class="btn-o" bindtap="nextFilter">滤镜：{{filter}}</view>
+    <view class="btn-o" bindtap="pipGo">小窗（push）</view>
+  </view>
+  <view class="result"><text>{{result}}</text></view>
+  <image wx:if="{{shot}}" class="shot" src="{{shot}}" mode="aspectFit"></image>
+</view>
+<view class="card">
+  <text class="title">状态</text>
+  <view class="kv"><text class="kv-k">码率</text><text class="kv-v">{{net}}</text></view>
+  <view class="log">
+    <text class="log-line" wx:for="{{logs}}" wx:key="*this">{{item}}</text>
+  </view>
+</view>

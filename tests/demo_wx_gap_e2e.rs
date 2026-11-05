@@ -178,14 +178,16 @@ fn skyline_页_网格_movable_手势_面板_动画() {
     assert_eq!(e.data("gestureText"), "长按松手（END）");
 
     // draggable-sheet：scrollTo 0.9 → 面板高 = 0.9 × 240；往下拖 90px 松手，吸到最近的吸附点 0.5，页面不跟着滚
+    // scrollTo 与吸附都带动画（官方 DraggableSheetContext.scrollTo：animated 默认 true、300ms），走完才报最终 size
     e.tap(B, 5);
-    assert_eq!(e.data("sheetPct"), "90");
+    assert!(e.wait_until(1500, |e| e.data("sheetPct") == "90"), "{}", e.data("sheetPct"));
+    e.wait(100);
     let panel = e.visible(".sheet-panel", 0);
     assert!((panel[3] - 216.0).abs() < 1.0, "{panel:?}");
     let scroll_before = e.e.scroll_position();
     e.drag((panel[0] + 100.0, panel[1] + 20.0), (panel[0] + 100.0, panel[1] + 110.0), 8);
-    assert_eq!(e.data("sheetPct"), "50", "松手吸到 0.5");
-    assert_eq!(e.e.scroll_position(), scroll_before, "拖面板时页面不滚（catchtouchmove）");
+    assert!(e.wait_until(1500, |e| e.data("sheetPct") == "50"), "松手吸到 0.5：{}", e.data("sheetPct"));
+    assert_eq!(e.e.scroll_position(), scroll_before, "拖面板时页面不滚（面板里没有列表：host::gesture 归面板）");
 
     // this.animate：800ms 后回调、#box 停在终态颜色；进度条跟着共享值到 100%；clearAnimation 回原样
     e.tap(B, 7);

@@ -39,7 +39,8 @@ const WXML: &str = r#"<form bindsubmit="onSubmit" bindreset="onReset">
   <view class="row"><button form-type="submit" bindtap="onBtn" style="width:200px;height:44px;margin:0">提交</button></view>
   <view class="row"><button form-type="reset" style="width:200px;height:44px;margin:0">重置</button></view>
 </form>
-<view class="row"><button form-type="submit" style="width:200px;height:44px;margin:0">表单外</button></view>"#;
+<view class="row"><button form-type="submit" style="width:200px;height:44px;margin:0">表单外</button></view>
+<view class="row" bindtap="onRow"><button disabled bindtap="onBtnDis" style="width:200px;height:44px;margin:0">禁用</button></view>"#;
 
 const WXSS: &str = ".row{height:50px;overflow:hidden}";
 
@@ -47,6 +48,8 @@ const JS: &str = r#"
 Page({
   data: { opts: ['x', 'y', 'z'], log: [], submitted: null, resetDetail: null },
   onBtn() { this.data.log.push('tap'); this.setData({ log: this.data.log }); },
+  onBtnDis() { this.data.log.push('disabled'); this.setData({ log: this.data.log }); },
+  onRow(e) { this.data.log.push('row:' + e.target.dataset.k + ':' + (e.target.id === e.currentTarget.id)); this.setData({ log: this.data.log }); },
   onSubmit(e) {
     this.data.log.push('submit');
     this.setData({ log: this.data.log, submitted: JSON.stringify(e.detail) });
@@ -161,8 +164,8 @@ fn submit_reflects_user_edits_then_reset_clears_them() {
     e.tap_row(SUBMIT);
     assert_eq!(
         e.submitted()["value"],
-        serde_json::json!({ "nick": "", "agree": false, "vol": 0, "tags": [], "sex": "", "pk": 2 }),
-        "重置：输入框清空、开关与勾选取消、滑块回到 min；picker 不留状态、不动"
+        serde_json::json!({ "nick": "", "agree": true, "vol": 0, "tags": ["a"], "sex": "f", "pk": 2 }),
+        "重置：输入框清空、滑块回到 min；开关 / 勾选 / 单选回到属性里的 checked（WP-B6）；picker 回到属性值"
     );
 }
 
@@ -173,4 +176,15 @@ fn button_outside_form_does_not_submit() {
     let mut e = E::new(&fx);
     e.tap_row(11);
     assert_eq!(e.js("__currentPage.data.submitted"), "null");
+}
+
+/// WP-B6：禁用的按钮不派 bindtap（WebView 版 wx-button[disabled] 是 pointer-events:none），
+/// 点击落到外层的 view 上，`target` 是外层自己
+#[test]
+fn disabled_button_does_not_fire_tap() {
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    let fx = fixture("disabled");
+    let mut e = E::new(&fx);
+    e.tap_row(12);
+    assert_eq!(e.js("JSON.stringify(__currentPage.data.log)"), r#"["row:undefined:true"]"#);
 }

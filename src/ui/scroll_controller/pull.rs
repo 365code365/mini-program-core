@@ -37,6 +37,11 @@ impl ScrollController {
         std::mem::take(&mut self.pull_triggered)
     }
 
+    /// 取走上一次松手时到达过的最大顶部越界量（逻辑 px，读后清零）：下拉二级（`refresher-two-level-threshold`）用
+    pub fn take_pull_peak(&mut self) -> f32 {
+        std::mem::take(&mut self.last_pull_peak)
+    }
+
     /// 当前顶部越界量（逻辑 px，未越界为 0）。宿主用它画下拉指示器的进度。
     pub fn top_overscroll(&self) -> f32 {
         (self.min_bound() - self.position).max(0.0)
@@ -58,6 +63,7 @@ impl ScrollController {
         if self.max_over_top >= self.pull_threshold && self.top_inset <= 0.01 {
             self.pull_triggered = true;
         }
+        self.last_pull_peak = self.max_over_top;
         self.max_over_top = 0.0;
     }
     

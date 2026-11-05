@@ -62,6 +62,13 @@ pub fn handle_mouse_pressed(
                         // 根据滚动方向使用 x 或 y
                         let drag_pos = if element.is_horizontal { x } else { y };
                         controller.begin_drag(drag_pos, timestamp);
+                        // 横竖都能滚的横向那一半（ui/interaction/scroll_2d.rs）
+                        if interaction.scroll_is_2d(&element.id) {
+                            let key = crate::ui::interaction::scroll_x_key(&element.id);
+                            if let Some(c) = interaction.get_scroll_controller_mut(&key) {
+                                c.begin_drag(x, timestamp);
+                            }
+                        }
                         interaction.dragging_scroll_area = Some(element.id.clone());
                         return true;
                     }
@@ -95,6 +102,8 @@ pub fn handle_content_click(
     tap_ctx: (u32, u64),
 ) -> Option<InteractionResult> {
     let actual_y = y + scroll_pos;
+    // 上一次点击没派掉的「换焦点失焦」（label 转发那条路）不跨到这一次
+    crate::ui::interaction::edit_note::take_switch();
     let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - tabbar_height()) as f32 } else { LOGICAL_HEIGHT as f32 };
     
     // ── 覆盖层优先，且到此为止 ──
@@ -111,6 +120,7 @@ pub fn handle_content_click(
             if !on_fixed_with_handler {
                 // 落在覆盖层上但这一点没有处理器：消费掉，不往下透（弹窗里的 form-type 按钮照样提交）
                 let result = interaction.handle_click_scoped(x, y, true);
+                blur_switched_input(app, Some(renderer));
                 if let Some(r) = &result {
                     prepare_focused_input(interaction, Some(renderer), text_renderer, scale_factor, x, y, r);
                     // 拨了覆盖层里的开关 / 单选 / 勾选：它们的 change 照发（这里只是「没有 tap 处理器」）。
@@ -136,6 +146,7 @@ pub fn handle_content_click(
     if on_fixed_with_handler {
         // 检查交互元素（视口坐标，且只看覆盖层自己的元素）
         let result = interaction.handle_click_scoped(x, y, true);
+        blur_switched_input(app, renderer);
         if let Some(r) = &result {
             prepare_focused_input(interaction, renderer, text_renderer, scale_factor, x, y, r);
         }
@@ -158,6 +169,7 @@ pub fn handle_content_click(
     
     // 使用交互管理器处理点击
     if let Some(result) = interaction.handle_click(x, adjusted_y) {
+        blur_switched_input(app, renderer);
         prepare_focused_input(interaction, renderer, text_renderer, scale_factor, x, adjusted_y, &result);
         
         if let Some(renderer) = renderer {
@@ -170,8 +182,10 @@ pub fn handle_content_click(
     } else {
         // 点击了非交互区域：输入框失焦，**而且这次点击照常派发**（与微信一致：先 blur，再 tap）。
         // 从前失焦之后直接 return，点的那个 bindtap 吞掉了 —— 输入框聚焦着点旁边的「×」清空，
-        // 第一下只收了键盘、没清（news-app 搜索页，真机上反馈「点 × 清不掉」）
-        if let Some(InteractionResult::InputBlur { id, value, .. }) = interaction.blur_input() {
+        // 第一下只收了键盘、没清（news-app 搜索页，真机上反馈「点 × 清不掉」）。
+        // `hold-keyboard`（官方：「focus 时，点击页面的时候不收起键盘」）：不失焦，点击照常往下派
+        let hold = interaction.focused_input.as_ref().is_some_and(|f| f.hold_keyboard);
+        if let Some(InteractionResult::InputBlur { id, value, .. }) = (!hold).then(|| interaction.blur_input()).flatten() {
             dispatch_input_event(app, renderer, &id, "blur", &value);
             if let Some(renderer) = renderer {
                 dispatch_tap_chain(app, renderer, x, adjusted_y, Some(false), tap_ctx);
@@ -196,6 +210,9 @@ pub fn handle_content_click(
     None
 }
 
+use super::builtin_tap::exclusive_radio;
+use super::input_focus::blur_switched_input;
+
 /// 刚聚焦的输入框：按渲染器登记的属性补齐编辑参数，并把光标放到点中的位置。
 ///
 /// `hit_y` 是交给 `handle_click` 的那个纵坐标（与 `Focus.bounds` 同一坐标系）。
@@ -211,6 +228,10 @@ fn prepare_focused_input(
     hit_y: f32,
     result: &InteractionResult,
 ) {
+    // 每条点击出口都经过这里（结果刚出来、事件还没派）：选中一个 radio 时把同组其它项取消
+    if let (InteractionResult::Select { id, .. }, Some(r)) = (result, renderer) {
+        exclusive_radio(interaction, r, id);
+    }
     let InteractionResult::Focus { id, bounds, click_x, .. } = result else { return };
     let sf = scale_factor as f32;
     let region = renderer.and_then(|r| r.input_region(id));
@@ -222,24 +243,10 @@ fn prepare_focused_input(
             .or_else(|| binding.and_then(|b| b.data.get(k)))
             .cloned()
     };
-    let truthy = |k: &str| attr(k).map(|v| crate::renderer::components::attr_is_true(&v)).unwrap_or(false);
     let layout = interaction.text_layouts.get(id.as_str()).cloned();
     let Some(input) = interaction.focused_input.as_mut() else { return };
-    if let Some(r) = region {
-        input.multiline = r.tag == "textarea";
-    }
-    if let Some(ml) = attr("maxlength").and_then(|s| s.parse::<i32>().ok()) {
-        input.maxlength = ml;
-    }
-    input.is_password = crate::renderer::components::is_password_input(attr("password").as_deref(), attr("type").as_deref());
-    if let Some(t) = attr("type") {
-        input.input_type = t;
-    }
-    // textarea 的右下角默认是「换行」（`return`），input 默认是「完成」
-    input.confirm_type = attr("confirm-type")
-        .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| if input.multiline { "return" } else { "done" }.to_string());
-    input.confirm_hold = truthy("confirm-hold");
+    // maxlength / type / 多行 / confirm-* / hold-keyboard：与按属性聚焦同一份（input_focus.rs）
+    super::input_focus::fill_from_attrs(input, region.map(|r| r.tag.as_str()), attr);
 
     // 按上一帧画出来的排版定位（多行的折行、单行的 text-align / 字号 / 内边距 / 横向滚动都在里面）。
     // 画的是占位符、或者值已经变了就不能用：多行留在末尾，单行退回下面按默认字号估
@@ -335,6 +342,9 @@ pub(super) fn dispatch_component_events(
 
 /// 命中点所在的 `checkbox-group` / `radio-group` 里，当前选中项的 value 集合。
 /// 不在这类组里返回 `None`（那就是单独的 switch/checkbox，走布尔语义）。
+///
+/// 成员按布局树找（`WxmlRenderer::choice_group`）：滚出视口的项也算。从前按本帧的交互元素表
+/// （`checked_values_in`）：长列表里滚出去的已选项不进 `detail.value`
 fn group_values(
     renderer: &WxmlRenderer,
     interaction: &InteractionManager,
@@ -347,13 +357,21 @@ fn group_values(
         .dispatch_chain(x, hit_y, "change", scope)
         .into_iter()
         .find(|b| b.tag == group_tag)?;
-    let kind = if group_tag == "checkbox-group" {
-        InteractionType::Checkbox
-    } else {
-        InteractionType::Radio
-    };
-    Some(interaction.checked_values_in(&group.bounds, kind))
+    match renderer.choice_group(&group.component_id, interaction) {
+        Some(members) => Some(
+            members
+                .into_iter()
+                .filter(|(id, _, attr)| interaction.effective_checked(id, *attr))
+                .map(|(_, value, _)| value)
+                .collect(),
+        ),
+        None => {
+            let kind = if group_tag == "checkbox-group" { InteractionType::Checkbox } else { InteractionType::Radio };
+            Some(interaction.checked_values_in(&group.bounds, kind))
+        }
+    }
 }
+
 
 /// 把一次 tap 交给统一的事件派发出口（捕获→冒泡、catch、mut-bind、完整事件对象）。
 /// `hit_y` 是对应坐标系下的纵坐标（覆盖层用视口坐标，正常流含滚动偏移）。
@@ -382,6 +400,10 @@ fn dispatch_tap_chain(
 /// `bindinput` 的处理函数返回了一个字符串：用它替换输入框的内容（官方 component/input：
 /// 「处理函数可以直接 return 一个字符串，将替换输入框的内容」）。在派发完 `input` 之后立刻取
 pub fn take_input_replacement(app: &MiniApp) -> Option<String> {
+    // textarea：「bind:input 处理函数的返回值并不会反映到 textarea 上」（官方 textarea.html）
+    if crate::ui::interaction::edit_note::last_edit_multiline() {
+        return None;
+    }
     let raw = app
         .eval("typeof __lastHandlerResult === 'string' ? JSON.stringify(__lastHandlerResult) : ''")
         .ok()?;
@@ -399,16 +421,30 @@ pub fn dispatch_input_event(
     value: &str,
 ) -> bool {
     // 微信的 detail：input 是 `{value, cursor, keyCode}`，focus 是 `{value, height}`，
-    // blur / confirm 是 `{value}`。
+    // textarea 的 blur 是 `{value, cursor}`、input 的 blur 与 confirm 是 `{value}`。
+    // 光标 / keyCode / 失焦时内容变没变由产生结果的那一侧记下（ui/interaction/edit_note.rs）
+    use crate::ui::interaction::edit_note;
     let mut detail = serde_json::json!({ "value": value });
     match event_type {
         "input" => {
-            detail["cursor"] = serde_json::json!(value.chars().count());
-            detail["keyCode"] = serde_json::json!(0);
+            let note = edit_note::take_edit(component_id, value);
+            detail["cursor"] = serde_json::json!(note.as_ref().map(|n| n.cursor).unwrap_or_else(|| value.chars().count()));
+            detail["keyCode"] = serde_json::json!(note.map(|n| n.key_code).unwrap_or(0));
         }
         "focus" => {
-            // 软键盘高度：桌面宿主没有软键盘，微信在无键盘时也给 0
+            // 软键盘高度：桌面宿主没有软键盘，微信在无键盘时也给 0（SDK 用宿主报来的高度，engine_input.rs）
             detail["height"] = serde_json::json!(0);
+        }
+        "blur" => {
+            if let Some(n) = edit_note::take_blur(component_id) {
+                if n.multiline {
+                    detail["cursor"] = serde_json::json!(n.cursor);
+                } else if n.changed {
+                    // input 的 bindchange：「键盘非聚焦状态内容改变时触发」，失焦时内容与聚焦时不同才发。
+                    // 顺序按 DOM（change 先于 blur），微信真机顺序待验
+                    dispatch_input_detail(app, renderer, component_id, "change", serde_json::json!({ "value": value }));
+                }
+            }
         }
         _ => {}
     }
@@ -429,11 +465,13 @@ pub fn dispatch_input_detail(
         Some(b) => b,
         // 兜底：滚动后重算出来的 `component_id` 可能与聚焦那一刻不同（id 含坐标）。
         // 此时若全页只有唯一一条该类绑定，仍按它派发；有多条则宁可不发，避免串台。
+        // 只认输入框自己的绑定：`change` 这类名字别的组件也有（picker 的 bindchange），没写 bindchange 的输入框
+        // 失焦时退到「全页唯一一条 change」就派给了 picker（train 的乘车人页：手机号写进了票种下标）
         None => {
             let mut it = renderer
                 .get_event_bindings()
                 .iter()
-                .filter(|b| b.event_type == event_type);
+                .filter(|b| b.event_type == event_type && matches!(b.tag.as_str(), "input" | "textarea"));
             match (it.next(), it.next()) {
                 (Some(only), None) => only,
                 _ => return false,

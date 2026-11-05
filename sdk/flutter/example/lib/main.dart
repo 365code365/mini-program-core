@@ -274,12 +274,11 @@ class _MiniPageState extends State<MiniAppPage> {
     launchOptions: widget.launchOptions,
     backend: _backend,
     // 内置示例里 media / perf 页有 <video>，宿主 tab 有 <map>。
-    // video 在 Android 上走同层渲染（插件自带的 MediaPlayer 解码、引擎把帧画进页面，滑动时贴着页面走），
-    // 不经过下面的 nativeViewBuilder；iOS 上仍由 HostVideo 盖在画面上
-    // map：Android 上用插件自带的（builtinMap，瓦片地图同层渲染进页面，拖动 / 缩放 / MapContext 都有），
-    // web-view / live-player 同样是插件自带的；iOS 上暂时由下面 nativeViewBuilder 的假地图盖在画面上。
+    // video 走同层渲染（插件自带的播放器解码：Android MediaPlayer / iOS AVPlayer，引擎把帧画进页面，滑动时贴着页面走），
+    // 不经过下面的 nativeViewBuilder。
+    // map / web-view / live-player / camera / live-pusher：插件自带（Android 与 iOS 同一套行为）。
     // （对照用：`flutter build apk --dart-define=SAME_LAYER_MAP=false` 编一份假地图盖在画面上的 —— 一滑就错开）
-    nativeComponents: (Platform.isIOS || !const bool.fromEnvironment('SAME_LAYER_MAP', defaultValue: true))
+    nativeComponents: !const bool.fromEnvironment('SAME_LAYER_MAP', defaultValue: true)
         ? const ['video', 'map']
         : const ['video'],
     // A/B 用：`--dart-define=BUILTIN_WEBVIEW=false` 编一份不带插件自带 web-view 的

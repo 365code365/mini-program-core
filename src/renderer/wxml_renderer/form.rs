@@ -105,6 +105,9 @@ impl WxmlRenderer {
                     cx += -c.get_position() * sf;
                 } else {
                     cy += -c.get_position() * sf;
+                    if super::scroll_views::scroll_both(&n.attrs) {
+                        cx -= interaction.scroll_x_of(&id) * sf;
+                    }
                 }
             }
         }

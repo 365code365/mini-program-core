@@ -77,6 +77,23 @@ impl crate::MiniAppWindow {
         r.animated_images_due(y0, y1).into_iter().reduce(Self::union_of)
     }
 
+    /// 页面级吸附元素上次画的 ∪ 这次要画的（`wxml_renderer/sticky.rs`，与 SDK `sticky_due` 同一个函数），并成一块
+    pub(crate) fn sticky_damage(&mut self) -> Option<GeoRect> {
+        let has_tabbar = self.page_stack.last().map(|p| self.is_tabbar_page(&p.path)).unwrap_or(false);
+        let vp = (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32;
+        let scroll = self.scroll.get_position();
+        let (y0, y1) = self.gif_window();
+        let r = self.renderer.as_mut()?;
+        r.sticky_damage(scroll, vp)
+            .into_iter()
+            .filter_map(|d| {
+                // 夹进裁剪窗：窗外的本来就不在已绘制条带里
+                let (a, b) = (d.y.max(y0), (d.y + d.height).min(y1));
+                (b > a).then(|| GeoRect::new(d.x, a, d.width, b - a))
+            })
+            .reduce(Self::union_of)
+    }
+
     /// 光标闪烁的驱动：相位一翻转就安排一次重绘（含 fixed 覆盖层）。
     ///
     /// 只在**翻转的那一帧**标脏，不是每帧都标 —— 覆盖层重画一次要走一遍
@@ -126,6 +143,11 @@ impl crate::MiniAppWindow {
         let area = if structural { AreaDamage::Nothing } else { self.scroll_area_damage() };
         // 换了帧的动图：只重画它们自己那块（从前不算「在动」，静止页面上的 GIF 一动不动）
         let gif = if structural { None } else { self.animated_image_damage() };
+        // 吸附元素（position: sticky / sticky-header）：页面滚动时只重画它上次与这次画的那两块（并进 gif 那一路）
+        let gif = match (gif, if structural { None } else { self.sticky_damage() }) {
+            (Some(g), Some(s)) => Some(Self::union_of(g, s)),
+            (g, s) => g.or(s),
+        };
         if !(structural || css_anim || gif.is_some()) && matches!(area, AreaDamage::Nothing) {
             return;
         }
@@ -278,10 +300,23 @@ impl crate::MiniAppWindow {
             }
             any_moved = true;
             // 覆盖层里的要连覆盖层一起重画；本帧没登记（滚出视口了）的不知道画在哪
-            let Some((b, false)) = self.interaction.scroll_area_bounds(id) else {
+            // clip=false 的连盒子外画着的那圈一起（scroll_area_damage_bounds）；超出画布的夹回画布里
+            let Some((b, false)) = self.interaction.scroll_area_damage_bounds(id) else {
                 return AreaDamage::Full;
             };
             let r = GeoRect::new(b.x * sf, b.y * sf, b.width * sf, b.height * sf);
+            let r = match &self.canvas {
+                Some(c) => {
+                    let c = c.read();
+                    let (x0, y0) = (r.x.max(0.0), r.y.max(0.0));
+                    let (x1, y1) = ((r.x + r.width).min(c.width() as f32), (r.y + r.height).min(c.height() as f32));
+                    if x1 <= x0 || y1 <= y0 {
+                        continue;
+                    }
+                    GeoRect::new(x0, y0, x1 - x0, y1 - y0)
+                }
+                None => r,
+            };
             acc = Some(match acc {
                 Some(a) => Self::union_of(a, r),
                 None => r,

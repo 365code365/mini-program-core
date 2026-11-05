@@ -1,0 +1,1 @@
+<view wx:if="{{avatar}}" class="od-avatar"></view><text wx:else>{{text}}</text>

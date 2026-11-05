@@ -602,6 +602,8 @@ table { width: 100%; border-collapse: collapse; }
 
 /* 六组标签：2 列三行 / 1 列 */
 .tagset { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+/* 组数是奇数时最后一组占满一行，不留半格空位 */
+.tagset > .tag-group:last-child:nth-child(odd) { grid-column: 1 / -1; }
 @media (max-width: 700px) { .tagset { grid-template-columns: 1fr; } }
 .tag-group { padding: 16px 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); transition: border-color .22s; }
 .tag-group:hover { border-color: var(--line-2); }

@@ -41,8 +41,8 @@
                     for (var k in d) if (k !== '__node') out[k] = d[k];
                     if (n.kind === 'canvas' && typeof __canvas2dNode === 'function') out.node = __canvas2dNode(n);
                     else if (n.kind === 'scroll-view') out.node = __scrollViewContext(n.id);
-                    else if (n.kind === 'snapshot') out.node = __snapshotNode(n.id);
-                    else out.node = __builtinInstance(n.id) || null;
+                    else if (n.kind === 'snapshot') out.node = __snapshotNode(n.cid || n.id);
+                    else out.node = __builtinInstance(n.id, n.inst) || null;
                     d = out;
                 }
                 if (d.__ctx) {
@@ -52,6 +52,8 @@
                     else if (c.kind === 'canvas') o2.context = wx.createCanvasContext(c.id);
                     else if (c.kind === 'map') o2.context = wx.createMapContext(c.id);
                     else if (c.kind === 'live-player') o2.context = wx.createLivePlayerContext(c.id);
+                    else if (c.kind === 'camera') o2.context = wx.createCameraContext();
+                    else if (c.kind === 'live-pusher') o2.context = wx.createLivePusherContext();
                     else if (c.kind === 'editor') { var ed = __builtinInstance(c.id); o2.context = ed && ed.__editorContext ? ed.__editorContext() : null; }
                     else o2.context = null;
                     d = o2;
@@ -69,26 +71,43 @@
                 if (p.cb) p.cb(res);
             };
 
-            // ScrollViewContext（scroll-view 的 node）：scrollTo / scrollIntoView / triggerRefresh / closeRefresh
+            // ScrollViewContext（scroll-view 的 node，官方 api/ui/scroll/ScrollViewContext.html）：
+            // scrollTo / scrollIntoView（alignment）/ triggerRefresh / closeRefresh；可写属性 scrollEnabled / bounces /
+            // showScrollbar / pagingEnabled / fastDeceleration / decelerationDisabled 写了就发给宿主（host/selector_query.rs）。
+            // 同一页同一个 scroll-view 拿到的是同一个对象（属性读回来是写过的值）
+            var __svCtxs = {};
             function __scrollViewContext(id) {
+                var key = (typeof getCurrentPages === 'function' ? getCurrentPages().length : 0) + '|' + id;
+                if (__svCtxs[key]) return __svCtxs[key];
                 var req = function(op, extra) {
                     var o = { id: id, op: op };
                     if (extra) for (var k in extra) o[k] = extra[k];
                     __hostReq('scrollView', o);
                 };
-                return {
-                    scrollEnabled: true,
+                var ctx = {
                     scrollTo: function(opt) {
                         opt = opt || {};
                         req('scrollTo', { top: opt.top, left: opt.left, animated: opt.animated !== false, duration: opt.duration === undefined ? 300 : opt.duration });
                     },
                     scrollIntoView: function(selector, opt) {
                         opt = opt || {};
-                        req('scrollIntoView', { selector: String(selector), offset: Number(opt.offset) || 0, animated: opt.animated !== false });
+                        req('scrollIntoView', { selector: String(selector), offset: Number(opt.offset) || 0, alignment: opt.alignment || 'start', animated: opt.animated !== false });
                     },
-                    triggerRefresh: function() { req('triggerRefresh'); },
-                    closeRefresh: function() { req('closeRefresh'); }
+                    triggerRefresh: function(opt) { req('triggerRefresh'); },
+                    closeRefresh: function() { req('closeRefresh'); },
+                    triggerTwoLevel: function(opt) { req('triggerTwoLevel'); },
+                    closeTwoLevel: function(opt) { req('closeTwoLevel'); }
                 };
+                var props = { scrollEnabled: true, bounces: true, showScrollbar: true, pagingEnabled: false, fastDeceleration: false, decelerationDisabled: false };
+                Object.keys(props).forEach(function(k) {
+                    Object.defineProperty(ctx, k, {
+                        enumerable: true,
+                        get: function() { return props[k]; },
+                        set: function(v) { v = !!v; if (props[k] === v) return; props[k] = v; req('set', { key: k, value: v }); }
+                    });
+                });
+                __svCtxs[key] = ctx;
+                return ctx;
             }
 
             // ---------- IntersectionObserver ----------
@@ -152,18 +171,37 @@
             wx.nextTick = function(fn) { if (typeof fn === 'function') Promise.resolve().then(fn); };
 
             // 按宿主 id 找当前页里的组件实例（引擎内置组件：draggable-sheet 的 scrollTo、editor 的 EditorContext）
-            function __builtinInstance(id) {
-                if (!id || typeof __selectComponentsFrom !== 'function' || !__currentPage) return null;
-                try { return __selectComponentsFrom(__compStateOf(__currentPage), '', '#' + id, false); } catch (e) { return null; }
+            // `inst`：组件实例键（宿主从节点的 __inst 取）—— 没写 id 的节点（`select('.sheet').node()`）靠它
+            function __builtinInstance(id, inst) {
+                if (!__currentPage) return null;
+                var st = __compStateOf(__currentPage);
+                if (inst && st && st.map && st.map[inst]) return st.map[inst];
+                if (!id || typeof __selectComponentsFrom !== 'function') return null;
+                try { return __selectComponentsFrom(st, '', '#' + id, false); } catch (e) { return null; }
             }
-            // <snapshot> 的 node：takeSnapshot 要截渲染层的像素，引擎还没有这条通道（写明，fail 而不是假成功）
-            function __snapshotNode(id) {
+            // <snapshot> 的 node：takeSnapshot({type: 'file' | 'arraybuffer', format: 'png' | 'rgba'})（官方 Snapshot.takeSnapshot，
+            // 两者默认 file / png，不支持 Promise 风格）。宿主下一帧把子树离屏画出来（host::snapshot）：
+            // file 回 {tempFilePath}，arraybuffer 回 {data}，另带 width / height（物理像素）
+            var __snapSeq = 0, __snapTasks = {};
+            function __snapshotNode(cid) {
                 return {
                     takeSnapshot: function(o) {
                         o = o || {};
-                        var bad = { errMsg: 'takeSnapshot:fail 当前渲染引擎不支持 snapshot 截图' };
-                        if (!o.success && !o.fail && !o.complete) return Promise.reject(bad);
-                        setTimeout(function() { o.fail && o.fail(bad); o.complete && o.complete(bad); }, 0);
+                        var seq = ++__snapSeq;
+                        __snapTasks[seq] = o;
+                        __hostReq('snapshot', { seq: seq, cid: cid, type: o.type === 'arraybuffer' ? 'arraybuffer' : 'file',
+                                                format: o.format === 'rgba' ? 'rgba' : 'png' });
                     }
                 };
             }
+            globalThis.__snapshotDone = function(seq, ok, res) {
+                var o = __snapTasks[seq];
+                if (!o) return;
+                delete __snapTasks[seq];
+                if (ok) {
+                    if (typeof res.base64 === 'string') { res.data = wx.base64ToArrayBuffer(res.base64); delete res.base64; }
+                    res.errMsg = 'takeSnapshot:ok';
+                }
+                try { (ok ? o.success : o.fail) && (ok ? o.success : o.fail)(res); } catch (e) { console.error(e); }
+                try { o.complete && o.complete(res); } catch (e) { console.error(e); }
+            };

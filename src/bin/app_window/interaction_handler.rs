@@ -62,6 +62,10 @@ pub fn handle_interaction_result(
                 window.set_ime_allowed(false);
             }
             mini_render::host::tap::dispatch_input_event(app, renderer, id, "confirm", value);
+            // 按「完成」收键盘也是失焦（与 SDK engine_input.rs 同一条规则）
+            if !*keep_focus {
+                mini_render::host::tap::dispatch_input_event(app, renderer, id, "blur", value);
+            }
         }
         InteractionResult::ButtonClick { id, bounds: _ } => {
             println!("🔘 Button clicked: {}", id);

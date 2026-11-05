@@ -188,9 +188,11 @@ impl InputComponent {
             let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill);
             
             if !node.text.is_empty() {
+                // 占位符可以有自己的字号 / 字重（placeholder-style / placeholder-class，placeholder.rs）
+                let (ph_fs, ph_bold) = if ph { super::placeholder::placeholder_font(node, sf) } else { (font_size, false) };
                 // 根据 text-align 调整 x 位置（占位符按它自己的宽对齐）
                 let final_x = if ph {
-                    let pw = tr.measure_text(&node.text, font_size);
+                    let pw = tr.measure_text(&node.text, ph_fs);
                     text_x + match style.text_align {
                         TextAlign::Center if pw <= available_width => (available_width - pw) / 2.0,
                         TextAlign::Right if pw <= available_width => available_width - pw,
@@ -200,7 +202,17 @@ impl InputComponent {
                     text_x + align_dx
                 };
                 
-                tr.draw_text(canvas, &node.text, final_x, text_y, font_size, &paint);
+                if ph && (ph_fs != font_size || ph_bold) {
+                    // 与值同一条中线：字号不同时按占位符自己的字号重算基线
+                    let ph_y = match style.vertical_align {
+                        VerticalAlign::Top => y + ph_fs + 4.0 * sf,
+                        VerticalAlign::Bottom => y + h - 4.0 * sf,
+                        _ => y + (h + ph_fs) / 2.0 - 2.0 * sf,
+                    };
+                    tr.draw_text_weighted(canvas, &node.text, final_x, ph_y, ph_fs, 0.0, ph_bold, &paint);
+                } else {
+                    tr.draw_text(canvas, &node.text, final_x, text_y, font_size, &paint);
+                }
             }
             
             // ───────────────── 光标 ─────────────────
@@ -222,7 +234,7 @@ impl InputComponent {
                 set_last_caret_rect(Some((caret_x, caret_y, caret_w, caret_h)));
                 if should_show_cursor() {
                     let paint = Paint::new()
-                        .with_color(Color::from_hex(0x07C160))
+                        .with_color(super::caret_color(node))
                         .with_style(PaintStyle::Fill)
                         .with_anti_alias(true);
                     let mut path = Path::new();

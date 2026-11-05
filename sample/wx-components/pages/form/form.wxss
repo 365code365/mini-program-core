@@ -1,0 +1,6 @@
+.ipt { height: 80rpx; padding: 0 20rpx; margin-bottom: 16rpx; background: #f4f5f7; border-radius: 12rpx; }
+.ta { width: auto; min-height: 60rpx; max-height: 200rpx; background: #f4f5f7; border-radius: 12rpx; }
+.ta2 { width: auto; height: 100rpx; margin-top: 16rpx; background: #fff8e6; }
+.opt { display: flex; flex-direction: row; align-items: center; margin-right: 32rpx; padding: 8rpx 0; }
+.fruits { height: 300rpx; }
+.fruit { display: flex; flex-direction: row; align-items: center; padding: 12rpx 0; }

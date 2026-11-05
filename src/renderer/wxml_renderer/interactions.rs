@@ -21,6 +21,10 @@ impl WxmlRenderer {
         scroll_position: f32,
         viewport_height: f32,
     ) {
+        // 吸附元素按吸住的位置登记（画它的时候，sticky.rs），这里不按原位再登记一份
+        if self.sticky_skips(node) {
+            return;
+        }
         let sf = self.scale_factor;
         let layout = taffy.layout(node.taffy_node).unwrap();
         let x = ox + layout.location.x;
@@ -256,12 +260,25 @@ impl WxmlRenderer {
                         is_horizontal: scroll_x,
                         is_fixed,
                     });
+                    // 横竖都开：横向另一个控制器（ui/interaction/scroll_2d.rs）。setData 拿掉一个方向时收掉
+                    if super::scroll_views::scroll_both(&original_node.attrs) {
+                        interaction.ensure_scroll_x(&id, logical_content_width, bounds.width);
+                    } else {
+                        interaction.drop_scroll_x(&id);
+                    }
                 }
                 // 属性、阈值、下拉刷新，并把受控位置落到控制器上（scroll_views.rs）
                 self.register_scroll_view(
                     original_node, taffy, &id, bounds,
                     (logical_content_width, logical_content_height), is_fixed, interaction,
                 );
+                // clip=false：滚动时连盒子外画着的那圈一起重画（scroll_views.rs clip_false_paint）
+                let (paint, unbounded) = self.clip_false_paint(taffy, original_node, bounds);
+                if paint.is_some() || interaction.scroll_views.get(&id).is_some_and(|s| s.paint.is_some()) {
+                    let st = interaction.scroll_views.entry(id.clone()).or_default();
+                    st.paint = paint;
+                    st.paint_unbounded = unbounded;
+                }
             }
             "checkbox" => {
                 // 受控的选中态：页面 setData 改了 checked 就以页面为准（elements.rs `sync_checked`）
@@ -355,7 +372,9 @@ impl WxmlRenderer {
                 let actual_value = Self::input_value_attr(original_node);
                 // 有交互状态用状态里的值；页面 setData 改了 value 时以页面为准（受控，elements.rs）
                 let current_value = interaction.sync_input_value(&id, &actual_value);
-                
+                // `focus` / `auto-focus` 属性（ui/interaction/focus_attr.rs）：变了排一个聚焦 / 失焦请求
+                let truthy = |k: &str| original_node.attrs.get(k).is_some_and(|s| crate::renderer::components::attr_is_true(s));
+                interaction.sync_focus_attr(&id, truthy("focus") || truthy("auto-focus"), disabled);
                 interaction.register_element(InteractiveElement {
                     interaction_type: InteractionType::Input,
                     id,

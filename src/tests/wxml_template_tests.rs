@@ -251,3 +251,23 @@ fn 模板内_class_数组绑定照常拼接() {
     );
     assert_eq!(out[0].attributes.get("class").map(String::as_str), Some("a on"));
 }
+
+// 展开 wx:for / list-builder 时作用域只拷一次、每项改写 item / index（for_loop.rs、builder.rs）：
+// 下面两条守住「复用同一份作用域」与「每项一份新作用域」结果一致
+
+#[test]
+fn wx_for_复用作用域_同名外层变量与嵌套循环照旧() {
+    let src = r#"<view wx:for="{{rows}}" wx:for-item="row"><text wx:for="{{row.cells}}">{{index}}{{item}}{{row.n}}</text></view><text>{{item}}{{index}}</text>"#;
+    let data = json!({"item": "外", "index": "层", "rows": [{"n": "a", "cells": ["x", "y"]}, {"n": "b", "cells": ["z"]}]});
+    let out = render(src, &data);
+    assert_eq!(texts(&out), vec!["0xa", "1ya", "0zb", "外层"]);
+}
+
+#[test]
+fn list_builder_多个模板变量名不同_互不串值() {
+    let src = r#"<list-builder list="{{list}}"><text slot:item="a">{{a}}{{b}}</text><text slot:item="b" slot:index="j">{{a}}{{b}}{{j}}</text></list-builder>"#;
+    let data = json!({"a": "A", "list": ["p", "q"]});
+    let out = render(src, &data);
+    // 第二个模板看见的 a 是页面的 a，不是第一个模板刚写进去的项；第一个模板看不见第二个的 b
+    assert_eq!(texts(&out), vec!["p", "Ap0", "q", "Aq1"]);
+}

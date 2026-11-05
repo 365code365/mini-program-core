@@ -41,6 +41,8 @@ impl MiniEngine {
         // 网页 postMessage 攒下的消息在离开之前派给 bindmessage（engine_webview.rs）
         self.flush_webview_messages();
         // 转场：退栈之前留一张当前画面（要离开的那页），退栈之后它盖在恢复出来的上一页上滑走
+        // picture-in-picture-mode="pop"：关掉之前进小窗（engine_pip.rs）
+        self.pip_on_leave(crate::renderer::components::pip::PipDir::Pop);
         let t = self.pump_notes.start();
         let leaving = if animate { self.snapshot_frame() } else { None };
         self.pump_notes.add("留离开那页的图", t);
@@ -147,6 +149,8 @@ impl MiniEngine {
         }
         // 分栏时从左栏打开：右栏那页关掉，新页进右栏（engine_frameset_focus.rs）
         self.frameset_drop_right();
+        // 写了 picture-in-picture-mode="push" 的 live-pusher：盖住之前进小窗（engine_pip.rs）
+        self.pip_on_leave(crate::renderer::components::pip::PipDir::Push);
         let t = self.pump_notes.start();
         self.cover_current_page();
         self.pump_notes.add("盖住旧页（onHide + 留图）", t);

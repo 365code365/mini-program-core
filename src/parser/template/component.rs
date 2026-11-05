@@ -183,6 +183,12 @@ impl TemplateEngine {
             // 的宽高、背景、子项对齐直接作用在装内容的那一层；分成宿主 + 内层两层的话内层的 flex 对齐就丢了）
             let mut merge = cx.comp_option(tag, "__mergeHost").then(|| std::mem::take(&mut host.attributes));
             for mut c in host.children {
+                // 手势组件：模板根节点不进树，绑定并到子节点上（gesture_merge.rs）。子节点是使用方的，
+                // 不打 VIRTUAL_HOST_ATTR：页面的 `.a > .b` 照样命中（手势组件不算一层）
+                if c.node_type == WxmlNodeType::Element && c.attributes.contains_key(super::gesture_merge::MERGE_CHILD_ATTR) {
+                    out.extend(super::gesture_merge::merge_into_child(c));
+                    continue;
+                }
                 if c.node_type == WxmlNodeType::Element {
                     if let Some(h) = merge.take() {
                         Self::merge_host(tag, &h, &mut c);
@@ -245,6 +251,8 @@ impl TemplateEngine {
             }
             if let Some(name) = k.strip_prefix("data-") {
                 o.dataset.insert(camel_case(name), typed_attr(v, data));
+            } else if let Some(p) = worklet_prop(k) {
+                o.props.insert(p, typed_attr(v, data));
             } else if let Some((ev, _, phase, _)) = crate::renderer::components::parse_event_attr(k) {
                 let handler = Self::interpolate(v, data).trim().to_string();
                 if handler.is_empty() {
@@ -298,6 +306,19 @@ pub fn is_property_attr(key: &str) -> bool {
         return false; // capture-bindtap / mut-bindtap 这类不带冒号的写法
     }
     !matches!(key, "class" | "style" | "id" | "hidden" | "eS" | "eA" | "slot")
+}
+
+/// Skyline 的 `worklet:` 前缀属性（组件属性，值是页面 / 外层组件上的方法名）→ 组件 properties 的名字。
+/// 引擎没有 UI 线程，worklet 函数就是普通函数，组件在逻辑层同步调它（`builtin_components/gesture.js`）：
+/// `worklet:ongesture` 与 `on-gesture-event` 是同一个属性（`onGestureEvent`），其余去掉前缀后照常驼峰
+/// （`worklet:should-accept-gesture` → `shouldAcceptGesture`、draggable-sheet 的 `worklet:onsizeupdate` → `onsizeupdate`）
+pub fn worklet_prop(key: &str) -> Option<String> {
+    let rest = key.strip_prefix("worklet:")?.trim();
+    match rest {
+        "" => None,
+        "ongesture" => Some("onGestureEvent".to_string()),
+        _ => Some(camel_case(rest)),
+    }
 }
 
 /// `foo-bar` 属性 ↔ `fooBar` 属性名（微信规则；uni-app 的 `u-p` / `u-i` 也走这条）

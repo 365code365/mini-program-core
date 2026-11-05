@@ -179,6 +179,12 @@ mod load;
 mod intrinsic;
 mod crop;
 pub use intrinsic::intrinsic_size;
+/// SVG：第一次解码时栅格化（resvg，feature `svg`），canvas 的图源也用它
+pub mod svg;
+/// Skyline `fade-in`：第一次画出来时渐显（当成会换帧的动图，只重画那块）
+pub mod fade;
+/// forceHttps、show-menu-by-longpress（建树时改 src / 挂长按菜单）
+mod attrs;
 /// 快要滑进屏幕的图先在后台解码、降采样（与绘制同一份缓存，像素不变）
 pub mod prefetch;
 use load::*;
@@ -192,11 +198,14 @@ impl ImageComponent {
         // 必须在合成默认尺寸**之前**调用 —— CSS 语义里「指定尺寸」只算作者写的那个，
         // 引擎给 textarea 之类补的默认高度不算，那种情况仍应允许被父级压缩。
         super::pin_replaced_min_size(&mut ts);
-        let events = extract_events(node);
-        let attrs = node.attributes.clone();
+        let mut events = extract_events(node);
+        let mut attrs = node.attributes.clone();
         let sf = ctx.scale_factor;
         
-        let src = node.get_attr("src").unwrap_or("");
+        // forceHttps：http:// 换成 https://（attrs.rs）；show-menu-by-longpress：挂一条长按绑定弹菜单
+        let src_owned = attrs::effective_src(node, &mut attrs);
+        attrs::longpress_menu(node, &src_owned, &mut events);
+        let src = src_owned.as_str();
         let mode = node.get_attr("mode").unwrap_or("scaleToFill");
         
         // 检查 CSS 是否定义了尺寸和样式
@@ -333,6 +342,19 @@ impl ImageComponent {
                     Self::draw_border(canvas, style, x, y, w, h, has_radius, uniform_radius,
                                       radius, radius_tl, radius_tr, radius_br, radius_bl);
                     return;
+                }
+                // fade-in 渐显中：乘了透明度的一份像素，不进缩放缓存（只在渐显的 300ms 里，fade.rs）
+                if node.attrs.get("fade-in").is_some_and(|v| attr_is_true(v)) {
+                    let a = fade::alpha(src);
+                    if a < 1.0 {
+                        if a > 0.0 {
+                            let px = fade::faded(&img_data.data, a);
+                            canvas.draw_image(&px, img_data.width, img_data.height, x, y, w, h, mode, radius);
+                        }
+                        Self::draw_border(canvas, style, x, y, w, h, has_radius, uniform_radius,
+                                          radius, radius_tl, radius_tr, radius_br, radius_bl);
+                        return;
+                    }
                 }
                 // 绘制图片（透明度通过背景色已经处理）
                 // 走带缩放缓存的绘制：动画页面每帧重绘时不再重复重采样

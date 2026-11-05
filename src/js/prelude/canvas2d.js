@@ -14,6 +14,8 @@
             // 交出去、原生执行完再读像素（同步桥）。clip（路径裁剪）与 setLineDash / lineDashOffset 见 canvas/clipdash.rs；
             // miterLimit 只记不用（光栅器的斜接没有长度上限）。
             var __c2dNodes = {};
+            // roundRect 的圆角展开（上下文与 Path2D 共用，第一次 getContext 时填上）
+            var __c2dRadii = null;
             function __c2dColor(v) {
                 if (v && typeof v === 'object' && v.__stops) { return v.__stops.length ? v.__stops[0][1] : '#000000'; }
                 return String(v);
@@ -34,7 +36,7 @@
                     st = { fillStyle: '#000000', strokeStyle: '#000000', lineWidth: 1, lineCap: 'butt', lineJoin: 'miter',
                            font: '10px sans-serif', textAlign: 'start', textBaseline: 'alphabetic', globalAlpha: 1,
                            globalCompositeOperation: 'source-over', shadowBlur: 0, shadowColor: 'rgba(0, 0, 0, 0)',
-                           shadowOffsetX: 0, shadowOffsetY: 0 };
+                           shadowOffsetX: 0, shadowOffsetY: 0, __mtx: [1, 0, 0, 1, 0, 0] };
                 }
                 resetState();
                 var push = function(cmd) { node._pending.push(cmd); node._queue(); };
@@ -102,8 +104,48 @@
                 });
                 ctx.save = function() { node._stack.push(Object.assign({}, st)); push({ type: 'save' }); };
                 ctx.restore = function() { if (node._stack.length) st = node._stack.pop(); push({ type: 'restore' }); };
+                // getTransform 跟踪全部变换（translate / rotate / scale / transform / setTransform，随 save / restore 进出）。
+                // 记的是开发者那一层矩阵（canvas 像素坐标），不含原生垫的 CSS / canvas 预缩放（与浏览器一致）
+                var mul = function(n) {
+                    var m = st.__mtx;
+                    st.__mtx = [m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1], m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3],
+                                m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];
+                };
+                var rawTranslate = ctx.translate, rawRotate = ctx.rotate, rawScale = ctx.scale;
+                ctx.translate = function(x, y) { mul([1, 0, 0, 1, Number(x) || 0, Number(y) || 0]); rawTranslate(x, y); };
+                ctx.rotate = function(a) { var c = Math.cos(a), s = Math.sin(a); mul([c, s, -s, c, 0, 0]); rawRotate(a); };
+                ctx.scale = function(x, y) { if (y === undefined) y = x; mul([Number(x), 0, 0, Number(y), 0, 0]); rawScale(x, y); };
+                // roundRect(x, y, w, h, radii)：radii 是数、{x, y}（取 x）或 1~4 个的数组，按 CSS border-radius 的规则展开成四角
+                function radii4(r) {
+                    var a = Array.isArray(r) ? r : [r === undefined || r === null ? 0 : r];
+                    a = a.map(function(v) { return v && typeof v === 'object' ? Number(v.x) : Number(v); });
+                    if (a.length < 1 || a.length > 4) throw new RangeError("Failed to execute 'roundRect': " + a.length + ' radii provided. Between one and four radii are necessary.');
+                    if (a.some(function(v) { return !isFinite(v); })) return null;
+                    if (a.some(function(v) { return v < 0; })) throw new RangeError("Failed to execute 'roundRect': Radius value is negative.");
+                    if (a.length === 1) return [a[0], a[0], a[0], a[0]];
+                    if (a.length === 2) return [a[0], a[1], a[0], a[1]];
+                    if (a.length === 3) return [a[0], a[1], a[2], a[1]];
+                    return a;
+                }
+                __c2dRadii = radii4;
+                ctx.roundRect = function(x, y, w, h, r) {
+                    var rr = radii4(r);
+                    if (rr) push({ type: 'roundRect', x: x, y: y, width: w, height: h, radii: rr });
+                };
+                // isPointInPath([path,] x, y[, rule]) / isPointInStroke([path,] x, y)：同步问原生（先交出攒着的指令，canvas/hit2d.rs）
+                function hit(stroke, args) {
+                    var a = Array.prototype.slice.call(args), path = null;
+                    if (a[0] && a[0].__cmds) path = a.shift().__cmds;
+                    node._flush();
+                    var r = __native_canvas_hit(node._key, JSON.stringify({ x: Number(a[0]), y: Number(a[1]), stroke: stroke,
+                        rule: a[2] === 'evenodd' ? 'evenodd' : 'nonzero', path: path, pre: pre() }));
+                    return String(r) === 'true';
+                }
+                ctx.isPointInPath = function() { return hit(false, arguments); };
+                ctx.isPointInStroke = function() { return hit(true, arguments); };
                 ctx.drawImage = function(img, a, b, c, d, e, f, g, h) {
-                    var src = img && typeof img === 'object' ? (img.src || img._src || '') : String(img || '');
+                    // createImage 加载过的远程图用下载好的本地文件（img._path）
+                    var src = img && typeof img === 'object' ? (img._path || img.src || img._src || '') : String(img || '');
                     if (!src) return;
                     if (arguments.length <= 3) push({ type: 'drawImage', src: src, dx: a, dy: b });
                     else if (arguments.length <= 5) push({ type: 'drawImage', src: src, dx: a, dy: b, dWidth: c, dHeight: d });
@@ -125,7 +167,7 @@
                 ctx.createRadialGradient = function(x0, y0, r0, x1, y1, r1) { return gradient('radial', [x0, y0, r0, x1, y1, r1]); };
                 ctx.createConicGradient = function(a, x, y) { return gradient('conic', [a, x, y]); };
                 ctx.createPattern = function(img, repetition) {
-                    var src = img && typeof img === 'object' ? (img.src || img._src || '') : String(img || '');
+                    var src = img && typeof img === 'object' ? (img._path || img.src || img._src || '') : String(img || '');
                     return src ? { __pattern: { src: src, repetition: repetition == null ? 'repeat' : String(repetition) } } : null;
                 };
                 var dashList = [];
@@ -136,22 +178,28 @@
                     push({ type: 'setLineDash', segments: dashList });
                 };
                 ctx.getLineDash = function() { return dashList.slice(); };
-                // clip(path2d?)：给了 Path2D 先把它放进当前路径
-                ctx.clip = function(p) { if (p && p.__cmds) { push({ type: 'beginPath' }); p.__cmds.forEach(push); } push({ type: 'clip' }); };
+                // fill / clip 的填充规则：fill()、fill('evenodd')、fill(path)、fill(path, 'evenodd')（默认 nonzero）
+                var ruleOf = function(a, b) { var r = typeof a === 'string' ? a : b; return r === 'evenodd' ? 'evenodd' : undefined; };
+                var withPath = function(p) { if (p && p.__cmds) { push({ type: 'beginPath' }); p.__cmds.forEach(push); } };
+                // clip(path2d?, rule?)：给了 Path2D 先把它放进当前路径
+                ctx.clip = function(p, r) { withPath(p); push({ type: 'clip', rule: ruleOf(p, r) }); };
                 ctx.arcTo = function(x1, y1, x2, y2, r) { push({ type: 'arcTo', x1: x1, y1: y1, x2: x2, y2: y2, r: r }); };
                 ctx.ellipse = function(x, y, rx, ry, rot, s, e, ccw) {
                     push({ type: 'ellipse', x: x, y: y, rx: rx, ry: ry, rotation: rot || 0, sAngle: s, eAngle: e, counterclockwise: !!ccw });
                 };
-                var mtx = [1, 0, 0, 1, 0, 0];
                 ctx.setTransform = function(a, b, c, d, e, f) {
                     if (a && typeof a === 'object') { f = a.f; e = a.e; d = a.d; c = a.c; b = a.b; a = a.a; }
                     if (a === undefined) { a = 1; b = 0; c = 0; d = 1; e = 0; f = 0; }
-                    mtx = [a, b, c, d, e, f];
+                    st.__mtx = [a, b, c, d, e, f].map(Number);
                     push({ type: 'setTransform', a: a, b: b, c: c, d: d, e: e, f: f, pre: pre() });
                 };
                 ctx.resetTransform = function() { ctx.setTransform(1, 0, 0, 1, 0, 0); };
-                ctx.transform = function(a, b, c, d, e, f) { push({ type: 'transform', a: a, b: b, c: c, d: d, e: e, f: f }); };
-                ctx.getTransform = function() { return { a: mtx[0], b: mtx[1], c: mtx[2], d: mtx[3], e: mtx[4], f: mtx[5] }; };
+                ctx.transform = function(a, b, c, d, e, f) { mul([a, b, c, d, e, f].map(Number)); push({ type: 'transform', a: a, b: b, c: c, d: d, e: e, f: f }); };
+                ctx.getTransform = function() {
+                    var m = st.__mtx;
+                    return { a: m[0], b: m[1], c: m[2], d: m[3], e: m[4], f: m[5], is2D: true,
+                             isIdentity: m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1 && m[4] === 0 && m[5] === 0 };
+                };
                 ctx.getImageData = function(x, y, w, h) {
                     node._flush();
                     var b64 = __native_canvas_read(node._key, String(x), String(y), String(w), String(h), JSON.stringify(pre()));
@@ -168,9 +216,8 @@
                     return { width: w, height: h, data: new Uint8ClampedArray(Math.max(0, w * h * 4)) };
                 };
                 // fill(path2d) / stroke(path2d)：把 Path2D 录下的路径放进当前路径再画
-                var rawFill = ctx.fill, rawStroke = ctx.stroke;
-                ctx.fill = function(p) { if (p && p.__cmds) { push({ type: 'beginPath' }); p.__cmds.forEach(push); } rawFill(); };
-                ctx.stroke = function(p) { if (p && p.__cmds) { push({ type: 'beginPath' }); p.__cmds.forEach(push); } rawStroke(); };
+                ctx.fill = function(p, r) { withPath(p); push({ type: 'fill', rule: ruleOf(p, r) }); };
+                ctx.stroke = function(p) { withPath(p); push({ type: 'stroke' }); };
                 return ctx;
             }
             function __canvas2dNode(info) {
@@ -206,13 +253,32 @@
                     if (!node._ctx) node._ctx = __c2dContext(node);
                     return node._ctx;
                 };
+                // createImage（官方 api/canvas/Image）：真加载 —— 本地 / wxfile:// / data: URI 由原生解码（SVG 也认，解出来的图进
+                // drawImage 的缓存），远程图先 wx.downloadFile 成本地文件；width / height 是图的固有尺寸，读不到发 onerror。
+                // cloud:// 宿主解析不了，走 onerror
                 node.createImage = function() {
-                    var img = { width: 0, height: 0, onload: null, onerror: null, complete: false, _src: '' };
+                    var img = { width: 0, height: 0, onload: null, onerror: null, complete: false, referrerPolicy: '', _src: '', _path: '', _seq: 0 };
                     Object.defineProperty(img, 'src', {
                         get: function() { return img._src; },
                         set: function(v) {
-                            img._src = String(v);
-                            setTimeout(function() { img.complete = true; if (typeof img.onload === 'function') img.onload(); }, 0);
+                            var src = v == null ? '' : String(v), seq = ++img._seq;
+                            img._src = src; img._path = ''; img.complete = false; img.width = 0; img.height = 0;
+                            var done = function(path, why) {
+                                if (seq !== img._seq) return;
+                                var r = {};
+                                if (path) { try { r = JSON.parse(__native_canvas_image(path)); } catch (e) { r = { err: String(e) }; } }
+                                else r = { err: why || 'load image fail' };
+                                img.complete = true;
+                                if (r.err) { if (typeof img.onerror === 'function') img.onerror({ type: 'error', errMsg: String(r.err) }); return; }
+                                img.width = r.width; img.height = r.height; img._path = path;
+                                if (typeof img.onload === 'function') img.onload({ type: 'load' });
+                            };
+                            if (!src) setTimeout(function() { done('', 'empty src'); }, 0);
+                            else if (/^https?:\/\//.test(src) && wx.downloadFile) {
+                                wx.downloadFile({ url: src,
+                                    success: function(d) { done(d.statusCode && d.statusCode >= 400 ? '' : d.tempFilePath, 'http ' + d.statusCode); },
+                                    fail: function(e) { done('', e && e.errMsg); } });
+                            } else setTimeout(function() { done(src); }, 0);
                         }
                     });
                     return img;
@@ -235,6 +301,11 @@
                             p.__cmds.push(c);
                         };
                     });
+                    p.roundRect = function(x, y, w, h, r) {
+                        if (!__c2dRadii) node.getContext('2d');
+                        var rr = __c2dRadii(r);
+                        if (rr) p.__cmds.push({ type: 'roundRect', x: x, y: y, width: w, height: h, radii: rr });
+                    };
                     p.addPath = function(o) { if (o && o.__cmds) p.__cmds = p.__cmds.concat(o.__cmds); };
                     return p;
                 };

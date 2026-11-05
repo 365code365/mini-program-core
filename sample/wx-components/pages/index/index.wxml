@@ -1,0 +1,8 @@
+<view class="card">
+  <view class="h">逐项对照微信官方组件文档</view>
+  <text class="tip">每一页底部有事件日志：在真机上点一点，核对 e.detail 的字段与类型。</text>
+</view>
+<navigator wx:for="{{pages}}" wx:key="path" url="/pages/{{item.path}}/{{item.path}}" class="card entry" hover-class="entry-hover">
+  <view class="entry-title">{{item.title}}</view>
+  <view class="entry-desc">{{item.desc}}</view>
+</navigator>

@@ -91,6 +91,8 @@ impl crate::MiniAppWindow {
             content_height: self.scroll.get_max_scroll() + vp,
         };
         if mini_render::host::selector_query::tick(&mut self.app, self.renderer.as_ref(), &mut self.interaction, view) { self.needs_redraw = true; changed = true; }
+        // <snapshot> 的 takeSnapshot（与 SDK 同一份 host::snapshot）
+        if mini_render::host::snapshot::tick(&mut self.app, self.renderer.as_mut(), &self.interaction) > 0 { changed = true; }
         if mini_render::host::observers::tick(&mut self.app, self.renderer.as_ref(), &self.interaction, &route, view, t_ms) { changed = true; }
         if mini_render::renderer::components::take_canvas_dirty() {
             if let Some(r) = self.renderer.as_mut() { r.invalidate_offscreen_caches(); }
@@ -98,7 +100,8 @@ impl crate::MiniAppWindow {
             changed = true;
         }
         // 新字体登记好了（@font-face / wx.loadFontFace）：整棵树重排（与 SDK 同一个开关）
-        if mini_render::text_faces::take_changed() {
+        // textarea auto-height 的行数变了也一样（components/input/auto_height.rs）
+        if mini_render::text_faces::take_changed() | mini_render::renderer::components::auto_height::take_relayout() {
             if let Some(r) = self.renderer.as_mut() { r.invalidate_layout(); }
             self.needs_redraw = true;
             self.fixed_dirty = true;

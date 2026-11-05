@@ -89,6 +89,10 @@ class MiniProgramView @JvmOverloads constructor(
     private val sameLayer = SameLayerViews(context, { b -> session.run(b) }) { resources.displayMetrics.density }.also {
         // SDK 自带的地图（瓦片 + 标记 / 折线 / 手势 / MapContext，MiniMapView.kt）；宿主登记同名的就用宿主的
         it.factories["map"] = { MiniMapView() }
+        // 相机 / 推流 / voip-room 自己那一格（Camera2 → 同层渲染，CameraPipe）。宿主清单要声明 CAMERA / RECORD_AUDIO 才申请得到
+        it.factories["camera"] = { MiniCameraView("camera") }
+        it.factories["live-pusher"] = { MiniLivePusherView() }
+        it.factories["voip-room"] = { MiniCameraView("voip-room") }
     }
     /** `<web-view>`：系统 WebView 盖在画面上（MiniWebViews.kt） */
     private val webViews by lazy { MiniWebViews(this) { b -> session.run(b) } }
@@ -251,6 +255,7 @@ class MiniProgramView @JvmOverloads constructor(
         background = false
         webViews.resume()
         session.lifecycle(0)
+        sameLayer.resume()
     }
 
     /** 进后台：派发 `App.onHide` 并**停止出帧**（继续出帧纯属耗电） */
@@ -259,6 +264,7 @@ class MiniProgramView @JvmOverloads constructor(
         background = true
         webViews.pause()
         session.lifecycle(1)
+        sameLayer.pause()
     }
 
     /** 对应 Activity/Application 的 `onTrimMemory` */

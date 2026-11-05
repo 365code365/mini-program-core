@@ -37,14 +37,29 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
             c.set_pull_threshold(rf.threshold);
         }
         let (pos, max, dragging, animating, gap) = (c.get_position(), c.get_max_scroll(), c.is_dragging, c.is_animating(), c.top_gap());
+        let release_v = c.release_velocity();
+        // 横竖都能滚：横向那一半在 `"{id}#x"` 控制器上（ui/interaction/scroll_2d.rs）。单向的全是 None
+        let xs = if info.both { x_state(interaction, id) } else { None };
+        let (dragging, animating) = match xs {
+            Some(x) => (dragging || x.dragging, animating || x.animating),
+            None => (dragging, animating),
+        };
         let st = state(&mut interaction.scroll_views, id);
         let mut out: Vec<(&'static str, Value)> = Vec::new();
-        let (sl, stp) = if info.horizontal { (pos, 0.0) } else { (0.0, pos) };
+        let (sl, stp) = match xs {
+            Some(x) => (x.pos, pos),
+            None if info.horizontal => (pos, 0.0),
+            None => (0.0, pos),
+        };
         let in_upper = pos <= info.upper_threshold;
         let in_lower = max > 0.0 && max - pos <= info.lower_threshold;
+        let (in_left, in_right) = xs.map(|x| (x.pos <= info.upper_threshold, x.max > 0.0 && x.max - x.pos <= info.lower_threshold)).unwrap_or((false, false));
         if !st.tracked {
             st.tracked = true;
             st.reported_pos = pos;
+            st.reported_x = sl;
+            st.in_left = in_left;
+            st.in_right = in_right;
             st.in_upper = in_upper;
             st.in_lower = in_lower;
             st.dragging = dragging;
@@ -55,7 +70,8 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
         if dragging && !st.dragging && info.enhanced {
             out.push(("dragstart", json!({ "scrollTop": stp, "scrollLeft": sl })));
         }
-        let moved = (pos - st.reported_pos).abs() > 0.01;
+        let x_moved = xs.is_some() && (sl - st.reported_x).abs() > 0.01;
+        let moved = (pos - st.reported_pos).abs() > 0.01 || x_moved;
         let moving = dragging || animating || moved;
         if moving && !st.moving {
             st.drag_started = dragging;
@@ -63,23 +79,43 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
         }
         if moved {
             let d = st.reported_pos - pos;
-            let (dx, dy) = if info.horizontal { (d, 0.0) } else { (0.0, d) };
-            out.push((
-                "scroll",
-                json!({
-                    "scrollLeft": sl, "scrollTop": stp,
-                    "scrollHeight": info.content_height.max(info.bounds.height),
-                    "scrollWidth": info.content_width.max(info.bounds.width),
-                    "deltaX": dx, "deltaY": dy, "isDrag": dragging,
-                }),
-            ));
+            let (dx, dy) = match xs {
+                Some(_) => (st.reported_x - sl, d),
+                None if info.horizontal => (d, 0.0),
+                None => (0.0, d),
+            };
+            let mut detail = json!({
+                "scrollLeft": sl, "scrollTop": stp,
+                "scrollHeight": info.content_height.max(info.bounds.height),
+                "scrollWidth": info.content_width.max(info.bounds.width),
+                "deltaX": dx, "deltaY": dy, "isDrag": dragging,
+            });
+            // Skyline 3.6.6 `boundaryVelocity`：这一次滚动碰到边界（从界内进到界外）时是碰边那一刻的速度（逻辑 px/s，
+            // 正 = scrollTop 变大的方向），否则官方是 NaN。JSON 带不了 NaN：没碰边时不给这个字段（读出来是 undefined，
+            // `isNaN(e.detail.boundaryVelocity)` 两种都为真）
+            let inside = |p: f32| p >= 0.0 && p <= max;
+            if inside(st.reported_pos) && !inside(pos) {
+                // 头一次报 scroll（静止起步）没有上一次的时刻：按一个 60Hz 帧算
+                let dt = if st.last_scroll_ms > 0 && time_ms > st.last_scroll_ms { time_ms - st.last_scroll_ms } else { 16 };
+                let v = (pos - st.reported_pos) * 1000.0 / dt as f32;
+                detail["boundaryVelocity"] = json!(v);
+            }
+            st.last_scroll_ms = time_ms;
+            out.push(("scroll", detail));
             if dragging && info.enhanced {
                 out.push(("dragging", json!({ "scrollTop": stp, "scrollLeft": sl })));
             }
             st.reported_pos = pos;
+            st.reported_x = sl;
         }
         if !dragging && st.dragging && info.enhanced {
-            out.push(("dragend", json!({ "scrollTop": stp, "scrollLeft": sl, "velocity": { "x": 0, "y": 0 } })));
+            // 松手速度（逻辑 px/s，正 = scrollTop / scrollLeft 变大的方向；官方没写单位，待验）
+            let (vx, vy) = match xs {
+                Some(x) => (x.release_v, release_v),
+                None if info.horizontal => (release_v, 0.0),
+                None => (0.0, release_v),
+            };
+            out.push(("dragend", json!({ "scrollTop": stp, "scrollLeft": sl, "velocity": { "x": vx, "y": vy } })));
         }
         if !moving && st.moving {
             out.push(("scrollend", json!({ "isDrag": st.drag_started })));
@@ -91,6 +127,17 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
         if in_lower && !st.in_lower && moved {
             out.push(("scrolltolower", json!({ "direction": if info.horizontal { "right" } else { "bottom" } })));
         }
+        // 双向的横向阈值：同一对事件，direction 是 left / right（官方 upper/lower-threshold 「距顶部/左边」）
+        if xs.is_some() {
+            if in_left && !st.in_left && x_moved {
+                out.push(("scrolltoupper", json!({ "direction": "left" })));
+            }
+            if in_right && !st.in_right && x_moved {
+                out.push(("scrolltolower", json!({ "direction": "right" })));
+            }
+            st.in_left = in_left;
+            st.in_right = in_right;
+        }
         st.in_upper = in_upper;
         st.in_lower = in_lower;
         let was_dragging = st.dragging;
@@ -100,11 +147,17 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
         if let Some(rf) = &info.refresher {
             let prev_triggered = st.last_triggered;
             st.last_triggered = Some(rf.triggered);
+            // ScrollViewContext.triggerRefresh / closeRefresh（host/selector_query.rs 记下，这里消费）
+            let request = st.refresh_request.take();
+            let status_before = st.refresh_status;
             let (phase, pulled, refresh_seq) = (st.refresher, st.pulled, st.refresh_seq);
             let mut next = phase;
             let mut new_pulled = pulled;
             let mut enter_refresh = false;
             let mut restore = false;
+            // 下拉二级（two_level.rs）：这一帧打开 / 关闭
+            let mut two_level_open = false;
+            let mut two_level_close = false;
             match phase {
                 RefresherPhase::Idle | RefresherPhase::Pulling if dragging && gap > 0.0 => {
                     next = RefresherPhase::Pulling;
@@ -118,7 +171,12 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
                 }
                 RefresherPhase::Pulling if !dragging && was_dragging => {
                     new_pulled = 0.0;
-                    if interaction.get_scroll_controller_mut(id).map(|c| c.take_pull_trigger()).unwrap_or(false) {
+                    let (trigger, peak) =
+                        interaction.get_scroll_controller_mut(id).map(|c| (c.take_pull_trigger(), c.take_pull_peak())).unwrap_or((false, 0.0));
+                    if rf.two_level.is_some_and(|tl| peak >= tl.threshold) {
+                        // 拉过二级阈值松手：打开二级（不发 refresherrefresh，官方：「继续下拉至 two-level-threshold 松手触发下拉二级」）
+                        two_level_open = true;
+                    } else if trigger {
                         enter_refresh = true;
                         out.push(("refresherrefresh", json!({ "dy": rf.threshold })));
                     } else {
@@ -136,15 +194,68 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
                 RefresherPhase::Idle if rf.triggered && prev_triggered == Some(false) => enter_refresh = true,
                 _ => {}
             }
+            // 下拉二级：属性 / Context 请求 / 二级里滑动关闭（scroll_two_level.rs）
+            if let Some(tl) = &rf.two_level {
+                let st = state(&mut interaction.scroll_views, id);
+                let (prev_two, two_req) = (st.last_two_triggered.replace(tl.triggered), st.two_level_request.take());
+                let s2 = super::scroll_two_level::step(tl, phase, prev_two, two_req, dragging, was_dragging, gap, interaction.get_scroll_controller_mut(id));
+                two_level_open |= s2.open && phase != RefresherPhase::Refreshing;
+                two_level_close |= s2.close;
+            }
+            // 程序触发：与手拉到位松手一样进刷新态、发 refresherrefresh（官方「触发下拉刷新」；发不发事件官方没写，待验）
+            match request {
+                Some(true) if phase != RefresherPhase::Refreshing && !enter_refresh => {
+                    enter_refresh = true;
+                    out.push(("refresherrefresh", json!({ "dy": rf.threshold })));
+                }
+                Some(false) if phase == RefresherPhase::Refreshing => restore = true,
+                _ => {}
+            }
+            // bindrefresherstatuschange（官方 RefreshStatus：0 Idle / 1 CanRefresh / 2 Refreshing / 3 Completed /
+            // 5 CanTwoLevel / 6 TwoLevelOpening / 7 TwoLeveling / 8 TwoLevelClosing；4 Failed 引擎判断不了，不报）
+            let animating_now = interaction.get_scroll_controller(id).map(|c| c.is_animating()).unwrap_or(false);
+            let status = if two_level_open {
+                6
+            } else if two_level_close {
+                8
+            } else if enter_refresh {
+                2
+            } else if restore {
+                3
+            } else {
+                match next {
+                    RefresherPhase::Pulling if rf.two_level.is_some_and(|tl| gap >= tl.threshold) => 5,
+                    RefresherPhase::Pulling if gap >= rf.threshold => 1,
+                    RefresherPhase::Pulling => 0,
+                    RefresherPhase::Refreshing => 2,
+                    // 二级：打开的弹簧走完才算「打开了」
+                    RefresherPhase::TwoLevel if status_before == 6 && animating_now => 6,
+                    RefresherPhase::TwoLevel => 7,
+                    // 复位 / 二级关闭完成、回到原处之后才回到 Idle
+                    RefresherPhase::Idle if (status_before == 3 || status_before == 8) && gap > 0.5 => status_before,
+                    RefresherPhase::Idle => 0,
+                }
+            };
+            if status != status_before {
+                out.push(("refresherstatuschange", json!({ "status": status, "dy": gap })));
+            }
             let seq = if enter_refresh { set_data_seq(app) } else { refresh_seq };
             if let Some(c) = interaction.get_scroll_controller_mut(id) {
-                if enter_refresh {
+                if two_level_open {
+                    c.set_top_inset(rf.two_level.map(|t| t.height).unwrap_or(0.0));
+                } else if two_level_close {
+                    c.set_top_inset(0.0);
+                } else if enter_refresh {
                     c.set_top_inset(rf.threshold);
                 } else if restore {
                     c.set_top_inset(0.0);
                 }
             }
-            if enter_refresh {
+            if two_level_open {
+                next = RefresherPhase::TwoLevel;
+            } else if two_level_close {
+                next = RefresherPhase::Idle;
+            } else if enter_refresh {
                 next = RefresherPhase::Refreshing;
             } else if restore {
                 next = RefresherPhase::Idle;
@@ -154,6 +265,7 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
             st.refresher = next;
             st.pulled = new_pulled;
             st.refresh_seq = seq;
+            st.refresh_status = status;
         }
         for (name, detail) in out {
             fired |= super::own_events::dispatch_own(app, r, id, name, detail, time_ms);
@@ -165,8 +277,33 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
     fired
 }
 
+/// sticky-header 的 `bindstickontopchange`（`detail = {isStickOnTop}`，吸顶状态变了才有）：渲染器画的时候按滚动算出、
+/// 攒下（`wxml_renderer/sticky.rs`），宿主在每次重画页面之后调。SDK 与桌面共用。返回派发了几条
+pub fn dispatch_sticky_events(app: &mut MiniApp, r: &mut WxmlRenderer, time_ms: u64) -> usize {
+    let events = r.take_sticky_events();
+    for (id, stuck) in &events {
+        super::own_events::dispatch_own(app, r, id, "stickontopchange", json!({ "isStickOnTop": stuck }), time_ms);
+    }
+    events.len()
+}
+
+/// 双向 scroll-view 横向控制器这一帧的状态
+#[derive(Clone, Copy)]
+struct XState {
+    pos: f32,
+    max: f32,
+    dragging: bool,
+    animating: bool,
+    release_v: f32,
+}
+
+fn x_state(interaction: &InteractionManager, id: &str) -> Option<XState> {
+    let c = interaction.get_scroll_controller(&crate::ui::interaction::scroll_x_key(id))?;
+    Some(XState { pos: c.get_position(), max: c.get_max_scroll(), dragging: c.is_dragging, animating: c.is_animating(), release_v: c.release_velocity() })
+}
+
 /// `scroll_views[id]`，没有就建。`entry(id.to_string())` 每次都分配一个键，这里只在第一次建时分配
-fn state<'a>(
+pub(super) fn state<'a>(
     map: &'a mut std::collections::HashMap<String, crate::ui::scroll_view_state::ScrollViewState>,
     id: &str,
 ) -> &'a mut crate::ui::scroll_view_state::ScrollViewState {
@@ -257,133 +394,4 @@ pub fn page_scroll(app: &mut MiniApp, pos: f32, last_sent: &mut f32) -> bool {
     *last_sent = pos;
     app.eval(&format!("__dispatchPage && __dispatchPage('onPageScroll', {{ scrollTop: {pos} }})")).ok();
     true
-}
-
-impl super::engine::MiniEngine {
-    /// 当前页面定义了 `onPageScroll`：没定义就不派发（每页问一次逻辑层，结果按页记住）。
-    ///
-    /// 与微信一致（官方文档：「请只在需要的时候才在 page 中定义此方法，不要定义空方法」——
-    /// 没定义时渲染层根本不往逻辑层发滚动事件）。从前每滚一帧都 `eval` 一段派发脚本：
-    /// 一加 PLY110 上快甩时 QuickJS 光解析这段就占引擎线程 7%，页面根本没有这个回调
-    pub(super) fn page_wants_scroll_events(&mut self) -> bool {
-        let key = (self.page_stack.len(), self.page_opened_ms, self.current_route());
-        if let Some((k, v)) = &self.page_scroll_handler {
-            if *k == key {
-                return *v;
-            }
-        }
-        let v = self
-            .app
-            .eval("(typeof __currentPage === 'object' && __currentPage && typeof __currentPage.onPageScroll === 'function') ? 1 : 0")
-            .map(|r| r.trim() == "1")
-            .unwrap_or(true);
-        self.page_scroll_handler = Some((key, v));
-        v
-    }
-}
-
-/// `InteractionManager::scroll_views` 里给页面 `onPageScroll` 记「上次报的位置」用的键。
-/// 组件 id 不会是这个（NUL 开头），换页时随 `clear_page_state` 一起清
-const PAGE_KEY: &str = "\u{0}page";
-
-impl super::engine::MiniEngine {
-    /// 某个 scroll-view 当前的滚动偏移（逻辑 px；`id` 是它的 `id` 属性或组件 id）。
-    /// 诊断与测试用：宿主不需要它也能工作
-    pub fn scroll_view_offset(&self, id: &str) -> Option<f32> {
-        self.interaction.get_scroll_controller(id).map(|c| c.get_position())
-    }
-    /// 所有 scroll-view 的偏移（按 id 排好）。测试用：两个引擎比「滚到同一处没有」
-    pub fn scroll_view_offsets(&self) -> Vec<(String, f32)> {
-        let mut v: Vec<(String, f32)> = self.interaction.scroll_controllers.iter().map(|(k, c)| (k.clone(), c.get_position())).collect();
-        v.sort_by(|a, b| a.0.cmp(&b.0));
-        v
-    }
-
-    /// SDK 每帧：scroll-view 事件 → `wx.pageScrollTo` → `onPageScroll`。返回是否要重画
-    pub(super) fn tick_scroll_views(&mut self, now_ms: u64) -> bool {
-        // swiper 的换页动画与自动播放按宿主给的时钟走（同一串 pump 时间 → 同一串画面）
-        crate::renderer::components::swiper_set_clock(now_ms.max(1));
-        // scroll-view 的事件（bindscroll / scrolltolower / refresher…）派完不用整页重画：回调里的 setData
-        // 在本函数末尾记成数据脏，交给失效分析；scroll-view 自己的位移由 engine_damage 只重画它的盒子。
-        // 从前派过事件就 `mark_full`：带 bindscroll 的列表（外卖店铺页、点餐页按滚动高亮左侧分类）
-        // 滚着的每一帧都整页重画，一加 PLY110 上 14~34ms、屏上重复 25.7%
-        let mut redraw = false;
-        tick(&mut self.app, self.renderer.as_ref(), &mut self.interaction, now_ms);
-        // swiper / picker-view 的事件（change / transition / animationfinish …）派完不用整页重画：
-        // 回调里 setData 走下面的失效分析，swiper 自己的位移由 engine_swiper.rs 只重画它的盒子，
-        // picker-view 的吸附动画照旧按「在动」整帧。从前这里 `redraw = true` → `mark_full`：
-        // 轮播页每次自动翻页那一帧整页重画（一加上 60ms，bindchange 里改了一行字）
-        super::swiper::tick(&mut self.app, self.renderer.as_ref(), now_ms);
-        // picker 面板弹着时跟上页面改的 range（multiSelector 联动）
-        if super::picker_sheet::sync_columns(&mut self.picker_sheet, self.renderer.as_ref()) {
-            redraw = true;
-        }
-        // VideoContext 命令、video 的组件事件、控制条（内置播放器那边变了要重画；同层渲染只重画视频框）
-        if super::video::tick(&mut self.app, self.renderer.as_ref(), &self.interaction, now_ms) {
-            redraw = true;
-            self.dmg.compose_dirty = true;
-        }
-        // LivePlayerContext 的命令（同层渲染的直播，engine_live_player.rs）
-        self.tick_live_players();
-        // 全屏那一层（画在合成那一步）：新帧 / 控制条变了只重新合成
-        self.sync_fullscreen(now_ms);
-        // SelectorQuery / ScrollViewContext / IntersectionObserver（与桌面共用）
-        let vp = self.viewport_height();
-        let view = super::selector_query::PageView {
-            scroll_top: self.scroll.get_position(),
-            width: self.width as f32,
-            height: vp,
-            content_height: self.scroll.get_max_scroll() + vp,
-        };
-        if super::selector_query::tick(&mut self.app, self.renderer.as_ref(), &mut self.interaction, view) {
-            redraw = true;
-        }
-        let route = self.current_route();
-        super::observers::tick(&mut self.app, self.renderer.as_ref(), &self.interaction, &route, view, now_ms);
-        // 操作菜单 / 图片预览的请求与动画（画在合成那一步，只要重新合成）
-        // 预览层的关闭键放在状态栏下面、「当前 / 总数」放在底部安全区上面
-        let bottom = self.opts.safe_area.map(|s| s.bottom).unwrap_or(0.0);
-        super::ui_overlay::image_preview::set_insets(self.opts.status_bar_height(), bottom);
-        if super::ui_overlay::take_sheet_requests(&mut self.app) {
-            self.dmg.compose_dirty = true;
-        }
-        // wx.setBackgroundColor / wx.hideKeyboard
-        let (wa_redraw, _) = super::window_api::take_requests(&mut self.app, self.renderer.as_ref(), &mut self.interaction);
-        if wa_redraw {
-            redraw = true;
-        }
-        // 原生 tabBar 的运行时 API：改了就重画 tabBar；显隐变了视口高度跟着变，重新排版
-        let was_hidden = super::tabbar_api::hidden();
-        if super::tabbar_api::take_requests(&mut self.app, self.config.tab_bar.as_ref()) {
-            self.dmg.tabbar_route = None;
-            redraw = true;
-            if super::tabbar_api::hidden() != was_hidden {
-                self.update_renderers();
-            }
-        }
-        if apply_page_scroll(&mut self.app, self.renderer.as_ref(), &self.interaction, &mut self.scroll) {
-            redraw = true;
-        }
-        let pos = self.scroll.get_position();
-        let wants = self.page_wants_scroll_events();
-        let st = state(&mut self.interaction.scroll_views, PAGE_KEY);
-        let mut last = if st.tracked { st.reported_pos } else { 0.0 };
-        st.tracked = true;
-        if wants && page_scroll(&mut self.app, pos, &mut last) {
-            self.scroll_moved = true;
-        }
-        state(&mut self.interaction.scroll_views, PAGE_KEY).reported_pos = last;
-        // 事件处理函数里的 setData 这一帧就生效（不等下一帧开头）。
-        //
-        // 只记「数据脏了」，**不**要整页重画：与别处的 setData 一样交给失效分析（只重画变了的节点）。
-        // 从前这里 `redraw = true` → 调用方 `mark_full`：onPageScroll / IntersectionObserver 回调里
-        // 一 setData 就整页重画 —— 一加 PLY110 上滑「节点与滚动」页 42~71 帧 `整帧·结构`、
-        // 每帧 24~31ms，屏上重复 9~11%（tests/sdk_damage_equivalence.rs 有这一条）
-        if self.app.take_data_dirty() {
-            self.page_data_dirty = true;
-        }
-        // 重画之前：scroll-into-view 绑定的字段这一帧里变过又变回来，也要再滚一次
-        rearm_into_view(&self.app, self.renderer.as_ref(), &mut self.interaction, self.page_data_dirty);
-        redraw
-    }
 }

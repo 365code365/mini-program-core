@@ -1,7 +1,8 @@
 //! [`MiniEngine`] 与宿主之间的**通用**同层组件（创建选项 `sameLayer` 里除 `video` 以外的标签，如 `<map>`）。
 //!
 //! 画面怎么进来、怎么画见 `components::host_view`。这里管与宿主的三条约定：
-//! - **`sameLayerViews` 事件**：页面上有哪些同层组件（`key` / `tag` / `attrs` / 逻辑宽高 / 设备像素 `box`）。
+//! - **`sameLayerViews` 事件**：页面上有哪些同层组件（`key` / `tag` / `attrs` / 逻辑宽高 / 设备像素 `box`；
+//!   `<map>` 有自定义气泡时另带 `callouts`，见 `engine_map_callouts`），外加 `wxfileRoot`（`wxfile://` 的真实目录）。
 //!   只在布局树整棵重建过、或换了渲染器之后重新数一遍，变了才发 —— 宿主据此建 / 改 / 放自己的离屏控件，
 //!   按 `box` 画好交帧。滚动不发（滚动时画面在引擎画布里跟着走，宿主什么都不用做）。
 //! - **`nativeViewTap` 事件**：点落在同层组件的框里（视图本地逻辑坐标 `x` / `y`），宿主自己判点到了什么
@@ -21,7 +22,7 @@ thread_local! {
 }
 
 /// 页面上所有的同层组件（文档顺序；键重复的只留第一个）
-fn views(r: &WxmlRenderer, interaction: &InteractionManager) -> Vec<(String, String, QueryHit)> {
+pub(super) fn views(r: &WxmlRenderer, interaction: &InteractionManager) -> Vec<(String, String, QueryHit)> {
     let mut out: Vec<(String, String, QueryHit)> = Vec::new();
     for tag in host_view::tags() {
         for v in r.query_selector(&tag, true, interaction) {
@@ -60,7 +61,12 @@ pub(super) fn gesture_view_at(
     if host_view::tags().iter().all(|t| !host_view::wants_gestures(t)) {
         return None;
     }
-    let off = |v: &QueryHit, k: &str| v.attrs.get(k).map(|s| matches!(s.trim(), "false" | "0")).unwrap_or(false);
+    // 官方 `setting` 里写了的项盖过同名属性（enableScroll / enableZoom），没写的看属性
+    let off = |v: &QueryHit, k: &str| {
+        let sk = if k == "enable-scroll" { "enableScroll" } else { "enableZoom" };
+        let set = v.attrs.get("setting").and_then(|s| serde_json::from_str::<Value>(s).ok()).and_then(|o| o.get(sk).and_then(Value::as_bool));
+        set.map(|b| !b).unwrap_or_else(|| v.attrs.get(k).map(|s| matches!(s.trim(), "false" | "0")).unwrap_or(false))
+    };
     let all = views(renderer, interaction);
     let pick = |fixed: bool| {
         let p = crate::Point::new(x, if fixed { y } else { y + scroll });
@@ -91,19 +97,37 @@ impl MiniEngine {
         SYNC.with(|s| s.borrow_mut().0 = Some(generation));
         let dpr = self.dpr;
         let found = views(r, &self.interaction);
-        let keys: Vec<String> = found.iter().map(|(k, _, _)| k.clone()).collect();
-        let list: Vec<Value> = found
+        let mut keys: Vec<String> = found.iter().map(|(k, _, _)| k.clone()).collect();
+        // `<map>` 的自定义气泡（slot="callout"）：离屏出图，路径交给宿主（engine_map_callouts）
+        let callouts: Vec<Value> = match self.renderer.as_mut() {
+            Some(r) => found
+                .iter()
+                .map(|(key, tag, _)| if tag == "map" { super::engine_map_callouts::export(r, key, dpr) } else { Value::Null })
+                .collect(),
+            None => vec![Value::Null; found.len()],
+        };
+        let mut list: Vec<Value> = found
             .into_iter()
-            .map(|(key, tag, v)| {
-                json!({
+            .zip(callouts)
+            .map(|((key, tag, v), callouts)| {
+                let mut o = json!({
                     "key": key, "tag": tag, "attrs": v.attrs,
                     "width": v.rect.width, "height": v.rect.height,
                     // 宿主按这个尺寸画（一个宿主像素对一个屏幕像素），引擎只剩整行拷贝
                     "box": [(v.rect.width * dpr).round(), (v.rect.height * dpr).round()],
                     "fixed": v.is_fixed,
-                })
+                });
+                if callouts.as_array().is_some_and(|a| !a.is_empty()) {
+                    o["callouts"] = callouts;
+                }
+                o
             })
             .collect();
+        // 小窗里的那个（原页不在眼前）：照报，宿主的控件不放、按小窗的尺寸画（engine_pip.rs）
+        if let Some(e) = super::engine_pip::pip_entry(dpr, &keys) {
+            keys.push(e["key"].as_str().unwrap_or_default().to_string());
+            list.push(e);
+        }
         let sig = serde_json::to_string(&list).unwrap_or_default();
         if SYNC.with(|s| s.borrow().1.as_deref() == Some(sig.as_str())) {
             return;
@@ -111,7 +135,11 @@ impl MiniEngine {
         SYNC.with(|s| s.borrow_mut().1 = Some(sig));
         // 页面上已经没有的：帧（几 MB 一张）一起丢掉
         host_view::retain(&keys);
-        self.events.push(json!({ "type": "sameLayerViews", "views": list }));
+        // wxfileRoot：宿主把 `wxfile://…`（下载 / 选图得到的临时文件）当图标路径时按它找真实文件
+        self.events.push(json!({
+            "type": "sameLayerViews", "views": list,
+            "wxfileRoot": crate::wxfile::root().to_string_lossy(),
+        }));
     }
 
     /// 宿主回传的组件事件（`markertap` …）。返回是否派发给了节点上的绑定

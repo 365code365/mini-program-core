@@ -155,12 +155,32 @@ impl InteractionManager {
 
     /// 本帧登记的 scroll-view 盒子：`(逻辑包围盒, 是否在 fixed 覆盖层里)`。
     /// 正常流的是内容坐标，覆盖层的是视口坐标。
+    /// 双向 scroll-view 的横向控制器键（`"{id}#x"`）按它的 scroll-view 查（scroll_2d.rs）
     pub fn scroll_area_bounds(&self, id: &str) -> Option<(Rect, bool)> {
+        let id = scroll_base_id(id);
         self.elements
             .iter()
             .rev()
             .find(|e| e.interaction_type == InteractionType::ScrollArea && e.id == id)
             .map(|e| (e.bounds, e.is_fixed))
+    }
+
+    /// 滚动这个 scroll-view 时要重画的范围：盒子，`clip="{{false}}"` 时加上盒子外画着的那一圈。
+    /// None = 不知道（没登记 / 里面有 transform、动画），调用方整帧
+    pub fn scroll_area_damage_bounds(&self, id: &str) -> Option<(Rect, bool)> {
+        let (b, fixed) = self.scroll_area_bounds(id)?;
+        match self.scroll_views.get(scroll_base_id(id)) {
+            Some(s) if s.paint_unbounded => None,
+            Some(s) => match s.paint {
+                Some(p) => {
+                    let (x0, y0) = (b.x.min(p.x), b.y.min(p.y));
+                    let (x1, y1) = ((b.x + b.width).max(p.x + p.width), (b.y + b.height).max(p.y + p.height));
+                    Some((Rect::new(x0, y0, x1 - x0, y1 - y0), fixed))
+                }
+                None => Some((b, fixed)),
+            },
+            None => Some((b, fixed)),
+        }
     }
 
     /// 页面被盖住 / tab 页切走：把这一页**要留着**的交互状态拿走（scroll-view 位置与受控状态、
@@ -209,7 +229,10 @@ impl InteractionManager {
         // setBackgroundColor 只对当前页面生效
         crate::host::window_api::clear();
         crate::renderer::components::picker_view::clear();
+        crate::renderer::components::progress_anim::clear();
+        crate::renderer::components::auto_height::clear();
         crate::renderer::components::clear_danmu();
+        self.focus_request = None;
         self.states.clear();
         self.transitions.clear();
         self.toggled_at.clear();

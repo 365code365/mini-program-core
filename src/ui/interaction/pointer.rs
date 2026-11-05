@@ -52,21 +52,15 @@ impl InteractionManager {
                 })
             }
             InteractionType::Radio => {
-                // Radio 是互斥的，需要取消同一组内其他 radio 的选中状态
-                // 简单实现：取消所有其他 radio 的选中状态（假设页面上只有一组 radio）
-                // 更好的实现应该基于 radio-group 或父容器
-                let radio_ids: Vec<String> = self.elements.iter()
-                    .filter(|e| e.interaction_type == InteractionType::Radio && e.id != element.id)
-                    .map(|e| e.id.clone())
-                    .collect();
-                
-                for id in radio_ids {
-                    self.states.insert(id, ComponentState {
-                        checked: false,
-                        value: String::new(),
-                    });
+                // 点已经选中的那个：什么都不变，也不发 change（微信 radio 不能点掉）。返回 None，
+                // 这一下按普通 tap 往下派（外层的 bindtap 照收）
+                let current = self.states.get(&element.id).map(|s| s.checked).unwrap_or(element.checked);
+                if current {
+                    return None;
                 }
-                
+                // 互斥只在同一个 radio-group 里：取消组里其它项由宿主按布局树做（host::tap `exclusive_radio`，
+                // 滚出视口的成员也算）。从前在这里把**全页**其它 radio 都取消（「假设页面上只有一组」），
+                // 一页两组单选互相清掉
                 self.states.insert(element.id.clone(), ComponentState {
                     checked: true,
                     value: element.value.clone(),
@@ -114,9 +108,16 @@ impl InteractionManager {
                 );
                 // 在已聚焦的输入框里再点一下只是挪光标：撤销栈要留着，
                 // 否则「点一下改个字再 ⌘Z」就撤不回点之前打的那些字
-                if let Some(prev) = self.focused_input.take().filter(|f| f.id == element.id) {
-                    focused.history = prev.history;
-                    focused.history.break_merge();
+                match self.focused_input.take() {
+                    Some(prev) if prev.id == element.id => {
+                        focused.history = prev.history;
+                        focused.history.break_merge();
+                        // 还是同一次聚焦：bindchange 仍跟「最初聚焦时」的值比
+                        focused.value_at_focus = prev.value_at_focus;
+                    }
+                    // 从另一个输入框点过来：那个先失焦（bindblur / bindchange，tap.rs 在 focus 之前派）
+                    Some(prev) => super::edit_note::note_switch(&prev),
+                    None => {}
                 }
                 self.focused_input = Some(focused);
 

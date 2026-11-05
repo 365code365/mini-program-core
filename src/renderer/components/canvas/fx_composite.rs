@@ -124,15 +124,102 @@ fn composite_px(c: u8, s: [f32; 4], px: Color, alpha: f32, op: Composite) -> Col
         Composite::Darken => blend(f32::min),
         Composite::Lighten => blend(f32::max),
         Composite::Difference => blend(|s, d| (s - d).abs()),
+        // Compositing and Blending Level 1 §9.2（可分离）
+        Composite::Overlay => blend(|s, d| hard_light(d, s)),
+        Composite::ColorDodge => blend(|s, d| if d == 0.0 { 0.0 } else if s >= 1.0 { 1.0 } else { (d / (1.0 - s)).min(1.0) }),
+        Composite::ColorBurn => blend(|s, d| if d >= 1.0 { 1.0 } else if s <= 0.0 { 0.0 } else { 1.0 - ((1.0 - d) / s).min(1.0) }),
+        Composite::HardLight => blend(hard_light),
+        Composite::SoftLight => blend(|s, d| {
+            if s <= 0.5 {
+                d - (1.0 - 2.0 * s) * d * (1.0 - d)
+            } else {
+                let dd = if d <= 0.25 { ((16.0 * d - 12.0) * d + 4.0) * d } else { d.sqrt() };
+                d + (2.0 * s - 1.0) * (dd - d)
+            }
+        }),
+        Composite::Exclusion => blend(|s, d| s + d - 2.0 * s * d),
+        // §9.3（不可分离）：整个颜色一起算
+        Composite::Hue | Composite::Saturation | Composite::Color | Composite::Luminosity => {
+            let un = |v: f32, a: f32| if a > 0.0 { v / a } else { 0.0 };
+            let (cs, cd) = ([un(sr, sa), un(sg, sa), un(sb, sa)], [un(dr, da), un(dg, da), un(db, da)]);
+            let b = match op {
+                Composite::Hue => set_lum(set_sat(cs, sat(cd)), lum(cd)),
+                Composite::Saturation => set_lum(set_sat(cd, sat(cs)), lum(cd)),
+                Composite::Color => set_lum(cs, lum(cd)),
+                _ => set_lum(cd, lum(cs)),
+            };
+            let ch = |s: f32, d: f32, b: f32| (1.0 - da) * s + (1.0 - sa) * d + sa * da * b;
+            ([ch(sr, dr, b[0]), ch(sg, dg, b[1]), ch(sb, db, b[2])], sa + da - sa * da)
+        }
     };
     let a = a.clamp(0.0, 1.0);
     let unp = |v: f32| if a > 0.0 { (v / a * 255.0).round().clamp(0.0, 255.0) as u8 } else { 0 };
     Color::new(unp(rgb[0]), unp(rgb[1]), unp(rgb[2]), (a * 255.0).round() as u8)
 }
 
+fn hard_light(s: f32, d: f32) -> f32 {
+    if s <= 0.5 { d * 2.0 * s } else { let t = 2.0 * s - 1.0; d + t - d * t }
+}
+
+fn lum(c: [f32; 3]) -> f32 {
+    0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2]
+}
+
+fn clip_color(c: [f32; 3]) -> [f32; 3] {
+    let l = lum(c);
+    let (n, x) = (c[0].min(c[1]).min(c[2]), c[0].max(c[1]).max(c[2]));
+    let mut c = c;
+    if n < 0.0 {
+        c = c.map(|v| l + (v - l) * l / (l - n).max(1e-6));
+    }
+    if x > 1.0 {
+        c = c.map(|v| l + (v - l) * (1.0 - l) / (x - l).max(1e-6));
+    }
+    c
+}
+
+fn set_lum(c: [f32; 3], l: f32) -> [f32; 3] {
+    let d = l - lum(c);
+    clip_color(c.map(|v| v + d))
+}
+
+fn sat(c: [f32; 3]) -> f32 {
+    c[0].max(c[1]).max(c[2]) - c[0].min(c[1]).min(c[2])
+}
+
+fn set_sat(c: [f32; 3], s: f32) -> [f32; 3] {
+    let (n, x) = (c[0].min(c[1]).min(c[2]), c[0].max(c[1]).max(c[2]));
+    if x <= n {
+        return [0.0; 3];
+    }
+    c.map(|v| (v - n) * s / (x - n))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 新补的混合模式按 W3C 公式：不透明红 (1,0,0) 叠在不透明灰 (0.5,0.5,0.5) 上
+    #[test]
+    fn 补齐的混合模式_红叠灰() {
+        let dst = Color::new(128, 128, 128, 255);
+        let s = [255.0, 0.0, 0.0, 255.0];
+        let px = |op| composite_px(255, s, dst, 1.0, op);
+        // overlay = hard-light(d, s)：d = 128/255 略大于 0.5 → screen(s, 2d-1)，红 1、绿 / 蓝 = 2d-1 ≈ 1/255
+        let o = px(Composite::Overlay);
+        assert!(o.r == 255 && o.g <= 1 && o.b <= 1, "{o:?}");
+        assert_eq!(px(Composite::Exclusion), Color::new(127, 128, 128, 255));
+        assert_eq!(px(Composite::HardLight), Color::new(255, 0, 0, 255));
+        // color：源的色相与饱和度 + 目标的亮度 0.502
+        let c = px(Composite::Color);
+        assert!(c.r > c.g && c.g == c.b && c.a == 255, "{c:?}");
+        let l = 0.3 * c.r as f32 + 0.59 * c.g as f32 + 0.11 * c.b as f32;
+        assert!((l - 128.0).abs() < 2.0, "亮度保持目标的：{l}");
+        let l = px(Composite::Luminosity);
+        assert!(l.r == l.g && l.g == l.b && (l.r as i32 - 77).abs() <= 1, "目标灰的颜色 + 源红的亮度 0.3：{l:?}");
+        assert_eq!(Composite::parse("soft-light"), Composite::SoftLight);
+        assert_eq!(Composite::parse("color-dodge"), Composite::ColorDodge);
+    }
 
     /// 按行 / 按列取样 + 记住上一个像素，与逐像素老算法逐字节相同（竖直、水平、斜向渐变，各种合成模式，带透明底）
     #[test]

@@ -104,6 +104,14 @@ impl WxmlRenderer {
         for node in nodes {
             if node.tag == "text" && !node.text.is_empty() {
                 self.fix_text_box(taffy, node, parent_inner, changed);
+            } else if node.tag == "#text" && !node.text.is_empty() {
+                // 裸文本（`<view>一段字</view>`）：建树时按一行的字宽定宽（layout.rs），比父级内容区还宽时
+                // 也要收到父级宽、按行数补高 —— 从前只收拾 `<text>`，长的裸文本一整行冲出屏幕（微信里到容器边就折行）。
+                // 放得下的（绝大多数）在量行数之前就返回，不多做一次度量
+                let fits = parent_inner.is_some_and(|(w, _)| taffy.layout(node.taffy_node).map(|l| l.size.width <= w + 0.5).unwrap_or(true));
+                if !fits {
+                    self.fix_text_box(taffy, node, parent_inner, changed);
+                }
             } else if node.tag == "scroll-view" {
                 self.release_scroll_min_size(taffy, node, parent_inner, changed);
             }
@@ -160,10 +168,11 @@ impl WxmlRenderer {
         //    走 taffy 文本度量的那条路径（width 仍是 auto）本来就会按可用宽换行。
         let mut narrowed = None;
         if let Some((avail_w, _)) = parent_inner {
+            // 居中 / 右对齐的裸文本是「宽 100%、最小宽 = 字宽」（layout.rs）：撑宽它的是最小宽，同样要收
             let self_fixed_width = taffy
                 .style(node.taffy_node)
                 .ok()
-                .map(|st| dim_length(st.size.width).is_some())
+                .map(|st| dim_length(st.size.width).is_some() || (node.tag == "#text" && dim_length(st.min_size.width).is_some()))
                 .unwrap_or(false);
             if self_fixed_width && avail_w > 1.0 && box_w > avail_w + 0.5 {
                 box_w = avail_w;
@@ -187,6 +196,8 @@ impl WxmlRenderer {
         // 盒宽是取整过的：放回取整吃掉的那点（measure.rs `LAYOUT_ROUNDING_SLACK_PX`）
         let slack = crate::renderer::components::LAYOUT_ROUNDING_SLACK_PX;
         let lines = count_wrapped_lines(tr, &node.text, avail + slack, size, ls, bold);
+        // `-webkit-line-clamp` / `max-lines`：补高也只补到 N 行（text_attrs.rs）
+        let lines = crate::renderer::components::text_attrs::clamp_lines(lines, node.style.line_clamp);
         let needed_h = lines as f32 * line_height + pt + pb;
 
         if narrowed.is_none() && needed_h <= box_h + 0.5 {

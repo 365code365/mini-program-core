@@ -3,11 +3,14 @@ import Foundation
 import QuartzCore
 import UIKit
 
-/// SDK 自带的 `<map>`：瓦片地图 + 标记 / 气泡 / 标签 / 折线 / 圆 / 多边形 / 比例尺，**同层渲染**（画进位图交给引擎）。
+/// SDK 自带的 `<map>`：瓦片地图 + 标记 / 气泡 / 标签 / 折线 / 圆 / 多边形 / 控件 / 比例尺 / 定位蓝点，**同层渲染**（画进位图交给引擎）。
 /// 手势、事件、MapContext 与 Android 的 `MiniMapView.kt` 同一套（改一边对照另一边）：
-/// - 单指拖动、惯性、双指捏合缩放、双击放大；`enable-scroll` / `enable-zoom` 都关的不接手势；
-/// - `tap {latitude, longitude}`、`markertap` / `callouttap` / `labeltap {markerId}`、`regionchange`（begin / end + causedBy）、`updated`；
-/// - 没做：定位蓝点、旋转 / 倾斜、路况、个性化样式、点聚合。
+/// - 单指拖动、惯性、双指捏合缩放、双击放大；`enable-scroll`（拖动）与 `enable-zoom`（捏合 / 双击）分开管，都关的不接手势；
+///   `setting` 里写了的盖过同名属性；
+/// - `tap {latitude, longitude}`、`markertap` / `callouttap` / `labeltap {markerId}`、`controltap {controlId}`、
+///   `polylinetap {longitude, latitude}`、`regionchange`（begin / end + causedBy）、`updated`；
+/// - show-location 有定位权限才显示（[MapLocation]，SDK 不弹授权）；customCallout 的内容由引擎画好交来（[customImages]）；
+/// - 没做：`poitap`（栅格瓦片没有 POI 数据）、旋转 / 倾斜、路况、个性化样式、点聚合、marker 碰撞。
 /// 为什么不用 MKMapView：它是 Metal 画的 UIView，离屏截不到画面，只能盖在引擎画面上 —— 一滑页面就跟页面错开。
 public final class MiniMapView: MiniSameLayerView {
     /// 瓦片源（全局，建第一张地图之前设）
@@ -27,6 +30,9 @@ public final class MiniMapView: MiniSameLayerView {
     var lines: [MapLine] = []
     var circles: [MapCircle] = []
     var polygons: [MapPolygon] = []
+    var controls: [MapControl] = []
+    /// 自定义气泡的图（markerId → 引擎画好的 PNG）
+    var customImages: [Int64: MapCalloutImage] = [:]
     var openCallouts = Set<Int64>()
     var hits: [MapHit] = []
     var missing = true
@@ -36,7 +42,11 @@ public final class MiniMapView: MiniSameLayerView {
         t.onLoaded = { [weak self] in self?.invalidate() }
         return t
     }()
-    private var gestures = true
+    var scrollEnabled = true
+    var zoomEnabled = true
+    var showLocation = false
+    var location: MapLocation?
+    private var gestures: Bool { scrollEnabled || zoomEnabled }
     private var prev: [String: String] = [:]
     private var updatedSent = false
 
@@ -61,21 +71,45 @@ public final class MiniMapView: MiniSameLayerView {
         }
         if changed("scale") { zoom = MapGeo.num(attrs["scale"]) ?? 16 }
         zoom = min(max(zoom, minZoom), maxZoom)
-        satellite = MapGeo.flag(attrs, "enable-satellite", false)
-        showScale = MapGeo.flag(attrs, "show-scale", false)
-        gestures = MapGeo.flag(attrs, "enable-scroll", true) || MapGeo.flag(attrs, "enable-zoom", true)
+        // 官方 setting：里面写了的键盖过同名属性（只认这几个；rotate / skew / 3D / 路况等没有对应能力，忽略）
+        let setting = (attrs["setting"] as? String).flatMap { $0.data(using: .utf8) }
+            .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
+        let flag = { (attr: String, key: String, def: Bool) -> Bool in
+            (setting[key] as? Bool) ?? MapGeo.flag(attrs, attr, def)
+        }
+        satellite = flag("enable-satellite", "enableSatellite", false)
+        showScale = flag("show-scale", "showScale", false)
+        scrollEnabled = flag("enable-scroll", "enableScroll", true)
+        zoomEnabled = flag("enable-zoom", "enableZoom", true)
+        applyShowLocation(flag("show-location", "showLocation", false))
         if changed("markers") { markers = MapGeo.array(attrs, "markers").compactMap(MapMarker.init) }
         if changed("polyline") { lines = MapGeo.array(attrs, "polyline").map(MapLine.init) }
         if changed("circles") { circles = MapGeo.array(attrs, "circles").map(MapCircle.init) }
-        if changed("polygons") { polygons = MapGeo.array(attrs, "polygons").map(MapPolygon.init) }
+        if changed("polygons") {
+            // 按 zIndex 稳定排序（同值按数组顺序）
+            polygons = MapGeo.array(attrs, "polygons").map(MapPolygon.init).enumerated()
+                .sorted { ($0.element.zIndex, $0.offset) < ($1.element.zIndex, $1.offset) }.map(\.element)
+        }
+        if changed("controls") { controls = MapGeo.array(attrs, "controls").map(MapControl.init) }
+        // 引擎交来的自定义气泡图（SameLayerViews 并进来的 __callouts）
+        if changed("__callouts") {
+            customImages = [:]
+            for o in MapGeo.array(attrs, "__callouts") {
+                guard let id = MapGeo.num(o["markerId"]), let p = o["path"] as? String else { continue }
+                customImages[Int64(id)] = MapCalloutImage(path: p, size: CGSize(width: MapGeo.num(o["width"]) ?? 0, height: MapGeo.num(o["height"]) ?? 0))
+            }
+        }
         if changed("include-points") {
             let pts = MapGeo.points((MapGeo.array(attrs, "include-points")) as [Any])
             if !pts.isEmpty { fit(pts, pad: [30, 30, 30, 30], animate: false) }
         }
         prev = [:]
-        for k in ["latitude", "longitude", "scale", "markers", "polyline", "circles", "polygons", "include-points"] { prev[k] = s(k) }
+        for k in ["latitude", "longitude", "scale", "markers", "polyline", "circles", "polygons", "controls", "__callouts", "include-points"] {
+            prev[k] = s(k)
+        }
         invalidate()
     }
+
 
     public override func draw(in ctx: CGContext, pixelWidth: Int, pixelHeight: Int, scale: CGFloat) {
         settle?.invalidate()
@@ -88,7 +122,7 @@ public final class MiniMapView: MiniSameLayerView {
     }
     private var settle: Timer?
 
-    public override func onDetach() { stopAnim() }
+    public override func onDetach() { stopAnim(); location?.stop() }
 
     // ───────────────────────── 投影 ─────────────────────────
 
@@ -142,21 +176,30 @@ public final class MiniMapView: MiniSameLayerView {
     private func tapAt(_ x: CGFloat, _ y: CGFloat) {
         let hit = hits.last { $0.rect.contains(CGPoint(x: x, y: y)) }
         switch hit?.kind {
+        case .control?: emit("controltap", ["controlId": hit!.id])
         case .callout?: emit("callouttap", ["markerId": hit!.id])
         case .label?: emit("labeltap", ["markerId": hit!.id])
         case .marker?:
-            if let m = (markers + extraMarkers).first(where: { $0.id == hit!.id }), let c = m.callout, !c.always {
+            // BYCLICK 的气泡（callout / title / customCallout）点一下开、再点一下关
+            if let m = (markers + extraMarkers).first(where: { $0.id == hit!.id }),
+               m.custom.map({ !$0.always }) ?? m.callout.map({ !$0.always }) ?? false {
                 if openCallouts.contains(m.id) { openCallouts.remove(m.id) } else { openCallouts.insert(m.id) }
             }
             emit("markertap", ["markerId": hit!.id])
             invalidate()
-        case nil: emit("tap", fromScreen(x, y).json)
+        case nil:
+            let p = fromScreen(x, y)
+            // 点在折线上：polylinetap（官方 detail 只有经纬度）；同时发不发 tap 官方没写，按不发（待验）
+            if lines.contains(where: { onLine($0, x, y) }) { emit("polylinetap", ["longitude": p.lng, "latitude": p.lat]) }
+            else { emit("tap", p.json) }
         }
     }
 
+
     // ───────────────────────── 手势 ─────────────────────────
 
-    private enum G { case idle, pending, drag, pinch }
+    /// hold：手指挪过了但不许拖（enable-scroll 关着）：这一串什么都不做，抬手也不算点击
+    private enum G { case idle, pending, drag, pinch, hold }
     private var g = G.idle
     private var p0 = CGPoint.zero, p1 = CGPoint.zero, down = CGPoint.zero
     private var lastTapT = -1000.0
@@ -185,8 +228,10 @@ public final class MiniMapView: MiniSameLayerView {
             samples = [(t, p)]
         case "move":
             if g == .pending && hypot(x - down.x, y - down.y) > Self.slop {
-                g = .drag
-                regionBegin("gesture")
+                if scrollEnabled {
+                    g = .drag
+                    regionBegin("gesture")
+                } else { g = .hold }
             }
             if g == .drag {
                 panBy(x - p0.x, y - p0.y)
@@ -204,6 +249,7 @@ public final class MiniMapView: MiniSameLayerView {
             case .pending: if !pinched { tapOrDouble(p, t) }
             case .drag: fling(t)
             case .pinch: regionEnd("scale")
+            case .hold: if pinched { regionEnd("scale") }
             case .idle: break
             }
             g = .idle
@@ -216,7 +262,8 @@ public final class MiniMapView: MiniSameLayerView {
     private func onSecond(_ phase: String, _ p: CGPoint) {
         switch phase {
         case "start":
-            if g == .idle { return }
+            // enable-zoom 关着：第二根手指不缩放（第一根照常拖）
+            if g == .idle || !zoomEnabled { return }
             stopAnim()
             p1 = p
             g = .pinch
@@ -227,18 +274,22 @@ public final class MiniMapView: MiniSameLayerView {
         case "move":
             if g == .pinch { p1 = p; applyPinch() }
         default:
-            if g == .pinch { g = .drag; samples = [] }
+            // 第二根抬起：剩下那根接着拖（不许拖就停在这儿，抬手时收 regionchange end）
+            if g == .pinch { g = scrollEnabled ? .drag : .hold; samples = [] }
         }
     }
 
     private func applyPinch() {
         let d = max(hypot(p1.x - p0.x, p1.y - p0.y), 1)
-        zoomAround(pinchZoom + log2(Double(d / pinchDist)), (p0.x + p1.x) / 2, (p0.y + p1.y) / 2)
+        // 不许拖时绕框的中心点缩放（视野中心不动），许拖时绕两指中点
+        let ax = scrollEnabled ? (p0.x + p1.x) / 2 : width * CGFloat(offsetX)
+        let ay = scrollEnabled ? (p0.y + p1.y) / 2 : height * CGFloat(offsetY)
+        zoomAround(pinchZoom + log2(Double(d / pinchDist)), ax, ay)
         invalidate()
     }
 
     private func tapOrDouble(_ p: CGPoint, _ t: Double) {
-        if t - lastTapT < 300 && hypot(p.x - lastTap.x, p.y - lastTap.y) < 30 {
+        if zoomEnabled && t - lastTapT < 300 && hypot(p.x - lastTap.x, p.y - lastTap.y) < 30 {
             lastTapT = -1000
             regionBegin("scale")
             animate(0.3, onEnd: { [weak self] in self?.regionEnd("scale") }) { [weak self] f, from in
@@ -351,6 +402,8 @@ enum MapContextCalls {
         case "getSkew": reply.success(["skew": 0])
         case "moveToLocation":
             var t = LatLng(MapGeo.num(a["latitude"]) ?? .nan, MapGeo.num(a["longitude"]) ?? .nan)
+            // 不给坐标：官方挪到当前定位点。有定位权限用蓝点 / 系统缓存的最后位置，没有退回属性里的中心点
+            if !t.valid, let f = m.location?.fix ?? MapLocation.lastKnown() { t = f }
             if !t.valid { t = LatLng(MapGeo.num(m.attrs["latitude"]) ?? .nan, MapGeo.num(m.attrs["longitude"]) ?? .nan) }
             guard t.valid else { reply.fail("moveToLocation:fail 没有可挪去的位置"); return true }
             m.moveTo(t, m.zoom, animate: true)
@@ -406,6 +459,7 @@ enum MapContextCalls {
             m.offsetY = min(max(o.count > 1 ? o[1] : 0.5, 0.25), 0.75)
             m.invalidate()
             reply.success()
+        case "openMapApp": MapAppLink.open(a, reply)
         default: return false
         }
         return true

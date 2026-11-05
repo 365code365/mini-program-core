@@ -49,6 +49,11 @@ const INPUT_ATTRS: &[&str] = &[
     "confirm-hold",
     "adjust-position",
     "cursor-spacing",
+    // 聚焦参数（host/input_focus.rs）：点页面不收键盘、按属性聚焦时的光标与选区
+    "hold-keyboard",
+    "cursor",
+    "selection-start",
+    "selection-end",
 ];
 
 impl WxmlRenderer {

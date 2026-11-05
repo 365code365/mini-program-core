@@ -9,7 +9,8 @@ const MINI_PROGRAM_ORDER: &[&str] = &[
     "module", "console", "fake-clock", "wx-object", "codec", "timer", "storage", "ui", "canvas", "media",
     "query", "canvas2d", "app-page", "app-hooks", "lifecycle", "page-components", "route", "device", "network",
     "host", "host-media", "system", "tabbar", "socket", "fs", "audio", "app-info", "host-capabilities",
-    "base-ext", "host-objects", "net-socket", "route-ext", "page-ext", "media-ext", "worker-mq", "animate",
+    // 2026-11-03：open-type（button 的开放能力，要 route-ext / host 之后、探针之前）
+    "base-ext", "host-objects", "net-socket", "route-ext", "open-type", "page-ext", "media-ext", "worker-mq", "animate",
     "worklet", "webaudio", "component", "component-tree", "wxs", "api-probe",
     // 2026-11：wx 的中立别名 nb / gb / mb（js/api_alias.rs），要指向探针包好的 wx，所以在探针之后
     "api-alias",

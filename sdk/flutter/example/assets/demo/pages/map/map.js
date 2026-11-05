@@ -19,14 +19,16 @@ function markers() {
       m.width = 32;
       m.height = 32;
       m.label = { content: p.name, color: '#333333', fontSize: 12, anchorX: -30, anchorY: 4, bgColor: '#ffffffdd', padding: 4, borderRadius: 4 };
-    } else m.callout = { content: p.name + "（点我）", display: 'BYCLICK', padding: 6, borderRadius: 4, fontSize: 12 };
+    } else m.callout = { content: p.name + "（点我）", display: 'BYCLICK', padding: 6, borderRadius: 4, fontSize: 12, textAlign: 'center', anchorY: -2 };
+    // 王府井：自定义气泡（map 里 slot="callout" 的 cover-view，marker-id=3），官方：有 customCallout 时忽略 callout
+    if (p.id === 3) m.customCallout = { display: 'ALWAYS', anchorX: 0, anchorY: 0 };
     return m;
   });
 }
 
 const ROUTE = [{
   points: PLACES.slice(0, 3).map((p) => ({ latitude: p.latitude, longitude: p.longitude })),
-  color: '#10aeffdd', width: 6, arrowLine: true
+  color: '#10aeffdd', colorList: ['#10aeffdd', 'rgba(7, 193, 96, 0.85)'], width: 6, arrowLine: true
 }, {
   points: [PLACES[0], PLACES[4]].map((p) => ({ latitude: p.latitude, longitude: p.longitude })),
   color: '#fa9d3bdd', width: 4, dottedLine: true
@@ -47,8 +49,11 @@ Page({
         { latitude: 39.9048, longitude: 116.3873 }, { latitude: 39.9048, longitude: 116.3906 },
         { latitude: 39.9022, longitude: 116.3906 }, { latitude: 39.9022, longitude: 116.3873 }
       ],
-      strokeWidth: 2, strokeColor: '#8a5cf5cc', fillColor: '#8a5cf533'
+      strokeWidth: 2, strokeColor: '#8a5cf5cc', fillColor: '#8a5cf533', dashArray: [6, 4], zIndex: 1
     }],
+    // 控件：钉在地图左上角，不随地图动；点了发 controltap {controlId}
+    controls: [{ id: 1, iconPath: '/images/avatar.jpg', position: { left: 10, top: 10, width: 32, height: 32 }, clickable: true }],
+    setting: {},
     centerText: HOME.latitude.toFixed(5) + ', ' + HOME.longitude.toFixed(5),
     scaleText: '14',
     ctxResult: '点上面的按钮调 MapContext',
@@ -102,6 +107,12 @@ Page({
     this.setData({ [k]: !this.data[k] });
   },
   toggleRoute() { this.setData({ polyline: this.data.polyline.length ? [] : ROUTE }); },
+  // setting 整组覆盖同名属性：这里只写 enableScroll，别的照属性
+  toggleScroll() { this.setData({ setting: this.data.setting.enableScroll === false ? {} : { enableScroll: false } }); },
+  openApp() { this.call('openMapApp', { latitude: PLACES[1].latitude, longitude: PLACES[1].longitude, destination: PLACES[1].name }); },
+  onControlTap(e) { this.log('controltap controlId=' + e.detail.controlId + '（' + typeof e.detail.controlId + '）'); },
+  onPolylineTap(e) { this.log('polylinetap ' + e.detail.latitude.toFixed(5) + ', ' + e.detail.longitude.toFixed(5)); },
+  onPoiTap(e) { this.log('poitap ' + (e.detail.name || '')); },
   onTap(e) { this.log('tap ' + e.detail.latitude.toFixed(5) + ', ' + e.detail.longitude.toFixed(5)); },
   onMarkerTap(e) { this.log('markertap markerId=' + e.detail.markerId + '（' + typeof e.detail.markerId + '）'); },
   onCalloutTap(e) { this.log('callouttap markerId=' + e.detail.markerId); },
@@ -136,7 +147,9 @@ Page({
     const pt = await this.call('toScreenLocation', HOME);
     r.screen = !!(pt && typeof pt.x === 'number');
     r.translate = !!(await this.call('translateMarker', { markerId: 5, destination: { latitude: 39.9055, longitude: 116.404 }, duration: 300, autoRotate: false }));
-    r.ok = r.center && r.moved && r.region && r.include && r.screen && r.translate;
+    // WP-F1：moveToLocation 不给坐标（有定位权限挪到定位点，没有退回属性里的中心点），两种都该 success
+    r.moveNoArgs = !!(await this.call('moveToLocation'));
+    r.ok = r.center && r.moved && r.region && r.include && r.screen && r.translate && r.moveNoArgs;
     console.log('NC-CHECK map ' + JSON.stringify(r));
     if (this.chain) wx.redirectTo({ url: '/pages/webview/webview?auto=1&chain=1' });
   }

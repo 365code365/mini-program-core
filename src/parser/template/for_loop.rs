@@ -49,8 +49,11 @@ impl TemplateEngine {
             _ => return,
         };
         let mut seen: HashMap<String, u32> = HashMap::new();
+        // 作用域只拷一次，每项只改写 item / index：每项都写这两个键，上一项留下的值总会被盖掉。
+        // 从前每项 `data.clone()`，而 data 里装着被遍历的数组本身，N 项就是 N² 个对象的深拷贝
+        // （真机 200 项一次 setData 展开 ~32ms，见 list-builder 那一页的同一问题）
+        let mut loop_data = data.clone();
         for (index, item) in items.iter().enumerate() {
-            let mut loop_data = data.clone();
             if let Some(obj) = loop_data.as_object_mut() {
                 obj.insert(item_name.to_string(), item.clone());
                 obj.insert(index_name.to_string(), JsonValue::Number(index.into()));

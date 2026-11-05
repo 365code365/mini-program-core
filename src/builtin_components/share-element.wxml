@@ -1,0 +1,1 @@
+<view class="se {{uid}}" style="{{hidden ? 'opacity:0;' : ''}}" animation="{{anim}}"><slot></slot></view>

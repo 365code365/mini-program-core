@@ -236,8 +236,8 @@ final class EngineHost: NSObject {
         self?.run { mr_app_set_device_orientation($0, deg) }
     }
 
-    /// 在引擎线程上执行一条命令，之后挂一帧
-    private func run(_ block: @escaping (OpaquePointer) -> Void) {
+    /// 在引擎线程上执行一条命令，之后挂一帧（自带原生组件 NativeComponents 也用它：交帧、回包、派事件）
+    func run(_ block: @escaping (OpaquePointer) -> Void) {
         thread.perform { [self] in
             guard let h = handle else { return }
             block(h)

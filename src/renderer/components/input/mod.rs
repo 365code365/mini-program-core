@@ -210,20 +210,7 @@ pub fn parse_color_attr(s: &str) -> Option<Color> {
     (h.len() == 8).then(|| Color::new((v >> 24) as u8, (v >> 16) as u8, (v >> 8) as u8, v as u8))
 }
 
-/// 解析 placeholder-style 属性
-fn parse_placeholder_style(style_str: &str) -> Option<Color> {
-    // 支持格式: "color: #999999" 或 "color: rgb(153, 153, 153)"
-    for part in style_str.split(';') {
-        let part = part.trim();
-        if part.starts_with("color:") {
-            let color_str = part.trim_start_matches("color:").trim();
-            return parse_color_value(color_str);
-        }
-    }
-    None
-}
-
-/// 解析颜色值
+/// 解析颜色值（`placeholder-style` 的 color、`cursor-color`）
 fn parse_color_value(s: &str) -> Option<Color> {
     let s = s.trim();
     if s.starts_with('#') {
@@ -271,6 +258,11 @@ impl InputComponent {
     pub fn build(node: &WxmlNode, ctx: &mut ComponentContext) -> Option<RenderNode> {
         // 使用 base 的样式解析，获取 CSS 定义的样式
         let (mut ts, mut ns) = build_base_style(node, ctx);
+        // textarea `auto-height`：「设置 auto-height 时，style.height 不生效」（官方），高度按行数定（auto_height.rs）
+        let auto_height = node.tag_name == "textarea" && auto_height::is_auto_height(&node.attributes);
+        if auto_height {
+            ts.size.height = taffy::style::Dimension::auto();
+        }
         // 替换元素：作者写死的尺寸就是它的最小尺寸，别被兄弟压没。
         // 必须在合成默认尺寸**之前**调用 —— CSS 语义里「指定尺寸」只算作者写的那个，
         // 引擎给 textarea 之类补的默认高度不算，那种情况仍应允许被父级压缩。
@@ -300,21 +292,18 @@ impl InputComponent {
         let _adjust_position = node.get_attr("adjust-position").map(|s| s != "false" && s != "{{false}}").unwrap_or(true);
         let _cursor_spacing = node.get_attr("cursor-spacing").and_then(|s| s.parse::<f32>().ok()).unwrap_or(0.0);
         
-        // 占位符颜色：`placeholder-style` > `placeholder-class` 里的 color > 默认。
-        // 从前只认 placeholder-style，而且输入框自己写了 `color` 时占位符也用那个颜色画（深色的「占位符」
-        // 看着像已经填了值）；`placeholder-class`（官方默认 `input-placeholder`）完全没认
-        let class_color = || {
-            let cls = node.get_attr("placeholder-class").unwrap_or("input-placeholder");
-            let names: Vec<&str> = cls.split_whitespace().collect();
-            match ctx.stylesheet.get_styles(&names, "").get("color") {
-                Some(crate::parser::wxss::StyleValue::Color(c)) => Some(*c),
-                _ => None,
-            }
-        };
-        let placeholder_color = node.get_attr("placeholder-style")
-            .and_then(|s| parse_placeholder_style(s))
-            .or_else(class_color)
-            .unwrap_or(Color::from_hex(0xBFBFBF));
+        // 占位符样式：`placeholder-style` > `placeholder-class`（input 默认 `input-placeholder`、
+        // textarea 默认 `textarea-placeholder`）> 默认。color / font-size / font-weight 都认（placeholder.rs）。
+        // 从前只认 color，而且输入框自己写了 `color` 时占位符也用那个颜色画（深色的「占位符」
+        // 看着像已经填了值）
+        let ph_style = placeholder::PlaceholderStyle::of_node(node, ctx);
+        let placeholder_color = ph_style.color.unwrap_or(Color::from_hex(0xBFBFBF));
+        if let Some(fs) = ph_style.font_size {
+            attrs.insert(placeholder::PLACEHOLDER_FONT_SIZE.into(), fs.to_string());
+        }
+        if let Some(b) = ph_style.bold {
+            attrs.insert(placeholder::PLACEHOLDER_BOLD.into(), if b { "1" } else { "0" }.into());
+        }
         // 作者写的文字颜色（值的颜色），在下面补默认值之前记下
         let author_color = ns.text_color;
         
@@ -323,8 +312,12 @@ impl InputComponent {
         // 检查 CSS 是否定义了样式
         let has_custom_width = !dim_is_auto(ts.size.width);
         let has_custom_height = !dim_is_auto(ts.size.height);
+        // textarea `disable-default-padding`（官方：「是否去掉 iOS 下的默认内边距」）：不补默认内边距，
+        // 当作页面自己写了 padding（没写就是 0）
+        let no_default_padding = is_textarea
+            && node.get_attr("disable-default-padding").is_some_and(|s| crate::renderer::components::attr_is_true(s));
         let has_custom_padding = !(length_px(ts.padding.top) == 0.0) ||
-                                  !(length_px(ts.padding.left) == 0.0);
+                                  !(length_px(ts.padding.left) == 0.0) || no_default_padding;
         let has_custom_bg = ns.background_color.is_some();
         let has_custom_border = ns.border_color.is_some() || ns.border_width > 0.0;
         let has_custom_radius = ns.border_radius > 0.0;
@@ -348,7 +341,7 @@ impl InputComponent {
         // 从前也给 12px，news 搜索页的占位文字比 iOS WebKit 参考右移 12px（@3x 量出 36 物理像素）。
         // textarea 仍沿用旧的默认值
         if !has_custom_padding && !is_textarea {
-            ts.padding = Rect { top: length(0.0), right: length(0.0), bottom: length(0.0), left: length(0.0) };
+            ts.padding = Rect { top: length(0.0_f32), right: length(0.0_f32), bottom: length(0.0_f32), left: length(0.0_f32) };
             ns.padding_top = 0.0;
             ns.padding_bottom = 0.0;
             ns.padding_left = 0.0;
@@ -372,7 +365,18 @@ impl InputComponent {
         // 例如 font-size:14px + padding:8px → 32.5px。固定 42px 会让输入框凭空高出近 10px，
         // 其后所有内容一路下移，两端从首屏就开始整体错位（首页搜索栏即是此因）。
         // 行高取西文因子：输入框行盒只由字体决定，不随占位文字是否中文而变（与浏览器一致）。
-        if !has_custom_height {
+        if auto_height {
+            // 行数 × 行高 + 上下内边距；min-height / max-height 由 taffy 照常夹。行高与绘制同一算式
+            // （textarea.rs：CSS 写了用 CSS，没写按含 CJK 的 normal），字号在下面补默认之前先按同样的规则取
+            let fs = if has_custom_font_size { ns.font_size } else { 16.0 } * sf;
+            let line_h = ns.line_height.map(|lh| lh * sf).unwrap_or_else(|| {
+                crate::text::shared_fonts().map(|tr| tr.natural_line_height(fs)).unwrap_or(fs * 1.375)
+            });
+            let lines = auto_height::lines_for_build(&node.attributes, value);
+            attrs.insert(auto_height::AUTO_HEIGHT_LINES.into(), lines.to_string());
+            let pad_v = (ns.padding_top + ns.padding_bottom) * sf;
+            ts.size.height = length(lines as f32 * line_h.max(1.0) + pad_v);
+        } else if !has_custom_height {
             let pad_v = (ns.padding_top + ns.padding_bottom) * sf;
             let line = ns.font_size * sf * crate::text::LATIN_LINE_HEIGHT_FACTOR;
             ts.size.height = length(if is_textarea {
@@ -439,5 +443,19 @@ impl InputComponent {
 mod draw;
 /// textarea 的多行排版与绘制
 mod textarea;
+/// 占位符的 color / font-size / font-weight（placeholder-style、placeholder-class）
+mod placeholder;
+/// textarea 的 auto-height 与 linechange
+pub mod auto_height;
 
 pub use textarea::layout_textarea_lines;
+
+/// 光标颜色：属性 `cursor-color`（官方：iOS 是十六进制，安卓只有 default 和 green，Skyline 下无限制）。
+/// 没写 / `default` 用引擎一直画的微信绿。只有聚焦的那个输入框画光标时才查
+pub(crate) fn caret_color(node: &RenderNode) -> Color {
+    const DEFAULT: u32 = 0x07C160;
+    match node.attrs.get("cursor-color").map(|s| s.trim()) {
+        None | Some("") | Some("default") | Some("green") => Color::from_hex(DEFAULT),
+        Some(s) => parse_color_value(s).or_else(|| crate::renderer::components::parse_color_str(s)).unwrap_or(Color::from_hex(DEFAULT)),
+    }
+}

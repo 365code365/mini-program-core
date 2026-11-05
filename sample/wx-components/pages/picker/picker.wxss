@@ -1,0 +1,3 @@
+.pick { padding: 20rpx; margin: 8rpx 0; background: #f4f5f7; border-radius: 12rpx; }
+.pv { height: 250px; }
+.pvi { line-height: 50px; text-align: center; }

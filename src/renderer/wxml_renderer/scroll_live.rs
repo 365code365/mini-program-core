@@ -33,14 +33,25 @@ impl WxmlRenderer {
         let sf = self.scale_factor;
         let text_color = node.style.text_color.unwrap_or(Color::BLACK);
         let horizontal = super::scroll_views::scroll_axes(&node.attrs).0;
+        // clip=false（Skyline）：不裁到盒子，主轴两侧各多画一个盒子长（滚动时的损伤区按同一个范围，scroll_views.rs clip_false_paint）
+        let clip = super::scroll_views::clips(&node.attrs);
         canvas.save();
-        canvas.clip_rect(GeoRect::new(x, y, w, h));
+        if clip {
+            canvas.clip_rect(GeoRect::new(x, y, w, h));
+        }
         let pos = interaction.get_scroll_controller(component_id).map(|c| c.get_position()).unwrap_or(0.0);
         if !horizontal && pos < 0.0 {
             self.draw_refresher_gap(canvas, node, component_id, interaction, (x, y, w), -pos * sf);
         }
-        let (dx, dy) = if horizontal { (-pos * sf, 0.0) } else { (0.0, -pos * sf) };
+        // 横竖都能滚的两个轴都挪（scroll_2d_attrs.rs）；只按纵向剔除不可见的子节点，横向靠裁剪
+        let (dx, dy) = Self::scroll_child_offset(&node.attrs, component_id, interaction, sf);
         let (view_start, view_len) = (pos * sf, if horizontal { w } else { h });
+        let ext = if clip { 0.0 } else { view_len };
+        let (view_start, view_len) = (view_start - ext, view_len + ext * 2.0);
+        // type="nested" 的外层：里层 scroll-view 跟着外层按小数偏移动，分块缓存在局部重画帧里对不齐（WP-D 用例抓到的），逐帧画
+        let nested = node.attrs.get("type").is_some_and(|t| t.trim() == "nested");
+        let was_nested = self.in_nested_outer;
+        self.in_nested_outer = was_nested || nested;
         for child in &node.children {
             let Ok(l) = taffy.layout(child.taffy_node) else { continue };
             let (s, len) = if horizontal { (l.location.x, l.size.width) } else { (l.location.y, l.size.height) };
@@ -48,6 +59,12 @@ impl WxmlRenderer {
                 self.draw_child_with_interaction(canvas, taffy, child, x + dx, y + dy, text_color, interaction, scroll_offset, viewport_height);
             }
         }
+        self.in_nested_outer = was_nested;
         canvas.restore();
+        // 吸附元素：内容画完再按吸住的位置画（sticky.rs）
+        if !horizontal {
+            self.draw_scroll_stickies(canvas, taffy, node, (x, y, w, h), (x + dx, y + dy), text_color, interaction, scroll_offset, viewport_height);
+        }
+        self.draw_scrollbar(canvas, component_id, (x, y, w, h), interaction);
     }
 }

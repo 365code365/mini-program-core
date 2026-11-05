@@ -27,7 +27,13 @@ Component({
       a.onPause(function () { self.setData({ playing: false }); self.triggerEvent('pause', {}); });
       a.onStop(function () { self.setData({ playing: false, timeText: '00:00' }); });
       a.onEnded(function () { self.setData({ playing: false }); self.triggerEvent('ended', {}); });
-      a.onError(function (e) { self.setData({ playing: false }); self.triggerEvent('error', { errMsg: e.errMsg || 'MEDIA_ERR' }); });
+      // 官方 binderror：detail = {errMsg: MediaError.code}，是数字（1 资源被禁止 / 2 网络错误 / 3 解码错误 / 4 不合适资源）。
+      // InnerAudioContext 的 errCode 换过去：10002 网络 → 2、10004 格式 → 3、其余（10001 系统 / 10003 文件 / -1）→ 4（映射待验）
+      a.onError(function (e) {
+        var c = e && e.errCode, code = c === 10002 ? 2 : c === 10004 ? 3 : 4;
+        self.setData({ playing: false });
+        self.triggerEvent('error', { errMsg: code });
+      });
       a.onTimeUpdate(function () {
         var t = a.currentTime, d = a.duration;
         self.setData({ timeText: fmt(t) });

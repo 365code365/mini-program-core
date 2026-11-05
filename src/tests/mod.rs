@@ -71,6 +71,18 @@ pub mod skyline_component_tests;
 /// 小游戏 G0：前置代码按应用种类分组、包种类入口、call_function 转义
 pub mod game_profile_tests;
 pub mod api_alias_tests;
+/// WP-A：text 的 line-clamp / max-lines / decode / space，rich-text 子树，cover-view 默认样式
+mod text_richtext_tests;
+/// WP-C：worklet 事件、手势组件、draggable-sheet、button open-type、navigator、开放能力、snapshot、page-container
+mod wpc;
+/// 组件对齐 WP-B：表单与输入（复用 wpc 的现场小程序夹具）
+mod wpb;
+/// 组件对齐 WP-D：吸顶（position: sticky / sticky-header）、scroll-view 与 ScrollViewContext、swiper
+mod wpd;
+/// 小窗（picture-in-picture-mode）
+mod pip_tests;
+/// voip-room 交给宿主自己的通话后台
+mod voip_tests;
 
 /// 拿着包根读锁的 `MiniEngine`（见 `data_dir::ROOT_TEST_LOCK`）：用法与 `MiniEngine` 相同（Deref）。
 /// 同一条线程上同时活着几个（GT-T9 一次起两个对照）只真锁一次：std 的 RwLock 同线程重复读锁可能死锁（有写者在等时）
