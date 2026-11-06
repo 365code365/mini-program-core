@@ -10,3 +10,8 @@
 .sw { height: 200rpx; }
 .ban { height: 200rpx; display: flex; align-items: center; justify-content: center; color: #fff; border-radius: 12rpx; }
 .b0 { background: #576b95; } .b1 { background: #e64340; } .b2 { background: #07c160; }
+.clip-wrap { padding: 16rpx 64rpx 32rpx; background: #f4f5f7; border-radius: 12rpx; }
+.clip-sv { width: 100%; }
+.clip-row { display: flex; flex-direction: row; }
+.clip-item { width: 180rpx; height: 120rpx; margin-right: 24rpx; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 32rpx; font-weight: bold; background: #07c160; border-radius: 16rpx; box-shadow: 0 10rpx 28rpx rgba(7, 193, 96, 0.45); }

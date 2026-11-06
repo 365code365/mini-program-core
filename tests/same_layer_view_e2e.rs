@@ -329,6 +329,82 @@ fn f1_自定义气泡出图交给宿主_slot_不画在页面上_setting_盖过�
     host_view::retain(&[]);
 }
 
+/// 铺满屏的地图上盖着按钮（bike 首页的写法：`.page` 里 map 在前，绝对定位的 cover-view 在后）：
+/// 1. 按在 cover-view 按钮上：不交给地图（没有 `nativeViewTouch`），按钮的 bindtap 照派，也不转 `nativeViewTap`；
+/// 2. 按在没绑事件、但盖着地图的卡片上：同样不归地图（与浏览器命中一致）；
+/// 3. 按在 fixed 底栏上：覆盖层在正常流上面，也不归地图；
+/// 4. 地图露着的地方照旧整串交给地图。
+#[test]
+fn 地图上盖着的按钮先收_不交给地图() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = fixture("covered");
+    std::fs::write(
+        root.join("pages/p/p.wxml"),
+        r#"<view class="page">
+  <map id="map" class="full" latitude="22.54" longitude="114.05" bindtap="onMapTap"></map>
+  <cover-view class="side"><cover-view class="btn" bindtap="onBtn">钱包</cover-view></cover-view>
+  <cover-view class="card">附近 14 辆可用车</cover-view>
+  <view class="bar" bindtap="onBar">扫码开锁</view>
+</view>"#,
+    )
+    .unwrap();
+    std::fs::write(
+        root.join("pages/p/p.wxss"),
+        "page { background-color: #ffffff; }
+.page { position: relative; width: 100%; height: 100vh; overflow: hidden; }
+.full { width: 100%; height: 100vh; }
+.side { position: absolute; left: 12px; top: 100px; width: 48px; }
+.btn { width: 48px; height: 52px; background-color: #ffffff; }
+.card { position: absolute; left: 12px; right: 12px; bottom: 100px; height: 60px; background-color: #ffffff; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; height: 60px; background-color: #13a868; }",
+    )
+    .unwrap();
+    std::fs::write(
+        root.join("pages/p/p.js"),
+        "Page({ data: { ev: [] }, onBtn() { this.data.ev.push('btn'); }, onBar() { this.data.ev.push('bar'); }, onMapTap() {} });",
+    )
+    .unwrap();
+    let opts = EngineOptions {
+        same_layer: vec!["map".into()],
+        same_layer_gestures: vec!["map".into()],
+        ..Default::default()
+    };
+    let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), Some(&root.join("_data").to_string_lossy()), W, H, DPR, HostEnv::default(), opts)
+        .expect("创建引擎");
+    e.set_animation_clock(0.0);
+    e.launch(None).expect("打开首页");
+    e.pump_ex(1000);
+    events(&mut e);
+    let mut t = 1000u64;
+    let mut tap = |e: &mut MiniEngine, x: f32, y: f32| -> Vec<Value> {
+        e.pointer_down(x, y);
+        t += 16;
+        e.pump_ex(t);
+        e.pointer_up(x, y);
+        t += 16;
+        e.pump_ex(t);
+        events(e)
+    };
+    let kinds = |evs: &[Value]| -> Vec<String> {
+        evs.iter().filter_map(|v| v["type"].as_str()).filter(|s| s.starts_with("nativeView")).map(String::from).collect()
+    };
+    // 1. 按钮（12..60, 100..152）
+    let evs = tap(&mut e, 36.0, 126.0);
+    assert!(kinds(&evs).is_empty(), "按在按钮上不归地图：{:?}", kinds(&evs));
+    // 2. 没绑事件的卡片（底边上 100、高 60）
+    let evs = tap(&mut e, 180.0, H as f32 - 130.0);
+    assert!(kinds(&evs).is_empty(), "盖着地图的卡片也挡：{:?}", kinds(&evs));
+    // 3. fixed 底栏
+    let evs = tap(&mut e, 180.0, H as f32 - 30.0);
+    assert!(kinds(&evs).is_empty(), "fixed 底栏在地图上面：{:?}", kinds(&evs));
+    assert_eq!(e.eval("JSON.stringify(getCurrentPages()[0].data.ev)").unwrap(), r#"["btn","bar"]"#, "按钮与底栏的 bindtap 都派了");
+    // 4. 地图露着的地方：整串给地图
+    let evs = tap(&mut e, 200.0, 300.0);
+    let k = kinds(&evs);
+    assert_eq!(k.first().map(String::as_str), Some("nativeViewTouch"), "露着的地图照旧接手势：{k:?}");
+    host_view::retain(&[]);
+}
+
 /// F2 camera / voip-room（同层渲染，`sameLayer: ["camera", "voip-room"]`）：
 /// 1. camera 进 `sameLayerViews`（宿主据此开相机），默认 100% × 300px；
 /// 2. `onCameraFrame` 由引擎从宿主交来的预览里取：`frame-size="small"` 长边 360，`data` 是 `ArrayBuffer`、长度 = 宽 × 高 × 4；
@@ -450,5 +526,66 @@ fn f2_相机帧走引擎_扫码_voip_room_进不了房() {
     let frames = e.eval("JSON.stringify(getCurrentPages()[0].data.frames[0])").unwrap();
     assert_eq!(frames, "[360,288,414720,true]", "small：长边 360，RGBA 的 ArrayBuffer");
     assert_eq!(e.eval("JSON.stringify(getCurrentPages()[0].data.voip)").unwrap(), r#"["number"]"#, "voip-room 只报一次错");
+    host_view::retain(&[]);
+}
+
+/// 示例「组件实验室」的扫码页（sample/wx-components/pages/scan）：包里的四张测试码（二维码 ×2、EAN-13、Code 128）
+/// 依次当相机画面交给引擎，页面的 bindscancode 依次拿到码里的字与码制名（判据：`data.last` 与 `count`）
+#[test]
+fn 组件实验室_扫码页_包里的四张测试码都扫得出() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("sample/wx-components");
+    let data = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("wx-components-scan");
+    std::fs::remove_dir_all(&data).ok();
+    let opts = EngineOptions { same_layer: vec!["camera".into()], ..Default::default() };
+    let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), Some(&data.to_string_lossy()), W, H, DPR, HostEnv::default(), opts)
+        .expect("创建引擎");
+    e.set_animation_clock(0.0);
+    e.launch(Some("pages/scan/scan")).expect("打开扫码页");
+    let mut t = 1000u64;
+    e.pump_ex(t);
+    let evs = events(&mut e);
+    let views = evs.iter().find(|v| v["type"] == "sameLayerViews").expect("sameLayerViews");
+    let cam = views["views"].as_array().unwrap().iter().find(|v| v["tag"] == "camera").expect("camera 交给宿主");
+    let key = cam["key"].as_str().unwrap().to_string();
+    let (bw, bh) = (cam["box"][0].as_f64().unwrap() as usize, cam["box"][1].as_f64().unwrap() as usize);
+    let codes = [
+        ("qr.png", "https://minirender.dev/lab?from=qr", "QR_CODE"),
+        ("qr-zh.png", "组件实验室·扫码测试", "QR_CODE"),
+        ("ean13.png", "6901234567892", "EAN_13"),
+        ("code128.png", "MINI-LAB-2026", "CODE_128"),
+    ];
+    for (n, (file, text, kind)) in codes.iter().enumerate() {
+        let img = image::open(root.join("images/codes").join(file)).expect("读测试码").to_luma8();
+        let (iw, ih) = (img.width() as usize, img.height() as usize);
+        assert!(iw <= bw && ih <= bh, "{file} {iw}x{ih} 放得进取景框 {bw}x{bh}");
+        // 白底上居中放这张码，当作相机交来的一帧
+        let mut px = vec![255u8; bw * bh * 4];
+        let (ox, oy) = ((bw - iw) / 2, (bh - ih) / 2);
+        for y in 0..ih {
+            for x in 0..iw {
+                let v = img.get_pixel(x as u32, y as u32)[0];
+                let i = ((oy + y) * bw + ox + x) * 4;
+                px[i..i + 3].copy_from_slice(&[v, v, v]);
+            }
+        }
+        let started = std::time::Instant::now();
+        let want = (n + 1).to_string();
+        // 解码在后台线程：按墙上时钟等，最多 5 秒
+        while started.elapsed().as_secs() < 5 {
+            assert!(host_view::push_rgba(&key, bw as u32, bh as u32, bw * 4, &px));
+            t += 300;
+            e.pump_ex(t);
+            std::thread::sleep(std::time::Duration::from_millis(40));
+            e.pump_ex(t + 1);
+            if e.eval("String(getCurrentPages()[0].data.count)").unwrap() == want {
+                break;
+            }
+        }
+        let last = e.eval("JSON.stringify(getCurrentPages()[0].data.last)").unwrap();
+        let v: Value = serde_json::from_str(&last).unwrap();
+        assert_eq!(v["result"], *text, "{file}：{last}");
+        assert_eq!(v["type"], *kind, "{file}：{last}");
+    }
     host_view::retain(&[]);
 }

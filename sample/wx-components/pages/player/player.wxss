@@ -1,0 +1,11 @@
+.player { width: 100%; height: 422rpx; background-color: #000; }
+.src { display: flex; flex-direction: column; padding: 14rpx 16rpx; margin-bottom: 8rpx; border: 2rpx solid #eeeeee; border-radius: 10rpx; }
+.src-on { border-color: #07c160; background: #f0fbf4; }
+.src-name { font-size: 26rpx; color: #1f2329; }
+.src-url { margin-top: 4rpx; font-size: 20rpx; color: #8a8f99; word-break: break-all; }
+.url { height: 72rpx; padding: 0 16rpx; margin-top: 4rpx; font-size: 24rpx; background: #f4f5f7; border-radius: 10rpx; }
+.state { margin-top: 12rpx; padding: 12rpx 16rpx; font-size: 24rpx; color: #1f2329; background: #f4f5f7; border-radius: 10rpx; }
+.kv { display: flex; flex-direction: row; justify-content: space-between; padding: 10rpx 0; font-size: 24rpx; }
+.k { color: #8a8f99; }
+.v { color: #1f2329; }
+.shot { width: 100%; height: 300rpx; margin-top: 12rpx; background: #f4f5f7; border-radius: 12rpx; }

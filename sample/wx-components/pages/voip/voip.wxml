@@ -1,0 +1,29 @@
+<view class="card">
+  <view class="h">voip-room</view>
+  <view class="rooms">
+    <view class="room">
+      <voip-room class="vr" openid="{{selfId}}" mode="camera" device-position="{{position}}" binderror="onRoomErr"></voip-room>
+      <text class="room-t">我（mode="camera"）</text>
+    </view>
+    <view class="room">
+      <voip-room class="vr" openid="{{peerId}}" mode="video" binderror="onRoomErr"></voip-room>
+      <text class="room-t">对方（mode="video"）</text>
+    </view>
+  </view>
+  <view class="row">
+    <view class="btn gray" bindtap="switchPos">device-position: {{position}}</view>
+  </view>
+  <text wx:if="{{roomErr}}" class="err">{{roomErr}}</text>
+  <text class="tip">mode="camera" 显示本机相机画面（同层渲染）；mode="video" 要先进房间才有对方的画面。</text>
+</view>
+<view class="card">
+  <view class="h">wx.joinVoIPChat</view>
+  <view class="row">
+    <view class="btn" bindtap="join">进房间</view>
+    <view class="btn gray" bindtap="mute">{{muted ? '取消静音' : '静音'}}</view>
+    <view class="btn gray" bindtap="exit">退出</view>
+  </view>
+  <view class="state">{{stateText}}</view>
+  <text class="tip">实时音视频的房间由微信后台管：signature / groupId 由微信服务器签发，媒体也走微信。在微信外，宿主可以在 hostApis 里接自己的通话后台（joinVoIPChat / exitVoIPChat / updateVoIPChatMuteConfig），没接时照官方返回失败原因。</text>
+</view>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

@@ -1,0 +1,40 @@
+<live-pusher id="pusher" class="pusher" url="{{url}}" mode="SD" enable-mic="{{mic}}" device-position="{{position}}" local-mirror="auto"
+  beauty="{{beauty}}" whiteness="{{whiteness}}" filter="{{filter}}" picture-in-picture-mode="{{pip}}"
+  bindstatechange="onState" bindnetstatus="onNet" binderror="onError"
+  bindbgmstart="onBgm" bindbgmprogress="onBgmProgress" bindbgmcomplete="onBgm"
+  bindenterpictureinpicture="onPip" bindleavepictureinpicture="onPip"></live-pusher>
+<view class="card">
+  <view class="h">推流地址（RTMP）</view>
+  <input class="url" value="{{url}}" bindinput="onUrl" placeholder="rtmp://服务器/应用/流名" />
+  <view class="row">
+    <view class="btn" bindtap="start">开始推流</view>
+    <view class="btn gray" bindtap="cmd" data-m="stop">停止</view>
+    <view class="btn gray" bindtap="cmd" data-m="pause">暂停</view>
+    <view class="btn gray" bindtap="cmd" data-m="resume">继续</view>
+  </view>
+  <view class="state {{live ? 'state-on' : ''}}">{{stateText}}</view>
+  <view class="kv"><text class="k">网络</text><text class="v">{{net}}</text></view>
+  <text class="tip">宿主硬编 H.264 + AAC，经 RTMP 发出。本机试：电脑上 `ffmpeg -listen 1 -i rtmp://0.0.0.0:1935/live/lab -c copy out.flv`，手机 `adb reverse tcp:1935 tcp:1935`，地址填 rtmp://127.0.0.1:1935/live/lab。推流服务器能转出 HLS（如 SRS、nginx-rtmp）的话，把那个 m3u8 地址填进「直播拉流」页就能看自己推的流。</text>
+</view>
+<view class="card">
+  <view class="h">美颜 · 滤镜 · 背景音 · 小窗</view>
+  <view class="row">
+    <view class="btn gray" bindtap="beautyOn">美颜 {{beauty}} · 美白 {{whiteness}}</view>
+    <view class="btn gray" bindtap="nextFilter">滤镜：{{filterName}}</view>
+    <view class="btn gray" bindtap="toggleMic">麦克风 {{mic ? '开' : '关'}}</view>
+  </view>
+  <view class="row">
+    <view class="btn gray" bindtap="bgm">playBGM</view>
+    <view class="btn gray" bindtap="cmd" data-m="pauseBGM">pauseBGM</view>
+    <view class="btn gray" bindtap="cmd" data-m="stopBGM">stopBGM</view>
+    <view class="btn gray" bindtap="pipGo">小窗推流（去别的页）</view>
+  </view>
+  <view class="row">
+    <view class="btn gray" bindtap="cmd" data-m="switchCamera">switchCamera</view>
+    <view class="btn gray" bindtap="cmd" data-m="toggleTorch">toggleTorch</view>
+    <view class="btn gray" bindtap="snap">snapshot</view>
+  </view>
+  <view wx:if="{{bgmText}}" class="kv"><text class="k">背景音</text><text class="v">{{bgmText}}</text></view>
+  <image wx:if="{{shot}}" class="shot" src="{{shot}}" mode="aspectFit"></image>
+</view>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

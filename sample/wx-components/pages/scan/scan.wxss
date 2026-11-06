@@ -1,0 +1,29 @@
+.scan-box { position: relative; height: 520rpx; margin-bottom: 12rpx; border-radius: 12rpx; overflow: hidden; background: #000; }
+.cam { width: 100%; height: 520rpx; }
+/* 扫描线：微信扫一扫的绿（#07C160），上面一段由透明渐到淡绿的拖尾，线本身两头淡出、带一圈光。
+   从取景框上沿扫到下沿 2.4 秒一趟；只动 transform（不改 top），每帧不重排、只重画线扫过的那块 */
+.scan-line { position: absolute; left: 0; top: -160rpx; width: 100%; height: 160rpx; animation: scan-sweep 2.4s linear infinite; }
+.scan-tail { height: 156rpx; background: linear-gradient(180deg, rgba(7, 193, 96, 0) 0%, rgba(7, 193, 96, 0.08) 60%, rgba(7, 193, 96, 0.28) 100%); }
+.scan-bar { height: 4rpx; margin: 0 6%; border-radius: 2rpx;
+  background: linear-gradient(90deg, rgba(7, 193, 96, 0) 0%, #07c160 18%, #4ee08f 50%, #07c160 82%, rgba(7, 193, 96, 0) 100%);
+  box-shadow: 0 0 16rpx 4rpx rgba(7, 193, 96, 0.55); }
+/* 扫到了：线停一下（与微信一样，结果出来就不再扫） */
+.scan-hit { animation-play-state: paused; }
+@keyframes scan-sweep {
+  0% { transform: translateY(0); opacity: 0; }
+  8% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { transform: translateY(680rpx); opacity: 0; }
+}
+.hit { margin-top: 12rpx; padding: 20rpx; background: #f0fbf4; border: 2rpx solid #9fe0b9; border-radius: 12rpx; }
+.hit-type { font-size: 22rpx; color: #07c160; font-weight: bold; }
+.hit-text { display: block; margin-top: 8rpx; font-size: 30rpx; color: #1f2329; word-break: break-all; }
+.hit-meta { margin-top: 8rpx; font-size: 22rpx; color: #8a8f99; }
+.err { display: block; margin-top: 12rpx; font-size: 24rpx; color: #e64340; }
+.api { display: block; margin-top: 12rpx; padding: 16rpx; background: #f4f5f7; border-radius: 10rpx; font-size: 24rpx; word-break: break-all; }
+.codes { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+.code { width: 300rpx; margin-bottom: 20rpx; display: flex; flex-direction: column; align-items: center; }
+.code-img { width: 260rpx; height: 260rpx; }
+.code-wide { height: 110rpx; margin: 75rpx 0; }
+.code-name { margin-top: 8rpx; font-size: 24rpx; font-weight: bold; }
+.code-val { margin-top: 4rpx; font-size: 20rpx; color: #8a8f99; word-break: break-all; text-align: center; }

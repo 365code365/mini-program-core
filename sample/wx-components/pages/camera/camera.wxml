@@ -1,0 +1,23 @@
+<camera class="cam" mode="normal" device-position="{{position}}" flash="{{flash}}" resolution="medium" frame-size="small"
+  bindinitdone="onInit" binderror="onError" bindstop="onStop"></camera>
+<view class="card">
+  <view class="h">CameraContext</view>
+  <view class="row">
+    <view class="btn" bindtap="takePhoto">takePhoto</view>
+    <view class="btn" bindtap="startRec">startRecord</view>
+    <view class="btn" bindtap="stopRec">stopRecord</view>
+  </view>
+  <view class="row">
+    <view class="btn gray" bindtap="zoom">setZoom({{nextZoom}})</view>
+    <view class="btn gray" bindtap="switchPos">device-position: {{position}}</view>
+    <view class="btn gray" bindtap="switchFlash">flash: {{flash}}</view>
+    <view class="btn gray" bindtap="toggleFrames">onCameraFrame {{framing ? '停' : '开'}}</view>
+  </view>
+  <view class="kv"><text class="k">maxZoom</text><text class="v">{{maxZoom}}</text></view>
+  <view class="kv"><text class="k">帧</text><text class="v">{{frame}}</text></view>
+  <view class="kv"><text class="k">录像</text><text class="v">{{recording ? '录制中…（10 秒自动停）' : (video || '-')}}</text></view>
+  <text wx:if="{{err}}" class="err">{{err}}</text>
+  <image wx:if="{{photo}}" class="shot" src="{{photo}}" mode="aspectFit" bindtap="previewPhoto"></image>
+  <text class="tip">画面由宿主相机采集（Android Camera2 / iOS AVCaptureSession），按框裁好同层画进页面；onCameraFrame 的帧由引擎从画面里取（frame-size="small"：长边 360，RGBA ArrayBuffer）。</text>
+</view>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

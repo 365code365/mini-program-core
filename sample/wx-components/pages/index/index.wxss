@@ -2,3 +2,4 @@
 .entry-hover { background: #eef9f2; }
 .entry-title { font-size: 32rpx; font-weight: bold; }
 .entry-desc { margin-top: 8rpx; color: #8a8f99; font-size: 24rpx; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; }
+.lab { margin-left: 12rpx; padding: 2rpx 12rpx; font-size: 20rpx; font-weight: normal; color: #fa9d3b; background: #fff4e5; border-radius: 8rpx; }

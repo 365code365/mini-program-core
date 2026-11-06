@@ -1,0 +1,6 @@
+.rooms { display: flex; flex-direction: row; justify-content: space-between; }
+.room { width: 316rpx; display: flex; flex-direction: column; align-items: center; }
+.vr { width: 316rpx; height: 420rpx; background: #1f2329; border-radius: 12rpx; overflow: hidden; }
+.room-t { margin-top: 8rpx; font-size: 22rpx; color: #8a8f99; }
+.err { display: block; margin-top: 8rpx; font-size: 22rpx; color: #e64340; word-break: break-all; }
+.state { margin-top: 8rpx; padding: 12rpx 16rpx; font-size: 24rpx; background: #f4f5f7; border-radius: 10rpx; word-break: break-all; }

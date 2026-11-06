@@ -1,0 +1,31 @@
+<live-player id="player" class="player" src="{{src}}" mode="live" autoplay="{{true}}" muted="{{muted}}" object-fit="{{fit}}"
+  bindstatechange="onState" bindnetstatus="onNet" bindfullscreenchange="onFull" binderror="onError"></live-player>
+<view class="card">
+  <view class="h">拉流地址</view>
+  <view wx:for="{{sources}}" wx:key="url" class="src {{index === current ? 'src-on' : ''}}" data-index="{{index}}" bindtap="pick">
+    <text class="src-name">{{item.name}}</text>
+    <text class="src-url">{{item.url}}</text>
+  </view>
+  <input class="url" value="{{custom}}" bindinput="onCustom" bindconfirm="playCustom" confirm-type="go" placeholder="自己的地址（m3u8 / mp4），回车播放" />
+  <view class="state">{{stateText}}</view>
+  <text class="tip">宿主系统播放器解码（Android MediaPlayer / iOS AVPlayer），帧同层画进页面、随页面滚动。认 HLS（m3u8）与 mp4；RTMP / FLV 宿主播不了，会报 -2301（照实留着那一项）。</text>
+</view>
+<view class="card">
+  <view class="h">LivePlayerContext</view>
+  <view class="row">
+    <view class="btn" bindtap="cmd" data-m="play">play</view>
+    <view class="btn gray" bindtap="cmd" data-m="pause">pause</view>
+    <view class="btn gray" bindtap="cmd" data-m="resume">resume</view>
+    <view class="btn gray" bindtap="cmd" data-m="stop">stop</view>
+  </view>
+  <view class="row">
+    <view class="btn gray" bindtap="toggleMute">{{muted ? '取消静音' : '静音'}}</view>
+    <view class="btn gray" bindtap="full">全屏（横）</view>
+    <view class="btn gray" bindtap="toggleFit">object-fit: {{fit}}</view>
+    <view class="btn gray" bindtap="snap">snapshot</view>
+  </view>
+  <view class="kv"><text class="k">画面</text><text class="v">{{size}}</text></view>
+  <view class="kv"><text class="k">全屏</text><text class="v">{{fullscreen}}</text></view>
+  <image wx:if="{{shot}}" class="shot" src="{{shot}}" mode="aspectFit"></image>
+</view>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

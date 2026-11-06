@@ -305,6 +305,8 @@ mod refresher;
 /// 按选择器找节点与位置（`wx.pageScrollTo({selector})`、SelectorQuery）
 mod query;
 pub use query::QueryHit;
+/// 同层组件（地图）上某一点有没有被页面元素盖住（盖住的那一下归按钮，不归地图）
+mod cover_hit;
 /// 每张图画的时候的几何（图片预取用）
 mod image_plan;
 pub use image_plan::ImagePlan;

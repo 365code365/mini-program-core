@@ -11,7 +11,12 @@
     "pages/scroll/scroll",
     "pages/gesture/gesture",
     "pages/media/media",
-    "pages/open/open"
+    "pages/open/open",
+    "pages/scan/scan",
+    "pages/camera/camera",
+    "pages/pusher/pusher",
+    "pages/player/player",
+    "pages/voip/voip"
   ],
   "window": {
     "navigationBarTitleText": "组件实验室",

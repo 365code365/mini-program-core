@@ -1,0 +1,42 @@
+<view class="card">
+  <view class="h">camera mode="scanCode"</view>
+  <view class="scan-box">
+    <camera class="cam" mode="scanCode" device-position="back" flash="{{flash}}"
+      bindscancode="onScan" binderror="onCamErr" bindinitdone="onInit" bindstop="onStop"></camera>
+    <!-- 扫描线：camera 组件自己不画（微信也不画，是页面盖上去的），颜色、拖尾照微信扫一扫 -->
+    <view wx:if="{{!camErr}}" class="scan-line {{hit ? 'scan-hit' : ''}}"><view class="scan-tail"></view><view class="scan-bar"></view></view>
+  </view>
+  <view class="row">
+    <view class="btn gray" bindtap="toggleFlash">flash: {{flash}}</view>
+    <view class="btn gray" bindtap="clear">清空结果</view>
+  </view>
+  <view wx:if="{{last}}" class="hit">
+    <view class="hit-type">{{last.type}}</view>
+    <text class="hit-text">{{last.result}}</text>
+    <view class="hit-meta">charSet {{last.charSet}} · 第 {{count}} 次</view>
+  </view>
+  <text wx:elif="{{camErr}}" class="err">{{camErr}}</text>
+  <text wx:else class="tip">对准二维码或条形码：画面由宿主相机采集、同层画进页面，引擎在画面上解码（二维码、EAN / UPC、Code 128 / 39 / 93、ITF、Codabar、Data Matrix、PDF417、Aztec），同一结果 2 秒内不重复报。</text>
+</view>
+<view class="card">
+  <view class="h">wx.scanCode</view>
+  <view class="row">
+    <view class="btn" bindtap="scanAny">扫一扫</view>
+    <view class="btn gray" bindtap="scanQr">只扫二维码</view>
+    <view class="btn gray" bindtap="scanBar">只扫条形码</view>
+  </view>
+  <text wx:if="{{api}}" class="api">{{api}}</text>
+  <text class="tip">调起宿主的扫码界面（宿主要接 hostApis 的 scanCode；示例 App 回一个演示结果）。</text>
+</view>
+<view class="card">
+  <view class="h">测试码（用另一台手机扫）</view>
+  <view class="codes">
+    <view wx:for="{{codes}}" wx:key="src" class="code" data-src="{{item.src}}" bindtap="preview">
+      <image class="code-img {{item.wide ? 'code-wide' : ''}}" src="{{item.src}}" mode="aspectFit"></image>
+      <text class="code-name">{{item.name}}</text>
+      <text class="code-val">{{item.value}}</text>
+    </view>
+  </view>
+  <text class="tip">点一张放大（previewImage）。这几张是用引擎同一个码库（rxing）生成的，生成后回读校验过。</text>
+</view>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

@@ -1,6 +1,6 @@
 const app = getApp();
 Page({
-  data: { log: [], imgInfo: '' },
+  data: { log: [], imgInfo: '', largeInfo: '', dupErr: '' },
   onReady() {
     this.createSelectorQuery().select('#cv').fields({ node: true, size: true }).exec((res) => {
       const r = res && res[0];
@@ -49,5 +49,7 @@ Page({
   },
   onImgLoad(e) { this.setData({ imgInfo: `${e.detail.width}×${e.detail.height}` }); app.note(this, `image bindload ${e.detail.width}×${e.detail.height}`); },
   onImgErr(e) { app.note(this, `image binderror ${e.detail.errMsg}`); },
-  onCover() { app.note(this, '点到视频上的 cover-view 控件'); }
+  onCover() { app.note(this, '点到视频上的 cover-view 控件'); },
+  onLargeLoad(e) { this.setData({ largeInfo: `${e.detail.width}×${e.detail.height}` }); app.note(this, `large-image load ${e.detail.width}×${e.detail.height}`); },
+  onDupErr(e) { this.setData({ dupErr: JSON.stringify(e.detail) }); app.note(this, `canvas binderror ${JSON.stringify(e.detail)}`); }
 });

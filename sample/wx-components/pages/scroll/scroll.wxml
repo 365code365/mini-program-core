@@ -30,4 +30,13 @@
     <swiper-item wx:for="{{banners}}" wx:key="*this" item-id="banner-{{item}}"><view class="ban b{{index}}">banner-{{item}}</view></swiper-item>
   </swiper>
 </view>
+<view class="card">
+  <view class="h">scroll-view clip="{{false}}"</view>
+  <view class="clip-wrap">
+    <scroll-view scroll-x clip="{{false}}" class="clip-sv">
+      <view class="clip-row"><view wx:for="{{clipItems}}" wx:key="*this" class="clip-item">{{item}}</view></view>
+    </scroll-view>
+  </view>
+  <text class="tip">两侧留了白边的盒子：内容照样画到盒子外面（左右各多画一个盒子宽），卡片的阴影不被裁掉。去掉 clip 对比一下。</text>
+</view>
 <view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

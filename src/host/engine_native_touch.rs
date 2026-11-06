@@ -1,6 +1,7 @@
 //! 同层渲染组件**自己的手势**：地图要跟手平移、双指捏合缩放（微信里在地图上拖动拖的是地图，不是页面）。
 //!
-//! 宿主在创建选项 `sameLayerGestures` 里点名的标签（同时得在 `sameLayer` 里），按下点落在它的框里时：
+//! 宿主在创建选项 `sameLayerGestures` 里点名的标签（同时得在 `sameLayer` 里），按下点落在它的框里、
+//! 而且那一点没被页面元素盖住时（地图上的 cover-view 按钮先收，见 `wxml_renderer/cover_hit.rs`）：
 //! 这一串触摸（含第二根手指）**整串**交给宿主，页面不建手势、不滚、不派 touchstart / tap，
 //! 每一段发一条 `nativeViewTouch` 事件：
 //!

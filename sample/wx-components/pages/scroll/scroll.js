@@ -3,7 +3,8 @@ const STATUS = ['下拉刷新', '松手刷新，继续下拉进二楼', '正在�
 Page({
   data: {
     rows: Array.from({ length: 30 }, (_, i) => i), status: 0, statusText: STATUS[0], triggered: false,
-    msgs: Array.from({ length: 8 }, (_, i) => ({ id: `m${i}`, t: `消息 ${i + 1}` })), banners: ['a', 'b', 'c'], cur: '', log: []
+    msgs: Array.from({ length: 8 }, (_, i) => ({ id: `m${i}`, t: `消息 ${i + 1}` })), banners: ['a', 'b', 'c'], cur: '', log: [],
+    clipItems: ['A', 'B', 'C', 'D', 'E', 'F']
   },
   onReady() {
     this.createSelectorQuery().select('#sv').node().exec((res) => { this.ctx = res[0] && res[0].node; });

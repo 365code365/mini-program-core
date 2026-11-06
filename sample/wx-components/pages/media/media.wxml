@@ -19,4 +19,17 @@
   </video>
   <text class="tip">子节点画在视频上，点它不切控制条；圆角只认 CSS。</text>
 </view>
+<view class="card">
+  <view class="h">large-image（Skyline 3.10.3）</view>
+  <large-image class="li" src="/images/photo.jpg" bind:load="onLargeLoad"></large-image>
+  <text class="tip">默认 widthFix 铺满宽度（只认 widthFix / heightFix）；bind:load 带原图尺寸：{{largeInfo || '等加载'}}</text>
+</view>
+<view class="card">
+  <view class="h">同页 canvas-id 重复 → binderror</view>
+  <view class="row">
+    <canvas canvas-id="dup" class="mini-cv" binderror="onDupErr"></canvas>
+    <canvas canvas-id="dup" class="mini-cv" binderror="onDupErr"></canvas>
+  </view>
+  <text class="tip">第二个起各报一次：{{dupErr || '（没收到）'}}</text>
+</view>
 <view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

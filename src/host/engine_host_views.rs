@@ -44,13 +44,18 @@ pub fn on_tap(renderer: &WxmlRenderer, interaction: &InteractionManager, x: f32,
     let p = crate::Point::new(x, y);
     let hit = views(renderer, interaction).into_iter().rev().find(|(_, _, v)| v.is_fixed == fixed && v.rect.contains(&p));
     let Some((key, tag, v)) = hit else { return false };
+    // 点在盖着地图的按钮 / 卡片上：那一下是它们的（bindtap 已派过），不再转给地图判标记
+    if renderer.covered_at(&v.component_id, p, interaction) {
+        return false;
+    }
     host_view::queue_tap(&key, &tag, x - v.rect.x, y - v.rect.y);
     true
 }
 
 /// 按在一个要自己处理手势的同层组件上（`sameLayerGestures`）：返回它的键、标签与框在**页面视口**里的左上角。
 /// `y` 是页面视口坐标，`scroll` 是页面滚动量（正常流的框按内容坐标登记）。fixed 的优先（画在上面）。
-/// 地图写了 `enable-scroll="false"` 且 `enable-zoom="false"` 的不接：它不动，拖动照样滚页面
+/// 地图写了 `enable-scroll="false"` 且 `enable-zoom="false"` 的不接：它不动，拖动照样滚页面。
+/// 按在盖着它的元素上的也不接（`WxmlRenderer::covered_at`）
 pub(super) fn gesture_view_at(
     renderer: &WxmlRenderer,
     interaction: &InteractionManager,
@@ -75,6 +80,15 @@ pub(super) fn gesture_view_at(
         })
     };
     let (key, tag, v) = pick(true).or_else(|| pick(false))?;
+    // 地图上盖着的东西先收这一下（cover-view 按钮、fixed 底栏、说明卡片）：不交给地图，走页面的触摸 / tap。
+    // 从前只看框，铺满屏的地图上一圈按钮全点不动（bike 首页，真机）
+    if !v.is_fixed && renderer.fixed_layer_hit(x, y) {
+        return None;
+    }
+    let p = crate::Point::new(x, if v.is_fixed { y } else { y + scroll });
+    if renderer.covered_at(&v.component_id, p, interaction) {
+        return None;
+    }
     let top = if v.is_fixed { v.rect.y } else { v.rect.y - scroll };
     Some((key.clone(), tag.clone(), v.rect.x, top))
 }
