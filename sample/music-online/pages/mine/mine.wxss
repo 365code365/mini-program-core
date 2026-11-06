@@ -6,9 +6,14 @@
 .ref-dark .ref-t { color: #fff; }
 .box { background: #fff; margin: 24rpx; border-radius: 20rpx; padding: 12rpx 0 16rpx; }
 .seg { padding: 16rpx 24rpx; }
-.seg-i { font-size: 28rpx; color: #8a9099; margin-right: 36rpx; }
+.seg-i { font-size: 27rpx; color: #8a9099; margin-right: 28rpx; white-space: nowrap; }
 .seg-on { color: #1f2329; font-weight: bold; }
 .play-all { padding: 16rpx 24rpx; }
-.pa-tri { width: 0; height: 0; border-top: 12rpx solid transparent; border-bottom: 12rpx solid transparent; border-left: 18rpx solid #f04c4c; margin-right: 14rpx; }
+/* 三角：border 透明边拼的三角引擎画不出来（画成方块），改成裁剪容器里放一个旋转 45° 的方块，只露出一半 */
+.pa-tri { position: relative; width: 18rpx; height: 24rpx; overflow: hidden; flex-shrink: 0; margin-right: 14rpx; }
+.pa-tri-in { position: absolute; left: -8.49rpx; top: 3.51rpx; width: 16.97rpx; height: 16.97rpx; background: #f04c4c; transform: scaleX(1.5) rotate(45deg); }
 .pa-t { font-size: 28rpx; font-weight: bold; }
 .cover { width: 88rpx; height: 88rpx; border-radius: 12rpx; margin-right: 12rpx; background: #e9ebef; }
+.fav { padding: 18rpx 24rpx; }
+.fav-cover { width: 96rpx; height: 96rpx; border-radius: 12rpx; margin-right: 20rpx; flex-shrink: 0; }
+.search-btn { font-size: 24rpx; color: #fff; border: 2rpx solid rgba(255, 255, 255, 0.7); border-radius: 28rpx; padding: 8rpx 26rpx; white-space: nowrap; }

@@ -1,6 +1,7 @@
 // 影片详情：海报头图、评分星级、简介展开收起、演职员横滑、剧照预览、热门短评、想看、听原声（跳云听音乐）
 const { request } = require('../../utils/api.js');
 const app = getApp();
+const store = require('../../utils/store.js');
 
 Page({
   data: { status: 'loading', m: null, wished: false, expanded: false, people: [], starWidth: 0, scoreText: '' },
@@ -13,24 +14,32 @@ Page({
     request('/api/demo/movies/' + this.id, null, { silent: true }).then((m) => {
       // 导演排在演员前面，横滑列表一起画
       const people = [{ id: 'd', name: m.director.name, role: '导演', avatar: m.director.avatar }].concat(m.cast);
-      const comments = m.hotComments.map((c) => Object.assign({}, c, { starWidth: c.star * 20 }));
-      this.setData({
-        status: 'ok', m, people, comments,
-        wished: app.isWished(m.id),
+            this.setData({
+        status: 'ok', m, people,
+        wished: store.isWished(m.id),
         scoreText: m.score ? m.score.toFixed(1) : '',
         starWidth: m.score * 10,
         headBg: 'linear-gradient(180deg, ' + m.colors[0] + ', ' + m.colors[1] + ')'
       });
+      this.mergeMine();
       wx.setNavigationBarTitle({ title: m.title });
       wx.setNavigationBarColor({ frontColor: '#ffffff', backgroundColor: m.colors[0] });
     }).catch((err) => {
       this.setData({ status: 'error', errMsg: err.statusCode === 404 ? '这部影片不存在' : '加载失败，请检查网络' });
     });
   },
+  // 写完 / 删掉短评回来：重新合并自己那条
+  onShow() { if (this.data.m) this.mergeMine(); },
+  mergeMine() {
+    const m = this.data.m;
+    const mine = store.myCommentOf(m.id);
+    const comments = store.mergeComments(m.id, m.hotComments).slice(0, mine ? 4 : 3).map((c) => Object.assign({}, c, { starWidth: c.star * 20 }));
+    this.setData({ comments, myComment: mine, commentTotal: m.commentCount + (mine ? 1 : 0) });
+  },
   onRetry() { this.load(); },
   onToggleSummary() { this.setData({ expanded: !this.data.expanded }); },
   onWish() {
-    const on = app.toggleWish(this.data.m);
+    const on = store.toggleWish(this.data.m);
     this.setData({ wished: on });
     wx.showToast({ title: on ? '已加入想看，上映提醒你' : '已取消想看', icon: 'none' });
   },
@@ -45,8 +54,13 @@ Page({
   onComments() {
     wx.navigateTo({ url: '/pages/comments/comments?id=' + this.id + '&title=' + encodeURIComponent(this.data.m.title) });
   },
+  // 写短评（已写过就是修改）：上映后才能写
   onWrite() {
-    wx.showToast({ title: '演示版暂不支持发表短评', icon: 'none' });
+    if (this.data.m.status === 'coming' && !this.data.myComment) {
+      wx.showToast({ title: '影片上映后才能写短评，先点「想看」吧', icon: 'none' });
+      return;
+    }
+    wx.navigateTo({ url: '/pages/write/write?id=' + this.id });
   },
   // 听原声：打开云听音乐的首页，query 带歌单 id（对方首页读到就直接打开歌单），extraData 带片名
   onSoundtrack() {

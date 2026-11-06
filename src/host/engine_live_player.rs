@@ -181,7 +181,7 @@ fn snapshot(key: &str, req: &Value) -> Result<Value, String> {
         let small = image::imageops::resize(&img, w / 2, h / 2, image::imageops::FilterType::Triangle);
         (w, h, rgba) = (small.width(), small.height(), small.into_raw());
     }
-    let (uri, path) = crate::wxfile::new_temp("png");
+    let (uri, path) = crate::wxfs::wxfile::new_temp("png");
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).ok();
     }

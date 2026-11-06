@@ -1,0 +1,8 @@
+.list { height: 760rpx; margin-top: 16rpx; background: #fff; }
+.item { display: flex; flex-direction: row; align-items: center; padding: 16rpx 8rpx; border-bottom: 1rpx solid #eee; }
+.item.hot { background: #f0fbf4; }
+.item-main { flex: 1; display: flex; flex-direction: column; }
+.item-title { font-size: 28rpx; color: #1f2329; }
+.item-sub { font-size: 22rpx; color: #8a8f99; margin-top: 6rpx; }
+.like { padding: 8rpx 20rpx; border-radius: 28rpx; background: #fff0f0; color: #e5484d; font-size: 24rpx; }
+.like-hover { background: #ffd6d6; }

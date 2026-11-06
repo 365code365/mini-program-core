@@ -302,7 +302,7 @@ fn d1_bench_吸顶滚动每帧代价() {
 <view class="tabs"><view class="tab" wx:for="{{tabs}}" wx:key="*this">{{item}}</view></view>
 <view wx:for="{{items}}" wx:key="*this" class="item"><view class="pic"></view><view class="txt">第 {{item}} 条 · 吸顶列表的内容行</view></view>"#;
     let js = "Page({ data: { tabs: ['推荐','热门','附近','关注'], items: Array.from({ length: 80 }, (_, i) => i) } });";
-    let _g = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
+    let _g = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
     for pos in ["sticky", "relative"] {
         let css = format!(
             "page {{ background: #f5f5f5; }} .head {{ height: 200px; background: linear-gradient(135deg, #ff7a45, #ffc53d); color: #fff; font-size: 24px; }}

@@ -3,7 +3,7 @@
 //! 「内存大」先看这一张表再动手：字体、画布、合成缓冲、侧滑截图、留着的页面、scroll-view 离屏缓存、
 //! 图片缓存、JS 堆各占多少。宿主 / 示例用 [`MiniEngine::memory_breakdown`]，`MINI_MEM_LOG=1` 时每次进后台打一行
 use super::engine::MiniEngine;
-use crate::mem_probe::resident;
+use crate::sys::mem_probe::resident;
 
 /// 上次还页时留下的行区间（页面画布：已绘制条带；覆盖层：有非零字节的行）与当时画布的代数 / 高度
 #[derive(Default)]

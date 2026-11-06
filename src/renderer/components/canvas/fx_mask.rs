@@ -96,9 +96,9 @@ pub(super) fn clear_rect(mask: &mut Canvas, (x0, y0, x1, y1): (usize, usize, usi
 /// 路径所有点（含贝塞尔控制点）的外接框：曲线落在控制点的凸包里，展平后的折线点都在曲线上，所以保守。
 /// 只给**填充**用：描边的斜接没有长度上限（canvas/paths.rs），外扩多少都不保证
 pub(super) fn path_hull(path: &crate::Path) -> Option<(f32, f32, f32, f32)> {
-    use crate::path::PathCommand::*;
+    use crate::gfx::path::PathCommand::*;
     let mut b = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
-    let mut add = |p: &crate::geometry::Point| {
+    let mut add = |p: &crate::gfx::geometry::Point| {
         b = (b.0.min(p.x), b.1.min(p.y), b.2.max(p.x), b.3.max(p.y));
     };
     for c in path.commands() {

@@ -222,7 +222,7 @@ impl Canvas2DContext {
     /// 所以两条路的像素结果相同。只对绘制类调用用（DRAW_OPS 里那些），设状态的调用直接调方法
     pub fn draw_op(&mut self, f: impl FnOnce(&mut Self)) {
         if self.has_clip() {
-            let diag = crate::game::slow_frame::enabled();
+            let diag = super::slow_frame_enabled();
             let t0 = std::time::Instant::now();
             let before = self.clip_snapshot();
             let snap_ns = t0.elapsed().as_nanos() as u64;
@@ -232,7 +232,7 @@ impl Canvas2DContext {
                 self.clip_apply(b);
             }
             if diag {
-                crate::game::slow_frame::note_sub(false, snap_ns + t1.elapsed().as_nanos() as u64);
+                super::slow_frame_note(false, snap_ns + t1.elapsed().as_nanos() as u64);
             }
         } else {
             f(self);

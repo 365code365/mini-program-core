@@ -13,8 +13,8 @@ use crate::ui::interaction::SliderSpec;
 
 fn engine_in(slot: &str) -> super::LockedEngine {
     let g = super::LockedEngine::lock();
-    let root = crate::app_dir::resolve("sample-app");
-    let data = crate::data_dir::subdir(&format!("engine-slider-tests/{slot}"));
+    let root = crate::app::dir::resolve("sample-app");
+    let data = crate::sys::data_dir::subdir(&format!("engine-slider-tests/{slot}"));
     std::fs::remove_dir_all(&data).ok();
     let mut e = MiniEngine::new(&root.to_string_lossy(), Some(&data.to_string_lossy()), 375, 667, 2.0)
         .expect("创建引擎");

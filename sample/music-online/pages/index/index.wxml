@@ -5,6 +5,12 @@
   <text class="ref-x" bindtap="onCloseRef">×</text>
 </view>
 
+<view class="search-wrap">
+  <view class="search row" bindtap="onSearch" hover-class="btn-hover">
+    <view class="glass"></view>
+    <text class="search-ph">搜索歌名、歌手</text>
+  </view>
+</view>
 <view class="state" wx:if="{{status === 'loading'}}"><text>正在加载…</text></view>
 <view class="state" wx:elif="{{status === 'error'}}">
   <text>网络开小差了</text>
@@ -27,12 +33,12 @@
   </view>
 
   <view class="sec">
-    <view class="sec-h"><text class="sec-t">推荐歌单</text><text class="more" bindtap="onMorePlaylists">更多 ›</text></view>
+    <view class="sec-h"><text class="sec-t">推荐歌单</text><text class="more" bindtap="onMorePlaylists">更多</text></view>
     <view class="grid">
       <view class="pl" wx:for="{{playlists}}" wx:key="id" data-id="{{item.id}}" bindtap="onPlaylist">
         <view class="pl-cover-wrap">
           <image class="pl-cover" src="{{item.cover}}" mode="aspectFill"></image>
-          <text class="pl-count">▶ {{item.playCountText}}</text>
+          <view class="pl-count row"><view class="pc-tri"><view class="pc-tri-in"></view></view><text>{{item.playCountText}}</text></view>
         </view>
         <text class="pl-name">{{item.name}}</text>
       </view>
@@ -40,7 +46,7 @@
   </view>
 
   <view class="sec">
-    <view class="sec-h"><text class="sec-t">排行榜</text><text class="more" data-id="1" bindtap="onCharts">全部 ›</text></view>
+    <view class="sec-h"><text class="sec-t">排行榜</text><text class="more" data-id="1" bindtap="onCharts">全部</text></view>
     <scroll-view scroll-x class="chart-scroll" show-scrollbar="{{false}}">
       <view class="chart-row">
         <view class="chart" wx:for="{{charts}}" wx:key="id" data-id="{{item.id}}" bindtap="onCharts">

@@ -1,0 +1,13 @@
+page { background: #fff; }
+.bar { padding: 16rpx 24rpx; border-bottom: 1rpx solid #f0f1f4; }
+.box { height: 68rpx; background: #f3f4f6; border-radius: 34rpx; padding: 0 24rpx; }
+.glass { width: 22rpx; height: 22rpx; border-radius: 11rpx; border: 4rpx solid #9aa0ab; margin-right: 14rpx; flex-shrink: 0; }
+.ipt { height: 68rpx; font-size: 26rpx; }
+.clear { width: 40rpx; height: 40rpx; line-height: 38rpx; text-align: center; border-radius: 20rpx; background: #c4c7cc; color: #fff; font-size: 26rpx; }
+.go { font-size: 28rpx; color: #f04c4c; margin-left: 20rpx; white-space: nowrap; }
+.block { padding: 28rpx 24rpx 0; }
+.words { display: flex; flex-direction: row; flex-wrap: wrap; }
+.word { font-size: 26rpx; color: #4e5969; background: #f3f4f6; border-radius: 30rpx; padding: 10rpx 28rpx; margin: 0 18rpx 18rpx 0; white-space: nowrap; }
+.word-hot { color: #f04c4c; background: #fff1f1; }
+.count { display: block; font-size: 24rpx; color: #9aa0ab; padding: 20rpx 24rpx 0; }
+.cover { width: 88rpx; height: 88rpx; border-radius: 12rpx; margin-right: 12rpx; background: #e9ebef; }

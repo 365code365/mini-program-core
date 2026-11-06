@@ -16,7 +16,7 @@
 //! 用到了哪个内置标签、且页面没有自己声明同名组件，就追加一份 [`ComponentSource`]。
 //! **按需**：没用到的页面一个都不加 —— 有组件的页面每次取数据都要多一趟对账（`component_mount::render_data`）。
 //! 模块路径用 `__builtin__/<标签>`（不在小程序目录里，`require` 也解析不到它，正好）。
-use crate::using_components::{scope_component_wxss, ComponentSource};
+use crate::app::using_components::{scope_component_wxss, ComponentSource};
 
 /// (标签, WXML, WXSS, JS)
 const BUILTINS: &[(&str, &str, &str, &str)] = &[

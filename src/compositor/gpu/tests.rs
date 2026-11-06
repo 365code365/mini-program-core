@@ -369,7 +369,7 @@ fn overlay_band_passthrough_matches_cpu_byte_for_byte() {
                 crate::host::ui_overlay::action_sheet::clear();
             }
             // GPU 与 CPU 两次合成按同一刻画（入场途中的面板按时间挪）
-            crate::frame_clock::set(Some(std::time::Instant::now()));
+            crate::sys::frame_clock::set(Some(std::time::Instant::now()));
             let st = comp.compose_offscreen(&l, true).unwrap_or_else(|e| panic!("覆盖层 #{case}.{k}：GPU 合成失败 {e}"));
             assert!(st.passthrough, "覆盖层 #{case}.{k} 应当是直通帧");
             let pb = comp.pass_band;
@@ -379,7 +379,7 @@ fn overlay_band_passthrough_matches_cpu_byte_for_byte() {
             let gpu = comp.read_back().unwrap();
             let mut buf = vec![0u32; (w * h) as usize];
             cpu::compose(&mut buf, &l);
-            crate::frame_clock::set(None);
+            crate::sys::frame_clock::set(None);
             if let Some((x, y, c, g)) = first_mismatch(&cpu_rgba(&buf), &gpu, w) {
                 panic!("覆盖层 #{case}.{k}：@{x},{y} CPU #{c:06x} / GPU #{g:06x}");
             }

@@ -1,7 +1,7 @@
 //! JS 与 Native 桥接层
 
 use super::JsRuntime;
-use crate::event::{Event, Touch};
+use crate::runtime::event::Event;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 
@@ -15,7 +15,7 @@ pub struct JsBridge {
     /// 交给宿主外壳的事件（导航栏、hostCall），JSON 串。**每个实例一份**，不是进程级：
     /// 进程里同时有两个引擎（测试并行跑）时互不串台。没人取时按 [`HOST_EVENT_CAP`] 丢最旧的。
     host_events: Arc<Mutex<std::collections::VecDeque<String>>>,
-    /// 网络请求的归属号：响应按它取回，不会被同进程里别的实例 `update()` 取走（见 `net.rs` 的 DONE）
+    /// 网络请求的归属号：响应按它取回，不会被同进程里别的实例 `update()` 取走（见 `net/mod.rs` 的 DONE）
     net_owner: u64,
 }
 
@@ -194,7 +194,7 @@ impl JsBridge {
                 let id: u32 = args[0].parse().unwrap_or(0);
                 let timeout: u64 = args.get(5).and_then(|s| s.parse().ok()).unwrap_or(0);
                 let flags: u32 = args.get(6).and_then(|s| s.parse().ok()).unwrap_or(0);
-                let opts = crate::net_stream::StreamOpts { binary: flags & 1 != 0, chunked: flags & 2 != 0 };
+                let opts = crate::net::stream::StreamOpts { binary: flags & 1 != 0, chunked: flags & 2 != 0 };
                 crate::net::submit_ex(owner, id, &args[1], &args[2], &args[3], &args[4], timeout, opts);
             }
             "undefined".to_string()
@@ -211,17 +211,17 @@ impl JsBridge {
             crate::net::submit_upload(owner, a(0).parse().unwrap_or(0), &a(1), &a(2), &a(3), &a(4), &a(5), a(6).parse().unwrap_or(0));
             "undefined".to_string()
         })?;
-        // 剪贴板：引擎里存一份，桌面窗体打开 use_system 后同步系统剪贴板（src/clipboard.rs）
+        // 剪贴板：引擎里存一份，桌面窗体打开 use_system 后同步系统剪贴板（src/sys/clipboard.rs）
         rt.register_function("__native_clipboard_set", move |args| {
-            crate::clipboard::set(args.first().map(|s| s.as_str()).unwrap_or(""));
+            crate::sys::clipboard::set(args.first().map(|s| s.as_str()).unwrap_or(""));
             "undefined".to_string()
         })?;
-        rt.register_function("__native_clipboard_get", move |_args| crate::clipboard::get())?;
-        crate::net_stream::register(&rt, owner)?;
+        rt.register_function("__native_clipboard_get", move |_args| crate::sys::clipboard::get())?;
+        crate::net::stream::register(&rt, owner)?;
         // wx.loadFontFace：(id, family, src)。结果排队，MiniApp::update 每帧回 __resolveFontFace
         rt.register_function("__native_load_font", move |args| {
             let a = |i: usize| args.get(i).cloned().unwrap_or_default();
-            crate::text_faces::load(a(0).parse().unwrap_or(0), &a(1), &a(2));
+            crate::text::faces::load(a(0).parse().unwrap_or(0), &a(1), &a(2));
             "undefined".to_string()
         })?;
         Ok(())
@@ -232,7 +232,7 @@ impl JsBridge {
         // 先把上次会话存下的内容读回来：微信的 storage 是跨启动持久的，
         // 「首次拉数据存起来、之后走缓存」这类逻辑只有这样才会真的走到缓存分支
         {
-            let restored = crate::storage_file::load();
+            let restored = crate::sys::storage_file::load();
             if !restored.is_empty() {
                 storage.lock().unwrap().extend(restored);
             }
@@ -246,7 +246,7 @@ impl JsBridge {
             if args.len() >= 2 {
                 let mut map = s.lock().unwrap();
                 map.insert(args[0].clone(), args[1].clone());
-                crate::storage_file::save(&map);
+                crate::sys::storage_file::save(&map);
             }
             "undefined".to_string()
         })?;
@@ -265,7 +265,7 @@ impl JsBridge {
             if let Some(key) = args.first() {
                 let mut map = s.lock().unwrap();
                 map.remove(key);
-                crate::storage_file::save(&map);
+                crate::sys::storage_file::save(&map);
             }
             "undefined".to_string()
         })?;
@@ -274,7 +274,7 @@ impl JsBridge {
         rt.register_function("__native_storage_clear", move |_args| {
             let mut map = s.lock().unwrap();
             map.clear();
-            crate::storage_file::save(&map);
+            crate::sys::storage_file::save(&map);
             "undefined".to_string()
         })?;
         
@@ -398,52 +398,11 @@ impl JsBridge {
         let rt = self.runtime.lock().unwrap();
         
         match event {
-            Event::Tap(tap) => {
-                rt.eval(&format!(
-                    "__app && __app.onTap && __app.onTap({{ x: {}, y: {}, timestamp: {} }})",
-                    tap.x, tap.y, tap.timestamp
-                ))?;
-            }
-            Event::TouchStart(touch) => {
-                let touches_json = self.touches_to_json(&touch.touches);
-                rt.eval(&format!(
-                    "__app && __app.onTouchStart && __app.onTouchStart({{ touches: {} }})",
-                    touches_json
-                ))?;
-            }
-            Event::AppShow => {
-                rt.eval("__dispatchApp && __dispatchApp('onShow')")?;
-            }
-            Event::AppHide => {
-                rt.eval("__dispatchApp && __dispatchApp('onHide')")?;
-            }
-            Event::PageLoad => {
-                rt.eval("__dispatchPage && __dispatchPage('onLoad')")?;
-            }
-            Event::PageShow => {
-                // onShow 同时联动组件 pageLifetimes.show
-                rt.eval("__dispatchPage && __dispatchPage('onShow')")?;
-            }
-            Event::PageHide => {
-                // onHide 同时联动组件 pageLifetimes.hide
-                rt.eval("__dispatchPage && __dispatchPage('onHide')")?;
-            }
-            Event::PageUnload => {
-                // onUnload 触发后回收页面内组件实例（detached）
-                rt.eval("__dispatchPage && __dispatchPage('onUnload')")?;
-            }
-            _ => {}
-        }
+            Event::AppShow => rt.eval("__dispatchApp && __dispatchApp('onShow')")?,
+            Event::AppHide => rt.eval("__dispatchApp && __dispatchApp('onHide')")?,
+        };
         
         Ok(())
-    }
-    
-    fn touches_to_json(&self, touches: &[Touch]) -> String {
-        let items: Vec<String> = touches
-            .iter()
-            .map(|t| format!("{{ id: {}, x: {}, y: {} }}", t.id, t.x, t.y))
-            .collect();
-        format!("[{}]", items.join(", "))
     }
     
     /// 触发定时器

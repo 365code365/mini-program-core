@@ -27,7 +27,7 @@ check() {
     echo "### $app (从 $route 出发, 点击 y=$y)"
     for spec in "$@"; do
         x="${spec%%:*}"; want="${spec##*:}"
-        rm -rf target/mini-storage
+        rm -rf "${MINI_DATA_DIR:-target}/mini-storage"
         got=$("$BIN" "$app" --route "$route" --settle 1 --time 2 \
                 --touch "$x,$y" --snapshot target/_tabchk 2>&1 |
               grep -oE 'pages/[a-z/-]+/rust.png' | tail -1 | sed 's|/rust.png||')
@@ -57,5 +57,5 @@ if [ -f sample/tea-app/app.json ]; then
         187:pages/gift/gift 262:pages/origin/origin 337:pages/mine/mine
 fi
 
-rm -rf target/_tabchk target/mini-storage
+rm -rf target/_tabchk "${MINI_DATA_DIR:-target}/mini-storage"
 if [ "$fail" = 0 ]; then echo "全部通过 OK"; else echo "$fail 项失败 FAIL"; exit 1; fi

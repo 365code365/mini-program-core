@@ -6,7 +6,9 @@ Page({
     tab: 0,
     favCount: 0,
     recentCount: 0,
-    list: []
+    plCount: 0,
+    list: [],
+    pls: []
   },
   onShow() {
     const tb = this.getTabBar && this.getTabBar()
@@ -16,10 +18,13 @@ Page({
   refresh() {
     const favs = S.favs()
     const recent = S.recent()
-    const ids = this.data.tab === 0 ? favs : recent
+    const ids = this.data.tab === 0 ? favs : this.data.tab === 1 ? recent : []
+    const plIds = S.plFavs()
     this.setData({
       favCount: favs.length,
       recentCount: recent.length,
+      plCount: plIds.length,
+      pls: this.data.tab === 2 ? plIds.map(id => D.playlist(id)).filter(Boolean) : [],
       list: ids.map(id => D.song(id)).filter(Boolean).map(s => Object.assign({}, s, { fav: favs.indexOf(s.id) >= 0 }))
     })
   },
@@ -30,6 +35,9 @@ Page({
   onSong(e) {
     P.playList(this.data.list.map(s => s.id), Number(e.currentTarget.dataset.index))
     wx.navigateTo({ url: '/pages/player/player' })
+  },
+  onPlaylist(e) {
+    wx.navigateTo({ url: '/pages/playlist/playlist?id=' + e.currentTarget.dataset.id })
   },
   onUnfav(e) {
     S.toggleFav(this.data.list[Number(e.currentTarget.dataset.index)].id)

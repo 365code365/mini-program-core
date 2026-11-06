@@ -283,7 +283,7 @@ mod tests {
         for (ago, closing) in [(0, false), (30, false), (120, false), (900, false), (40, true), (200, true)] {
             action_sheet::open_at(ago, closing);
             // 两次合成按同一刻画（动画按帧时钟取样）
-            crate::frame_clock::set(Some(std::time::Instant::now()));
+            crate::sys::frame_clock::set(Some(std::time::Instant::now()));
             let end = sheet_cover_from(&layers);
             skipped_any |= end.is_some_and(|e| e < h);
             // 两边同一个初值（导航栏半透明的那几行本来就叠在缓冲原值上）
@@ -293,7 +293,7 @@ mod tests {
             compose_rows(&mut want, &layers, (0, h));
             let bad = got.iter().zip(&want).position(|(a, b)| a != b);
             assert!(bad.is_none(), "{ago}ms{}：跳过的行与整帧合成不同 @{:?}（从第 {end:?} 行起跳过）", if closing { " 收起" } else { "" }, bad.map(|i| (i as u32 % w, i as u32 / w)));
-            crate::frame_clock::set(None);
+            crate::sys::frame_clock::set(None);
         }
         assert!(skipped_any, "一次都没跳过：测的不是那条路");
         action_sheet::clear();

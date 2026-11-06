@@ -201,7 +201,7 @@ impl WxmlRenderer {
             let fs = inherited.font_size;
             // 字族也是继承来的：裸文本（`<view>文字</view>`）同样要按父级的 font-family
             // 度量与绘制，否则宋体页面里这类文字会用黑体量宽度、再用宋体画
-            let family = crate::text_family::renderer_for_family(inherited.font_family.as_deref());
+            let family = crate::text::family::renderer_for_family(inherited.font_family.as_deref());
             let text_tr = family.as_deref().or(self.text_renderer.as_deref());
             // 默认行高取字体自然行高（≈浏览器 normal），无字体时回退 1.2 倍
             let natural_lh = text_tr

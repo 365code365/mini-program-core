@@ -48,7 +48,7 @@ pub mod web;
 /// 高性能+ 的渲染端：回放页面发来的画布 / WebGL 命令（游戏 JS 在 WKWebView 里，画面由这里经 ANGLE 上屏）
 pub mod remote;
 
-use crate::app_profile::{detect, AppProfile};
+use crate::app::profile::{detect, AppProfile};
 use crate::js::PreludeProfile;
 use crate::runtime::MiniApp;
 use config::GameConfig;
@@ -205,11 +205,11 @@ impl GameEngine {
         let config = GameConfig::parse(&text)?;
         let source = std::fs::read_to_string(root.join("game.js")).map_err(|e| format!("读不出 game.js：{e}"))?;
         if let Some(d) = data_dir {
-            crate::data_dir::set_data_dir(d);
+            crate::sys::data_dir::set_data_dir(d);
         }
         // 数据按 appId 隔离（game-doc/09 §2.2）：必须在建运行时之前设，storage 在桥初始化时就读回
         let app_id = opts.app_id.clone().unwrap_or_else(|| dir_name(&root));
-        crate::data_dir::set_app_scope(Some(&app_id));
+        crate::sys::data_dir::set_app_scope(Some(&app_id));
         // 包内资源（图片、音频、require 的基准）都按包根解析
         crate::host::page_loader::set_app_path(root.clone());
         let (width, height) = (width.max(1), height.max(1));
@@ -423,7 +423,7 @@ impl Drop for GameEngine {
     /// 数据命名空间是进程级的（data_dir::set_app_scope）：实例没了就清掉，否则之后在同一进程里打开的
     /// 小程序（或并行跑的测试）会把 storage 写进这个游戏的目录（踩过：lib 测试并行时 storage 用例读到了游戏的路径）
     fn drop(&mut self) {
-        crate::data_dir::set_app_scope(None);
+        crate::sys::data_dir::set_app_scope(None);
         // 先关音频设备：字段的析构从 JS 运行时拆起（大游戏几十毫秒），GameAudio 要等最后一个闭包放手才析构，
         // 而闭包万一被漏掉（踩过：字节码缓存漏上下文引用，bytecode_cache.rs 的 run）设备就永远开着、退出了还在响
         self.silence();

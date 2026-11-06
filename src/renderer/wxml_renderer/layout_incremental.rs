@@ -224,9 +224,17 @@ impl WxmlRenderer {
             self.cache = Some(cache);
             return Err(rendered);
         }
-        // 1) 布局之后改过的样式先还原成建树时的样子（见模块注释）
-        for (id, st) in self.layout_touched.borrow_mut().drain() {
-            let _ = cache.taffy.set_style(id, st);
+        // 1) 布局之后改过的样式先还原成建树时的样子（见模块注释）。只取决于父级宽的文字修正先留着（`kept`），
+        //    排完看父级宽变没变，变了再还原重排（下面 4)）
+        let mut restored = 0usize;
+        let mut kept: HashMap<NodeId, super::reflow::Touched> = HashMap::new();
+        for (id, t) in self.layout_touched.borrow_mut().drain() {
+            if t.parent_w.is_some() {
+                kept.insert(id, t);
+            } else {
+                let _ = cache.taffy.set_style(id, t.orig);
+                restored += 1;
+            }
         }
         // 2) 旧布局拍下来给失效分析（下面要在同一棵树上改）
         let snapshot = LayoutSnapshot::take(&cache.taffy, &cache.render_nodes);
@@ -256,7 +264,40 @@ impl WxmlRenderer {
         let root = cache.root;
         let _ = cache.taffy.set_children(root, &child_ids);
         let viewport_h = self.root_min_height(viewport);
-        let t_layout1 = self.layout_pass(&mut cache.taffy, root, &new_roots, viewport_h, true);
+        // 重建掉的节点已经从 taffy 树里拿掉了（键作废，再碰就 panic）：只留新树上还在的。
+        // 留下来的子树里的节点 id 不变；重建出来的是新 id，本来就没有修正要留
+        if !kept.is_empty() {
+            fn walk(n: &RenderNode, alive: &mut std::collections::HashSet<NodeId>) {
+                alive.insert(n.taffy_node);
+                n.children.iter().for_each(|c| walk(c, alive));
+            }
+            let mut alive = std::collections::HashSet::new();
+            new_roots.iter().for_each(|r| walk(r, &mut alive));
+            kept.retain(|id, _| alive.contains(id));
+        }
+        // 留着的修正放回记录里（修正那一步若再改它，`or_insert` 保住的还是建树时的原样）
+        self.layout_touched.borrow_mut().extend(kept.iter().map(|(k, v)| (*k, v.clone())));
+        let mut t_layout1 = self.layout_pass(&mut cache.taffy, root, &new_roots, viewport_h, true);
+        // 父级宽变了的（或节点已经不在树上了）：还原成原样再整个排一遍，与整棵重建时从建树那份样式起排一致
+        let stale: Vec<NodeId> = kept
+            .iter()
+            .filter(|(id, t)| {
+                let w = cache.taffy.parent(**id).and_then(|p| cache.taffy.layout(p).ok()).map(|l| l.content_box_width().max(0.0));
+                !matches!((w, t.parent_w), (Some(w), Some(pw)) if (w - pw).abs() <= 0.01)
+            })
+            .map(|(id, _)| *id)
+            .collect();
+        if !stale.is_empty() {
+            for id in &stale {
+                if let Some(t) = self.layout_touched.borrow_mut().remove(id) {
+                    if cache.taffy.parent(*id).is_some() {
+                        let _ = cache.taffy.set_style(*id, t.orig);
+                    }
+                }
+                restored += 1;
+            }
+            t_layout1 = self.layout_pass(&mut cache.taffy, root, &new_roots, viewport_h, true);
+        }
         let t_fix = std::time::Instant::now();
         let content_height = cache.taffy.layout(root).map(|l| l.size.height).unwrap_or(0.0) / self.scale_factor;
         // 5) 失效分析：旧的读快照，新的读树
@@ -273,13 +314,14 @@ impl WxmlRenderer {
         let ms = |a: std::time::Instant, b: std::time::Instant| (b - a).as_secs_f32() * 1000.0;
         if log_timing {
             eprintln!(
-                "⏱  增量重建：模板 {:.2}ms  建树 {:.2}ms（留 {} 棵子树 / 重建 {} 个）  布局 {:.2}ms  修正 {:.2}ms",
+                "⏱  增量重建：模板 {:.2}ms  建树 {:.2}ms（留 {} 棵子树 / 重建 {} 个，还原 {restored} 处修正）  布局 {:.2}ms  修正 {:.2}ms  失效分析 {:.2}ms",
                 ms(t_start, t_template),
                 ms(t_template, t_build),
                 stats.reused,
                 stats.rebuilt,
                 ms(t_build, t_layout1),
                 ms(t_layout1, t_fix),
+                ms(t_fix, std::time::Instant::now()),
             );
         }
         self.rebuild_laps = Some([

@@ -8,7 +8,8 @@ Page(withMini({
     pl: null,
     songs: [],
     curId: 0,
-    totalText: ''
+    totalText: '',
+    plFav: false
   },
   onLoad(q) {
     const pl = D.playlist(q.id) || D.PLAYLISTS[0]
@@ -22,8 +23,14 @@ Page(withMini({
     const cur = P.snapshot().song
     this.setData({
       songs: this.ids.map(id => Object.assign({}, D.song(id), { fav: favs.indexOf(id) >= 0 })),
-      curId: cur ? cur.id : 0
+      curId: cur ? cur.id : 0,
+      plFav: S.isPlFav(this.data.pl.id)
     })
+  },
+  onCollect() {
+    const on = S.togglePlFav(this.data.pl.id)
+    this.setData({ plFav: on })
+    wx.showToast({ title: on ? '已收藏到「我的 - 收藏歌单」' : '已取消收藏歌单', icon: 'none' })
   },
   onPlayAll() {
     P.playList(this.ids, 0)

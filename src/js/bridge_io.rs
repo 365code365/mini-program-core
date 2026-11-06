@@ -43,7 +43,7 @@ pub(super) fn register(rt: &JsRuntime, queue: Queue) -> Result<(), String> {
     // ── WebSocket：(id, url, headersJson, protocolsJson, timeoutMs) → "" 或错误串 ──
     rt.register_function("__native_socket_connect", move |args| {
         let a = |i: usize| args.get(i).cloned().unwrap_or_default();
-        match crate::websocket::connect(a(0).parse().unwrap_or(0), &a(1), &a(2), &a(3), a(4).parse().unwrap_or(0)) {
+        match crate::net::websocket::connect(a(0).parse().unwrap_or(0), &a(1), &a(2), &a(3), a(4).parse().unwrap_or(0)) {
             Ok(()) => String::new(),
             Err(e) => e,
         }
@@ -52,16 +52,16 @@ pub(super) fn register(rt: &JsRuntime, queue: Queue) -> Result<(), String> {
     rt.register_function("__native_socket_send", move |args| {
         let a = |i: usize| args.get(i).cloned().unwrap_or_default();
         let id = a(0).parse().unwrap_or(0);
-        let r = if a(1) == "b" { crate::websocket::send(id, None, Some(a(2))) } else { crate::websocket::send(id, Some(a(2)), None) };
+        let r = if a(1) == "b" { crate::net::websocket::send(id, None, Some(a(2))) } else { crate::net::websocket::send(id, Some(a(2)), None) };
         r.err().unwrap_or_default()
     })?;
     // (id, code, reason)
     rt.register_function("__native_socket_close", move |args| {
         let a = |i: usize| args.get(i).cloned().unwrap_or_default();
-        crate::websocket::close(a(0).parse().unwrap_or(0), a(1).parse().unwrap_or(1000), &a(2)).err().unwrap_or_default()
+        crate::net::websocket::close(a(0).parse().unwrap_or(0), a(1).parse().unwrap_or(1000), &a(2)).err().unwrap_or_default()
     })?;
-    // 二进制直通（WebSocket / TCP / UDP 的 ArrayBuffer 收发，src/bin_stash.rs）
-    crate::bin_stash::register(rt)?;
+    // 二进制直通（WebSocket / TCP / UDP 的 ArrayBuffer 收发，src/net/bin_stash.rs）
+    crate::net::bin_stash::register(rt)?;
     crate::wxfs::extra::register(rt)?;
     // ── 文件系统：(op, argsJson) → {ok, …} ──
     rt.register_function("__native_fs", move |args| {
@@ -141,7 +141,7 @@ pub(super) fn register(rt: &JsRuntime, queue: Queue) -> Result<(), String> {
         });
         let out = match r {
             Some(Ok(bytes)) => {
-                let (uri, real) = crate::wxfile::new_temp(if jpeg { "jpg" } else { "png" });
+                let (uri, real) = crate::wxfs::wxfile::new_temp(if jpeg { "jpg" } else { "png" });
                 if let Some(d) = real.parent() {
                     std::fs::create_dir_all(d).ok();
                 }

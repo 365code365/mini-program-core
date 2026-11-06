@@ -126,8 +126,7 @@ rfd = { version = "=0.17.2", optional = true, default-features = false }
 [target.'cfg(target_os = "android")'.dependencies]
 jni = "0.21"
 
-[build-dependencies]
-cbindgen = "0.29"
+# C 头文件由 scripts/gen-header.sh 调 cbindgen 命令行生成（没有 build.rs，不进构建依赖）
 
 # 加速开发编译
 [profile.dev]
@@ -204,3 +203,6 @@ wat = "=1.262.0"
 # 解释器热路径按小游戏的实测 profile 改过，改了什么见 third_party/rquickjs-sys/PATCHES.md
 [patch.crates-io]
 rquickjs-sys = { path = "third_party/rquickjs-sys" }
+# taffy 0.12.2 原样一份，只改了量尺寸缓存的淘汰（按槽覆盖 → 二次机会淘汰，同 taffy 0.14 的 #1010）：
+# 长竖排列表改一行原来要把整列重量 20 多遍。改了什么、怎么量的见 third_party/taffy/PATCHES.md
+taffy = { path = "third_party/taffy" }

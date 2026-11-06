@@ -58,3 +58,26 @@
 .mine-song {
   border-bottom: 1rpx solid #f0f1f5;
 }
+.tab {
+  white-space: nowrap;
+}
+.mine-pl {
+  padding: 20rpx 32rpx;
+  background: #ffffff;
+  border-bottom: 1rpx solid #f0f1f5;
+}
+.mine-pl-cover {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 14rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+}
+.mine-pl-initial {
+  color: #ffffff;
+  font-size: 20rpx;
+  font-weight: bold;
+}

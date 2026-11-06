@@ -7,9 +7,9 @@
   </view>
   <view class="mp-btn" catchtap="onToggle">
     <view class="mp-pause" wx:if="{{playing}}"><view class="bar"></view><view class="bar"></view></view>
-    <view class="mp-play" wx:else></view>
+    <view class="mp-play" wx:else><view class="mp-play-in"></view></view>
   </view>
   <view class="mp-next" catchtap="onNext">
-    <view class="nx-tri"></view><view class="nx-bar"></view>
+    <view class="nx-tri"><view class="nx-tri-in"></view></view><view class="nx-bar"></view>
   </view>
 </view>

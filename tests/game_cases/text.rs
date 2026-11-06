@@ -96,11 +96,11 @@ fn f1_f5_字体与文字() {
     assert!(narrow.2 - narrow.0 <= 11, "maxWidth=10：墨迹宽 ≤ 10，实际 {narrow:?}");
 }
 
-/// 画布 fillText 里的 emoji 画成彩色字形（不是豆腐块）：iOS 上 Apple Color Emoji 的字形是 emjc（emoji_emjc.rs），
+/// 画布 fillText 里的 emoji 画成彩色字形（不是豆腐块）：iOS 上 Apple Color Emoji 的字形是 emjc（text/emoji/emjc.rs），
 /// 这里在有彩色 emoji 字体的机器上跑同一条路（macOS 是 PNG），CPU / GPU 两个后端都判
 #[test]
 fn f6_emoji_彩色() {
-    if !mini_render::emoji::has_color_glyph('🌱') {
+    if !mini_render::text::emoji::has_color_glyph('🌱') {
         eprintln!("跳过：本机没有彩色 emoji 字体");
         return;
     }

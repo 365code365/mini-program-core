@@ -30,8 +30,8 @@ impl Canvas2DContext {
             text_align: TextAlign::Left,
             text_baseline: TextBaseline::default(),
             global_alpha: 1.0,
-            line_cap: crate::paint::StrokeCap::Butt,
-            line_join: crate::paint::StrokeJoin::Miter,
+            line_cap: crate::gfx::paint::StrokeCap::Butt,
+            line_join: crate::gfx::paint::StrokeJoin::Miter,
             transform: [dpr, 0.0, 0.0, dpr, 0.0, 0.0],
             current_path: Vec::new(),
             state_stack: Vec::new(),
@@ -155,18 +155,18 @@ impl Canvas2DContext {
     /// 设置线帽
     pub fn set_line_cap(&mut self, cap: &str) {
         self.line_cap = match cap {
-            "round" => crate::paint::StrokeCap::Round,
-            "square" => crate::paint::StrokeCap::Square,
-            _ => crate::paint::StrokeCap::Butt,
+            "round" => crate::gfx::paint::StrokeCap::Round,
+            "square" => crate::gfx::paint::StrokeCap::Square,
+            _ => crate::gfx::paint::StrokeCap::Butt,
         };
     }
 
     /// 设置线连接
     pub fn set_line_join(&mut self, join: &str) {
         self.line_join = match join {
-            "round" => crate::paint::StrokeJoin::Round,
-            "bevel" => crate::paint::StrokeJoin::Bevel,
-            _ => crate::paint::StrokeJoin::Miter,
+            "round" => crate::gfx::paint::StrokeJoin::Round,
+            "bevel" => crate::gfx::paint::StrokeJoin::Bevel,
+            _ => crate::gfx::paint::StrokeJoin::Miter,
         };
     }
 

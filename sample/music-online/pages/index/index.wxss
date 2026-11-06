@@ -23,3 +23,7 @@
 .card { background: #fff; border-radius: 20rpx; padding: 24rpx 0 8rpx; }
 .pad { padding: 0 24rpx; }
 .ns-cover { width: 92rpx; height: 92rpx; border-radius: 12rpx; margin-right: 12rpx; background: #e9ebef; }
+.search-wrap { padding: 16rpx 24rpx 0; }
+.search { height: 68rpx; background: #fff; border-radius: 34rpx; padding: 0 26rpx; }
+.glass { width: 22rpx; height: 22rpx; border-radius: 11rpx; border: 4rpx solid #9aa0ab; margin-right: 14rpx; }
+.search-ph { font-size: 26rpx; color: #9aa0ab; }

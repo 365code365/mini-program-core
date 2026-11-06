@@ -1,7 +1,7 @@
 package dev.minirender
 
 /**
- * 小游戏的 JNI 绑定（Rust 侧 `src/ffi_jni_game.rs`）。所有调用必须在同一条引擎线程上（[MiniGameView] 的 HandlerThread）。
+ * 小游戏的 JNI 绑定（Rust 侧 `src/ffi/jni_game.rs`）。所有调用必须在同一条引擎线程上（[MiniGameView] 的 HandlerThread）。
  * 每个入口都有 panic 防护：引擎内部出错时实例失效，之后的调用返回失败值，事件队列里有一条 `{"type":"error","kind":"panic"}`。
  */
 object MiniGame {

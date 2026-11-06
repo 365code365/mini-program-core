@@ -1,22 +1,26 @@
 <view class="hero">
   <view class="row">
-    <view class="me">影</view>
+    <view class="me"><text>影</text></view>
     <view class="col flex1">
       <text class="hello">影迷你好</text>
       <text class="hint">标记想看，上映前提醒你</text>
     </view>
   </view>
   <view class="stats row">
-    <view class="stat"><text class="n">{{list.length}}</text><text class="l">想看</text></view>
-    <view class="stat"><text class="n">{{coming}}</text><text class="l">待上映</text></view>
-    <view class="stat"><text class="n">{{list.length - coming}}</text><text class="l">可观看</text></view>
+    <view class="stat {{filter === 'all' ? 'stat-on' : ''}}" data-f="all" bindtap="onFilter"><text class="n">{{all.length}}</text><text class="l">想看</text></view>
+    <view class="stat {{filter === 'coming' ? 'stat-on' : ''}}" data-f="coming" bindtap="onFilter"><text class="n">{{coming}}</text><text class="l">待上映</text></view>
+    <view class="stat {{filter === 'avail' ? 'stat-on' : ''}}" data-f="avail" bindtap="onFilter"><text class="n">{{all.length - coming}}</text><text class="l">可观看</text></view>
+    <view class="stat" bindtap="onMyComments"><text class="n">{{comments.length}}</text><text class="l">短评</text></view>
   </view>
 </view>
 <view class="card">
-  <view class="sec-h"><text class="sec-t">我的想看</text><text class="more" wx:if="{{list.length}}" bindtap="onClear">清空</text></view>
+  <view class="sec-h">
+    <text class="sec-t">{{filter === 'coming' ? '待上映' : filter === 'avail' ? '可观看' : '我的想看'}}</text>
+    <text class="more" wx:if="{{all.length}}" bindtap="onClear">清空</text>
+  </view>
   <view class="state" wx:if="{{!list.length}}">
     <view class="state-icon">♡</view>
-    <text>还没有想看的影片</text>
+    <text>{{all.length ? '这一栏还没有影片' : '还没有想看的影片'}}</text>
     <view class="retry" hover-class="retry-hover" bindtap="onGo">去逛逛</view>
   </view>
   <view class="item row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onMovie" hover-class="item-hover">
@@ -27,7 +31,26 @@
       <text class="line status {{item.status === 'coming' ? 'accent' : ''}}">{{item.statusText}}</text>
     </view>
     <text class="score" wx:if="{{item.scoreText}}">{{item.scoreText}}</text>
-    <view class="rm" data-index="{{index}}" catchtap="onRemove">×</view>
+    <view class="rm" data-index="{{index}}" catchtap="onRemove"><text>×</text></view>
+  </view>
+</view>
+<view class="card cmt-card">
+  <view class="sec-h"><text class="sec-t">我的短评</text><text class="sub">{{comments.length}} 条</text></view>
+  <view class="state small" wx:if="{{!comments.length}}"><text>看完电影，在详情页写一条短评吧</text></view>
+  <view class="mc" wx:for="{{comments}}" wx:key="id">
+    <view class="row" data-id="{{item.movieId}}" bindtap="onMovie">
+      <image class="mc-poster" src="{{item.poster}}" mode="aspectFill"></image>
+      <view class="col flex1 info">
+        <text class="mc-title">{{item.movieTitle}}</text>
+        <view class="row"><text wx:for="{{starList}}" wx:key="*this" wx:for-item="n" class="mc-star {{n <= item.star ? 'mc-star-on' : ''}}">★</text><text class="sub mc-date">{{item.date}}</text></view>
+      </view>
+    </view>
+    <text class="mc-text">{{item.content}}</text>
+    <view class="row mc-acts">
+      <view class="flex1"></view>
+      <view class="mc-act" data-id="{{item.movieId}}" bindtap="onEditComment"><text>修改</text></view>
+      <view class="mc-act" data-index="{{index}}" bindtap="onDelComment"><text>删除</text></view>
+    </view>
   </view>
 </view>
 <view class="about sub">数据来自演示接口 {{base}}</view>

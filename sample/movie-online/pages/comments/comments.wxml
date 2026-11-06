@@ -12,19 +12,21 @@
   <text>短评加载失败</text>
   <view class="retry" hover-class="retry-hover" bindtap="onRetry">重试</view>
 </view>
-<view class="state" wx:elif="{{status === 'empty'}}"><text>还没有人写短评</text></view>
+<view class="state" wx:elif="{{status === 'empty'}}"><text>还没有人写短评</text><view class="retry" hover-class="retry-hover" bindtap="onWrite">写第一条</view></view>
 <block wx:else>
   <view class="cmt" wx:for="{{list}}" wx:key="id">
     <view class="row">
-      <image class="avatar" src="{{item.user.avatar}}" mode="aspectFill"></image>
+      <image wx:if="{{item.user.avatar}}" class="avatar" src="{{item.user.avatar}}" mode="aspectFill"></image>
+      <view wx:else class="avatar me-avatar"><text class="me-g">我</text></view>
       <view class="col flex1">
-        <text class="name">{{item.user.name}}</text>
+        <view class="row"><text class="name">{{item.user.name}}</text><text class="mine-tag" wx:if="{{item.mine}}">我的短评</text></view>
         <view class="row">
           <view class="stars"><text class="stars-bg">★★★★★</text><text class="stars-fg" style="width: {{item.starWidth}}%">★★★★★</text></view>
           <text class="sub date">{{item.date}}</text>
         </view>
       </view>
-      <view class="like {{item.liked ? 'like-on' : ''}}" data-index="{{index}}" bindtap="onLike">{{item.liked ? '♥' : '♡'}} {{item.likes}}</view>
+      <view wx:if="{{item.mine}}" class="like like-on" bindtap="onWrite"><text>修改</text></view>
+      <view wx:else class="like {{item.liked ? 'like-on' : ''}}" data-index="{{index}}" bindtap="onLike">{{item.liked ? '♥' : '♡'}} {{item.likes}}</view>
     </view>
     <text class="text">{{item.content}}</text>
   </view>

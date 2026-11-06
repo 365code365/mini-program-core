@@ -172,14 +172,14 @@ mod tests {
                 t0 = Instant::now();
                 action_sheet::open_at(0, true);
             }
-            crate::frame_clock::set(Some(t0 + Duration::from_millis((k % 30) * 11)));
+            crate::sys::frame_clock::set(Some(t0 + Duration::from_millis((k % 30) * 11)));
             let l = frame(&page, &tab, &fixed, &band, (w, h, sf));
             cpu::compose(&mut cached, &l);
             cpu::compose_rows(&mut direct, &l, (0, h));
             let bad = cached.iter().zip(&direct).position(|(a, b)| a != b);
             assert!(bad.is_none(), "第 {k} 帧：走缓存与整帧重拼不同 @{:?}", bad.map(|i| (i as u32 % w, i as u32 / w)));
         }
-        crate::frame_clock::set(None);
+        crate::sys::frame_clock::set(None);
         let (filled, needed) = ROWS.with(|r| r.get());
         assert!(needed > 20 * h / 2 && filled * 3 < needed, "要底图 {needed} 行，补拼了 {filled} 行：缓存没起作用");
         action_sheet::clear();

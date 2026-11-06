@@ -390,7 +390,6 @@ fn sheet_pick(a: &mut App, i: usize, n: usize) {
             break;
         }
         a.frames(1);
-        std::thread::sleep(std::time::Duration::from_millis(14));
     }
     assert!(action_sheet::visible(), "[recipe] 长按没有弹出操作菜单");
     a.sheet_tap(i, n);
@@ -406,7 +405,6 @@ fn wait_sheet_gone(a: &mut App) {
             break;
         }
         a.frames(1);
-        std::thread::sleep(std::time::Duration::from_millis(14));
     }
 }
 
@@ -422,7 +420,6 @@ impl LongPressNth for App {
         self.e.pointer_down(cx, cy);
         for _ in 0..40 {
             self.t += 16;
-            std::thread::sleep(std::time::Duration::from_millis(16));
             self.e.pump(self.t);
         }
         self.e.pointer_up(cx, cy);

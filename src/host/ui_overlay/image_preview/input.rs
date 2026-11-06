@@ -3,7 +3,7 @@
 use super::*;
 
 pub fn on_press(vp: (f32, f32), x: f32, y: f32) -> bool {
-    let now = crate::frame_clock::now();
+    let now = crate::sys::frame_clock::now();
     let top = TOP.with(Cell::get);
     with(|s| {
         let Some(p) = s.as_mut() else { return false };
@@ -32,7 +32,7 @@ pub fn on_press(vp: (f32, f32), x: f32, y: f32) -> bool {
 }
 
 pub fn on_move(x: f32, y: f32) -> bool {
-    let now = crate::frame_clock::now();
+    let now = crate::sys::frame_clock::now();
     with(|s| {
         let Some(p) = s.as_mut() else { return false };
         let Some(d) = p.drag.as_mut() else { return true };
@@ -83,7 +83,7 @@ pub fn on_move(x: f32, y: f32) -> bool {
 }
 
 pub fn on_release(x: f32, y: f32) -> bool {
-    let now = crate::frame_clock::now();
+    let now = crate::sys::frame_clock::now();
     let top = TOP.with(Cell::get);
     let consumed = visible();
     let toggle = with(|s| {
@@ -186,7 +186,7 @@ fn settle(p: &mut Preview, pos: f32, v: f32, now: Instant) {
 /// 第一根手指抬起而第二根还按着时，宿主先送第二根的抬起、之后把它当第一根接着送（位置会跳一下，
 /// 这里用 `rebase` 接住）
 pub fn on_pointer2(phase: i32, vp: (f32, f32), x: f32, y: f32) -> bool {
-    let now = crate::frame_clock::now();
+    let now = crate::sys::frame_clock::now();
     with(|s| {
         let Some(p) = s.as_mut() else { return false };
         if matches!(p.phase, Phase::Closing(..)) {

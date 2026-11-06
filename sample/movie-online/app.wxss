@@ -26,3 +26,5 @@ input { padding: 0 0 0 1rpx; }
 .btn-primary { background: linear-gradient(90deg, #ff7a8a, #ff4e6a); color: #fff; }
 .btn-hover { opacity: 0.85; }
 .tag { font-size: 20rpx; color: #ff4e6a; border: 1rpx solid #ffb3bd; padding: 2rpx 10rpx; border-radius: 6rpx; margin-right: 10rpx; }
+/* 右箭头用边框画（字体里的 › 引擎画不出来） */
+.arrow { width: 12rpx; height: 12rpx; border-top: 3rpx solid #b0b4ba; border-right: 3rpx solid #b0b4ba; transform: rotate(45deg); margin-left: 8rpx; flex-shrink: 0; }

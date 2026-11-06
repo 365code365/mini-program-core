@@ -129,18 +129,29 @@ fn plus_引擎_pixi_phaser_three() {
     }
 }
 
-/// 示例游戏在高性能+ 下冷启动：5 秒内没有报错、渲染端画出了东西
-#[test]
-fn plus_示例游戏都起得来() {
+/// 示例游戏在高性能+ 下冷启动：渲染端画出东西（颜色数 > 20）之后再看 1.5 秒，没有报错。一个游戏一个用例（同 web2 的 boot_web）
+fn boot_plus(g: &str) {
     let _g = serial();
-    for g in ["play-2048", "play-flappy", "play-snake", "play-breakout", "play-jump", "play-fighter", "play-3d-stack", "play-3d-runner", "play-3d-bowling", "play-3d-island"] {
-        if !std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("sample-game").join(g).is_dir() { continue; }
-        let mut h = open!(WebHarness::open(g, WebOpts { plus: true, query: "auto=1", ..Default::default() }));
-        h.sleep(6000);
-        let errs = h.errors();
-        assert!(errs.is_empty(), "{g} 报错：{errs:?}\n{:?}", h.log.lock().unwrap().iter().rev().take(20).collect::<Vec<_>>());
-        let n = h.native_colors();
-        assert!(n > 20, "{g} 渲染端颜色数 {n}（黑屏？）\n{:?}", h.log.lock().unwrap().iter().rev().take(20).collect::<Vec<_>>());
-        eprintln!("✓ {g}（高性能+）：{n} 种颜色");
+    if !std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("sample-game").join(g).is_dir() {
+        return;
     }
+    let Some(mut h) = WebHarness::open(g, WebOpts { plus: true, query: "auto=1", ..Default::default() }) else { return };
+    let t0 = std::time::Instant::now();
+    while h.native_colors() <= 20 && t0.elapsed().as_secs() < 12 {
+        h.sleep(250);
+    }
+    h.sleep(1500);
+    let errs = h.errors();
+    assert!(errs.is_empty(), "{g} 报错：{errs:?}\n{:?}", h.log.lock().unwrap().iter().rev().take(20).collect::<Vec<_>>());
+    let n = h.native_colors();
+    assert!(n > 20, "{g} 渲染端颜色数 {n}（黑屏？）\n{:?}", h.log.lock().unwrap().iter().rev().take(20).collect::<Vec<_>>());
+}
+macro_rules! boot_plus_cases {
+    ($($f:ident => $g:literal),* $(,)?) => { $( #[test] fn $f() { boot_plus($g) } )* };
+}
+boot_plus_cases! {
+    plus_boot_2048 => "play-2048", plus_boot_flappy => "play-flappy", plus_boot_snake => "play-snake",
+    plus_boot_breakout => "play-breakout", plus_boot_jump => "play-jump", plus_boot_fighter => "play-fighter",
+    plus_boot_3d_stack => "play-3d-stack", plus_boot_3d_runner => "play-3d-runner", plus_boot_3d_bowling => "play-3d-bowling",
+    plus_boot_3d_island => "play-3d-island",
 }

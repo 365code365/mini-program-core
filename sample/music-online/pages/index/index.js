@@ -47,6 +47,7 @@ Page({
     else if (d.type === 'song') this.playSongs(this.data.songs, 0);
   },
   onPlaylist(e) { wx.navigateTo({ url: '/pages/playlist/playlist?id=' + e.currentTarget.dataset.id }); },
+  onSearch() { wx.navigateTo({ url: '/pages/search/search' }); },
   onMorePlaylists() { wx.navigateTo({ url: '/pages/playlists/playlists' }); },
   onOst() { wx.navigateTo({ url: '/pages/playlists/playlists?tag=' + encodeURIComponent('影视原声') }); },
   onDaily() {
@@ -56,7 +57,7 @@ Page({
     app.globalData.chartId = Number(e.currentTarget.dataset.id) || 1;
     wx.switchTab({ url: '/pages/charts/charts' });
   },
-  onSong(e) { this.playSongs(this.data.songs, e.currentTarget.dataset.index); },
+  onSong(e) { this.playSongs(this.data.songs, Number(e.currentTarget.dataset.index)); },
   playSongs(list, i) {
     player.playQueue(list, i);
     wx.navigateTo({ url: '/pages/player/player' });

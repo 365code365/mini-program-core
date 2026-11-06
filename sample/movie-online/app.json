@@ -4,7 +4,8 @@
     "pages/mine/mine",
     "pages/search/search",
     "pages/detail/detail",
-    "pages/comments/comments"
+    "pages/comments/comments",
+    "pages/write/write"
   ],
   "window": {
     "navigationBarTitleText": "光影放映厅",

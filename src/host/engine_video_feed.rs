@@ -231,8 +231,8 @@ pub(super) fn resolve_url(src: &str, page_dir: &str) -> String {
     }
     let rel = (!src.starts_with('/') && !page_dir.is_empty()).then(|| format!("{page_dir}/{src}"));
     rel.as_deref()
-        .and_then(crate::assets::resolve)
-        .or_else(|| crate::assets::resolve(src))
+        .and_then(crate::app::assets::resolve)
+        .or_else(|| crate::app::assets::resolve(src))
         .map(|p| p.to_string_lossy().into_owned())
         .unwrap_or_else(|| src.to_string())
 }

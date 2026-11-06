@@ -201,7 +201,7 @@ pub fn apply_feedback_event(
                 image,
                 mask,
                 visible: true,
-                start_time: Instant::now(),
+                start_time: crate::sys::frame_clock::now(),
                 duration_ms: duration,
             });
         }

@@ -154,8 +154,8 @@ impl MiniEngine {
                     let (w, h) = fit(f.width, f.height, side);
                     let px = if (w, h) == (f.width, f.height) { f.rgba.clone() } else { scale_rgba(&f.rgba, f.width, f.height, w, h) };
                     // 只留最新一帧：逻辑层慢了就丢帧，不攒
-                    crate::bin_stash::clear(BIN_CAMERA, 0);
-                    crate::bin_stash::stash(BIN_CAMERA, 0, px);
+                    crate::net::bin_stash::clear(BIN_CAMERA, 0);
+                    crate::net::bin_stash::stash(BIN_CAMERA, 0, px);
                     frame = Some((w, h));
                 }
             }
@@ -277,7 +277,7 @@ fn scancode_detail(text: &str, raw: &[u8], kind: &str) -> Value {
 /// 换页：监听与扫码状态清掉（下一页的相机重新开始）
 pub(super) fn reset() {
     STATE.with(|s| *s.borrow_mut() = State::default());
-    crate::bin_stash::clear(BIN_CAMERA, 0);
+    crate::net::bin_stash::clear(BIN_CAMERA, 0);
 }
 
 #[cfg(test)]

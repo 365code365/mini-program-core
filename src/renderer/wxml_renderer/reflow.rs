@@ -16,6 +16,13 @@ use crate::renderer::components::{
     dim_is_auto, dim_length, dim_percent, lpa_length, FontWeight, RenderNode, WhiteSpace,
 };
 
+/// 布局之后改过的一处样式：原样，与（文字修正才有的）当时的父级内容区宽
+#[derive(Clone)]
+pub(super) struct Touched {
+    pub orig: Style,
+    pub parent_w: Option<f32>,
+}
+
 impl WxmlRenderer {
     /// 第二遍布局修正之一：**绝对定位元素的包含块高度塌成 0 时按视口折算**。
     ///
@@ -152,7 +159,7 @@ impl WxmlRenderer {
         }
         let Some(default_tr) = self.text_renderer.as_deref() else { return };
         // 与建树/绘制端同一族字体，否则「按 A 字体定的盒子」用 B 字体数行数
-        let family = crate::text_family::renderer_for_family(node.style.font_family.as_deref());
+        let family = crate::text::family::renderer_for_family(node.style.font_family.as_deref());
         let tr = family.as_deref().unwrap_or(default_tr);
         let sf = self.scale_factor;
 
@@ -214,16 +221,22 @@ impl WxmlRenderer {
             st.size.height = length(needed_h);
             st.min_size.height = length(needed_h);
         }
-        self.set_style_tracked(taffy, node.taffy_node, st);
+        self.set_style_tracked_w(taffy, node.taffy_node, st, parent_inner.map(|p| p.0));
         *changed = true;
     }
 
     /// 布局之后改样式：改的是缓存那棵树（`record_touch`）就先把原样记下来，增量重建时还原
     /// （layout_incremental.rs）。返回 taffy 收没收下
     pub(super) fn set_style_tracked(&self, taffy: &mut Tree, id: taffy::NodeId, st: Style) -> bool {
+        self.set_style_tracked_w(taffy, id, st, None)
+    }
+
+    /// 同上，`parent_w`：这次修正只取决于父级内容区宽（文字换行补高 / 收窄）。增量重建时父级宽没变就不用还原
+    /// （还原 → 排一遍 → 再修回来，结果一模一样，却让这条路上的祖先排两遍：list 示例页每次 setData 多 1~2ms，见 layout_incremental.rs）
+    pub(super) fn set_style_tracked_w(&self, taffy: &mut Tree, id: taffy::NodeId, st: Style, parent_w: Option<f32>) -> bool {
         if self.record_touch.get() {
             if let Ok(orig) = taffy.style(id) {
-                self.layout_touched.borrow_mut().entry(id).or_insert_with(|| orig.clone());
+                self.layout_touched.borrow_mut().entry(id).or_insert_with(|| Touched { orig: orig.clone(), parent_w });
             }
         }
         taffy.set_style(id, st).is_ok()

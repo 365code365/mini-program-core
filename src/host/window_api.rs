@@ -8,7 +8,7 @@
 //!   页面写了 page 背景时回弹区也是 page 背景色（要分开画得改合成层次，暂不做）。
 //! - 收键盘：等同于让聚焦的输入框失焦（`bindblur` 照发）。
 
-use crate::color::Color;
+use crate::gfx::color::Color;
 use crate::renderer::WxmlRenderer;
 use crate::runtime::MiniApp;
 use crate::ui::{InteractionManager, InteractionResult};

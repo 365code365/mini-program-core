@@ -58,8 +58,8 @@ pub(crate) fn call(out: &mut Vec<u8>, f: u8, sync: bool, args: &[A]) {
 /// 从前只拿了命名空间锁：并行跑的 MiniEngine 用例在 launch 之前包根被换成这里的临时目录，
 /// 报「app.js 不存在 … 页面不存在」（2026-11-01 全量撞上 engine_input_tests 的 picker 用例，单跑必过）
 fn locks() -> (std::sync::MutexGuard<'static, ()>, std::sync::RwLockWriteGuard<'static, ()>) {
-    (crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner()),
-     crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner()))
+    (crate::sys::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner()),
+     crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner()))
 }
 
 fn engine(name: &str) -> GameEngine {

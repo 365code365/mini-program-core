@@ -20,7 +20,7 @@ fn type_name(f: ::image::ImageFormat) -> &'static str {
 /// `{width, height, type}` 或 `{err}`
 pub fn info(src: &str) -> String {
     let r = (|| -> Result<serde_json::Value, String> {
-        let path = crate::assets::resolve(src).ok_or_else(|| format!("file not found: {src}"))?;
+        let path = crate::app::assets::resolve(src).ok_or_else(|| format!("file not found: {src}"))?;
         let reader = ::image::ImageReader::open(&path).map_err(|e| e.to_string())?.with_guessed_format().map_err(|e| e.to_string())?;
         let fmt = reader.format().map(type_name).unwrap_or("unknown");
         let (w, h) = reader.into_dimensions().map_err(|e| e.to_string())?;
@@ -33,7 +33,7 @@ pub fn info(src: &str) -> String {
 /// 结果写到 `wxfile://tmp_…jpg`，返回 `{tempFilePath}` 或 `{err}`
 pub fn compress(src: &str, quality: u8, w: u32, h: u32) -> String {
     let r = (|| -> Result<serde_json::Value, String> {
-        let path = crate::assets::resolve(src).ok_or_else(|| format!("file not found: {src}"))?;
+        let path = crate::app::assets::resolve(src).ok_or_else(|| format!("file not found: {src}"))?;
         let mut img = ::image::open(&path).map_err(|e| e.to_string())?;
         let (iw, ih) = (img.width().max(1), img.height().max(1));
         let (tw, th) = match (w, h) {
@@ -45,7 +45,7 @@ pub fn compress(src: &str, quality: u8, w: u32, h: u32) -> String {
         if (tw, th) != (iw, ih) {
             img = img.resize_exact(tw, th, ::image::imageops::FilterType::Triangle);
         }
-        let (uri, real) = crate::wxfile::new_temp("jpg");
+        let (uri, real) = crate::wxfs::wxfile::new_temp("jpg");
         if let Some(d) = real.parent() {
             std::fs::create_dir_all(d).map_err(|e| e.to_string())?;
         }

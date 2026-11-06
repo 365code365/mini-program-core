@@ -9,6 +9,7 @@ const groups = [
       { name: '选择器', desc: 'picker 五种 mode · columnchange · cancel', url: '/pages/picker/picker', icon: '选', color: '#fa9d3b' },
       { name: '轮播', desc: 'swiper 自动播放 · 衔接 · 纵向 · 多项 · 边距 · 受控', url: '/pages/swiper/swiper', icon: '轮', color: '#576b95' },
       { name: '滚动容器', desc: 'scroll-view 横纵 · 锚点 · 触底 · 自定义下拉刷新', url: '/pages/scroll/scroll', icon: '滚', color: '#ff6a00' },
+      { name: '横竖同时滚', desc: 'scroll-x + scroll-y 表格 · scrollLeft / scrollTop · 滚过之后点格子', url: '/pages/table/table', icon: '表', color: '#576b95' },
       { name: '媒体', desc: 'image 裁剪模式 · GIF · 事件 · 预览 · 宿主承载的 video', url: '/pages/media/media', icon: '媒', color: '#e64340' },
       { name: '画布', desc: 'canvas 旧接口 · type="2d" · drawImage', url: '/pages/canvas/canvas', icon: '画', color: '#8a5cf5' },
       { name: '自定义组件', desc: 'properties · observers · 具名 slot · behaviors · triggerEvent', url: '/pages/custom/custom', icon: '定', color: '#1aad19' },
@@ -55,6 +56,7 @@ const groups = [
       { name: '模拟 HTTP · 仪表盘', desc: '4 个接口并发 · 分块加载 / 失败 · 柱状图 · 真实网络对照', url: '/pages/dashboard/dashboard', icon: '仪', color: '#8a5cf5' },
       { name: '自定义导航栏', desc: 'navigationStyle: custom · 状态栏高度 · 安全区', url: '/pages/navcustom/navcustom', icon: '导', color: '#ff6a00' },
       { name: '综合场景（性能基准）', desc: '长列表 + CSS 动画 + 每秒 setData + 原生 video', url: '/pages/perf/perf', icon: '综', color: '#e64340' },
+      { name: '长列表改一行', desc: '300 行 wx:for · 只改一行 / 顶上计数 / 追加 50 行 · setData 到画完的耗时', url: '/pages/longlist/longlist', icon: '长', color: '#07c160' },
       { name: '详情页（静态）', desc: '带 query 打开 · 改标题 · 返回', url: '/pages/detail/detail?from=index', icon: '详', color: '#1aad19' }
     ]
   }

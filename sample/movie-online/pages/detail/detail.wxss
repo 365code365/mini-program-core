@@ -41,3 +41,7 @@
 .bottom-gap { height: 140rpx; }
 .bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 16rpx 24rpx 28rpx; box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.05); }
 .bar-btn { font-size: 26rpx; color: #4e5969; padding: 0 32rpx 0 8rpx; }
+.me-avatar { background: linear-gradient(135deg, #ff7a8a, #ff4e6a); display: flex; align-items: center; justify-content: center; }
+.me-g { color: #fff; font-size: 24rpx; font-weight: bold; }
+.mine-tag { font-size: 20rpx; color: #ff4e6a; background: #fff0f2; border-radius: 6rpx; padding: 2rpx 10rpx; margin-left: 12rpx; }
+.edit { font-size: 24rpx; color: #ff4e6a; padding: 8rpx 0 8rpx 20rpx; }

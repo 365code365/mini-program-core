@@ -88,7 +88,10 @@ pub fn masonry_pass(taffy: &mut Tree, nodes: &[RenderNode], sf: f32) -> bool {
     changed
 }
 
+/// 按最矮列摆好每一项。返回有没有哪个样式真的变了（没变的不写回：写回会把节点标脏，调用方就得再排一遍整棵树 ——
+/// 从前每次都写、每次都返回 true，页面上有瀑布流时每次 setData 都多一遍整树布局，list 示例页一次 1~2ms）
 fn place(taffy: &mut Tree, n: &RenderNode, sf: f32) -> bool {
+    let mut changed = false;
     let Ok(lay) = taffy.layout(n.taffy_node).cloned() else { return false };
     let pad = padding_of(&n.attrs).map(|p| p * sf);
     let inner_w = lay.size.width - pad[1] - pad[3];
@@ -114,7 +117,10 @@ fn place(taffy: &mut Tree, n: &RenderNode, sf: f32) -> bool {
             bottom: auto(),
         };
         st.size.width = length((col_w - m.left - m.right).max(0.0));
-        taffy.set_style(c.taffy_node, st).ok();
+        if taffy.style(c.taffy_node).ok() != Some(&st) {
+            taffy.set_style(c.taffy_node, st).ok();
+            changed = true;
+        }
         heights[col] = top + h + main_gap;
     }
     let content = heights.iter().cloned().fold(0.0, f32::max) - if n.children.is_empty() { 0.0 } else { main_gap };
@@ -122,9 +128,12 @@ fn place(taffy: &mut Tree, n: &RenderNode, sf: f32) -> bool {
         let mut st = st.clone();
         st.display = Display::Block;
         st.size.height = length(content.max(0.0) + pad[0] + pad[2]);
-        taffy.set_style(n.taffy_node, st).ok();
+        if taffy.style(n.taffy_node).ok() != Some(&st) {
+            taffy.set_style(n.taffy_node, st).ok();
+            changed = true;
+        }
     }
-    true
+    changed
 }
 
 #[cfg(test)]

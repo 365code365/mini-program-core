@@ -254,7 +254,7 @@ impl Canvas2DContext {
     /// （iPhone 萌宠小岛 Time Profiler：fill 里四分之一的样本在扫蒙版）。裁剪只是兜底：
     /// 框真漏了，结果是形状被切一块，而不是缓存的蒙版里留下脏像素去污染之后的绘制
     pub(super) fn paint_with_fx_in(&mut self, stroke: bool, bounds: Option<(f32, f32, f32, f32)>, draw_mask: impl FnOnce(&mut Canvas)) {
-        let _t = crate::game::slow_frame::enabled().then(SubTimer::start);
+        let _t = super::slow_frame_enabled().then(SubTimer::start);
         let Ok(mut canvas) = self.canvas.lock() else { return };
         let (w, h) = (canvas.width(), canvas.height());
         let alpha = self.global_alpha;
@@ -320,7 +320,7 @@ impl SubTimer {
 
 impl Drop for SubTimer {
     fn drop(&mut self) {
-        crate::game::slow_frame::note_sub(true, self.0.elapsed().as_nanos() as u64);
+        super::slow_frame_note(true, self.0.elapsed().as_nanos() as u64);
     }
 }
 

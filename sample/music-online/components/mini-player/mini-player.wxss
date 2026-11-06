@@ -8,9 +8,12 @@
 .mp-singer { font-size: 22rpx; color: #8a9099; margin-top: 4rpx; }
 .mp-btn { width: 64rpx; height: 64rpx; border-radius: 32rpx; border: 3rpx solid #1f2329; display: flex; align-items: center; justify-content: center; margin-left: 12rpx; }
 /* 三角形用边框画：引擎与 H5 都认，不依赖图标字体 */
-.mp-play { width: 0; height: 0; border-top: 14rpx solid transparent; border-bottom: 14rpx solid transparent; border-left: 22rpx solid #1f2329; margin-left: 6rpx; }
+/* 三角：border 透明边拼的三角引擎画不出来（画成方块），改成裁剪容器里放一个旋转 45° 的方块，只露出一半 */
+.mp-play { position: relative; width: 21rpx; height: 28rpx; overflow: hidden; flex-shrink: 0; margin-left: 6rpx; }
+.mp-play-in { position: absolute; left: -9.9rpx; top: 4.1rpx; width: 19.8rpx; height: 19.8rpx; background: #1f2329; transform: scaleX(1.5) rotate(45deg); }
 .mp-pause { display: flex; flex-direction: row; }
 .bar { width: 6rpx; height: 24rpx; background: #1f2329; border-radius: 3rpx; margin: 0 4rpx; }
 .mp-next { display: flex; flex-direction: row; align-items: center; padding: 16rpx 0 16rpx 26rpx; }
-.nx-tri { width: 0; height: 0; border-top: 12rpx solid transparent; border-bottom: 12rpx solid transparent; border-left: 18rpx solid #1f2329; }
+.nx-tri { position: relative; width: 18rpx; height: 24rpx; overflow: hidden; flex-shrink: 0; }
+.nx-tri-in { position: absolute; left: -8.49rpx; top: 3.51rpx; width: 16.97rpx; height: 16.97rpx; background: #1f2329; transform: scaleX(1.5) rotate(45deg); }
 .nx-bar { width: 5rpx; height: 24rpx; background: #1f2329; }

@@ -34,7 +34,7 @@ pub fn register(rt: &JsRuntime, root: PathBuf) -> Result<(), String> {
         let size = o.get("fontSize").and_then(|v| v.as_f64()).filter(|v| *v > 0.0).unwrap_or(16.0) as f32;
         let family = o.get("fontFamily").and_then(|v| v.as_str()).unwrap_or("sans-serif");
         let text = o.get("text").and_then(|v| v.as_str()).unwrap_or("");
-        let h = crate::text_family::renderer_for_family(Some(family))
+        let h = crate::text::family::renderer_for_family(Some(family))
             .map(|tr| tr.natural_line_height_for(text, size))
             .unwrap_or(size * 1.375);
         (h.round() as f64).into_js(&ctx)
@@ -44,8 +44,8 @@ pub fn register(rt: &JsRuntime, root: PathBuf) -> Result<(), String> {
 
 /// 只取字族名、不登记（高性能模式：字体由 WebKit 自己加载，game/web/natives.rs）
 pub(crate) fn family_of(src: &str, root: &Path) -> Result<String, String> {
-    let path = if src.starts_with(crate::wxfile::SCHEME) {
-        crate::wxfile::to_path(src).ok_or("无效的 wxfile 路径")?
+    let path = if src.starts_with(crate::wxfs::wxfile::SCHEME) {
+        crate::wxfs::wxfile::to_path(src).ok_or("无效的 wxfile 路径")?
     } else {
         super::image::loader::package_path(src, root).ok_or("路径不能跑出包根")?
     };
@@ -54,8 +54,8 @@ pub(crate) fn family_of(src: &str, root: &Path) -> Result<String, String> {
 }
 
 fn load_font(src: &str, root: &Path) -> Result<String, String> {
-    let path = if src.starts_with(crate::wxfile::SCHEME) {
-        crate::wxfile::to_path(src).ok_or("无效的 wxfile 路径")?
+    let path = if src.starts_with(crate::wxfs::wxfile::SCHEME) {
+        crate::wxfs::wxfile::to_path(src).ok_or("无效的 wxfile 路径")?
     } else {
         super::image::loader::package_path(src, root).ok_or("路径不能跑出包根")?
     };
@@ -64,7 +64,7 @@ fn load_font(src: &str, root: &Path) -> Result<String, String> {
     if family.is_empty() {
         return Err("字体没有字族名".into());
     }
-    crate::text_faces::register_file(&family, &path)?;
+    crate::text::faces::register_file(&family, &path)?;
     Ok(family)
 }
 

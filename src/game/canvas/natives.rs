@@ -135,7 +135,7 @@ pub fn register(rt: &JsRuntime, canvases: Rc<RefCell<GameCanvases>>, images: Rc<
         };
         let out = match r {
             Ok(bytes) => {
-                let (uri, real) = crate::wxfile::new_temp(if jpeg { "jpg" } else { "png" });
+                let (uri, real) = crate::wxfs::wxfile::new_temp(if jpeg { "jpg" } else { "png" });
                 if let Some(d) = real.parent() {
                     std::fs::create_dir_all(d).ok();
                 }

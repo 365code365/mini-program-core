@@ -70,7 +70,7 @@ impl App {
         let data = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("sample-e2e").join(format!("{name}-{tag}"));
         std::fs::remove_dir_all(&data).ok();
         if !storage.is_empty() {
-            // 与 storage_file.rs 同一份格式：<数据目录>/mini-storage/<小程序名>.json，值是 JSON.stringify 过的
+            // 与 sys/storage_file.rs 同一份格式：<数据目录>/mini-storage/<小程序名>.json，值是 JSON.stringify 过的
             let m: serde_json::Map<String, Value> =
                 storage.iter().map(|(k, v)| (k.to_string(), Value::String(serde_json::to_string(v).unwrap()))).collect();
             std::fs::create_dir_all(data.join("mini-storage")).unwrap();
@@ -79,6 +79,8 @@ impl App {
         let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), Some(&data.to_string_lossy()), W as u32, H as u32, DPR, Default::default(), opts)
             .expect("创建引擎");
         e.set_animation_clock(0.0);
+        // 定时器跟着 pump 的时刻走（不睡墙上时钟）：等 Toast、自动播放、倒计时都只是多推几帧
+        e.use_virtual_clock();
         e.eval(HOOK).expect("装错误钩子");
         e.launch(route).unwrap_or_else(|err| panic!("打开 {name} {route:?} 失败：{err}"));
         let mut app = App { e, t: 1000, name: name.to_string() };
@@ -86,11 +88,21 @@ impl App {
         app
     }
 
-    /// 推 `n` 帧（每帧 16ms 引擎时钟，墙上时钟也走一点：setTimeout 按墙上时钟）
+    /// 推 `n` 帧（每帧 16ms 引擎时钟；虚拟时钟下定时器也只认它，见 `MiniEngine::use_virtual_clock`）
     pub fn frames(&mut self, n: u32) {
         for _ in 0..n {
             self.t += 16;
+            self.e.pump(self.t);
+        }
+        self.drain_net();
+    }
+
+    /// 网络是真的（本机演示服务、图片下载）：有请求在飞就按墙上时钟等它回来（最多 10s），期间照常出帧
+    pub fn drain_net(&mut self) {
+        let t0 = std::time::Instant::now();
+        while self.e.net_pending() && t0.elapsed() < Duration::from_secs(10) {
             std::thread::sleep(Duration::from_millis(2));
+            self.t += 16;
             self.e.pump(self.t);
         }
     }
@@ -100,12 +112,12 @@ impl App {
         self.frames(24);
     }
 
-    /// 墙上时钟等 `ms`（定时器、倒计时、模拟网络延迟），期间照常出帧
+    /// 引擎时钟过 `ms`（定时器、倒计时、模拟网络延迟），期间照常出帧。不睡：虚拟时钟下定时器按 pump 的时刻走；
+    /// 真网络在最后由 `frames` → `drain_net` 等回来
     pub fn wait_ms(&mut self, ms: u64) {
-        let start = std::time::Instant::now();
-        while start.elapsed() < Duration::from_millis(ms) {
+        let n = ms.div_ceil(16) as u32;
+        for _ in 0..n {
             self.t += 16;
-            std::thread::sleep(Duration::from_millis(16));
             self.e.pump(self.t);
         }
         self.frames(2);
@@ -210,7 +222,6 @@ impl App {
         self.e.pointer_down(cx, cy);
         for _ in 0..40 {
             self.t += 16;
-            std::thread::sleep(Duration::from_millis(16));
             self.e.pump(self.t);
         }
         self.e.pointer_up(cx, cy);

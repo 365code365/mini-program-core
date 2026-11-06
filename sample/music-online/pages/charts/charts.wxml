@@ -10,7 +10,7 @@
   <view class="hero" style="background: linear-gradient(135deg, {{color}}, #2b2d42)">
     <text class="hero-t">{{charts[cur].name}}</text>
     <text class="hero-s">{{charts[cur].updateText}} · TOP {{songs.length}}</text>
-    <view class="pa row" bindtap="onPlayAll"><view class="pa-tri"></view><text>播放全部</text></view>
+    <view class="pa row" bindtap="onPlayAll"><view class="pa-tri"><view class="pa-tri-in"></view></view><text>播放全部</text></view>
   </view>
   <view class="list">
     <view class="song {{playingId === item.id ? 'song-on' : ''}}" wx:for="{{songs}}" wx:key="id" data-index="{{index}}" bindtap="onSong" hover-class="song-hover">

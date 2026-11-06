@@ -8,7 +8,7 @@
 //! | 临时 / 已保存文件 | `wxfile://tmp_…`、`wxfile://store/…` | ✓ | ✗（只能由 downloadFile / saveFile 产生） |
 //! | 代码包文件 | `/images/a.png`、`images/a.png` | ✓ | ✗ |
 //!
-//! 真实位置见 `crate::wxfile`（`<数据目录>/wxfile/<小程序名>/`）；代码包文件按小程序根目录解析，
+//! 真实位置见 `crate::wxfs::wxfile`（`<数据目录>/wxfile/<小程序名>/`）；代码包文件按小程序根目录解析，
 //! 路径里不许有 `..`。
 //!
 //! 返回值一律是 JSON：成功 `{"ok":true,…}`，失败 `{"ok":false,"err":"no such file or directory, open <路径>"}`，
@@ -22,6 +22,8 @@ mod ops;
 /// `wx.getVideoInfo`：读 MP4 / MOV 的盒子结构
 pub mod video_info;
 pub mod zip;
+/// `wxfile://` 虚拟路径（downloadFile 的产物、USER_DATA_PATH）→ 数据目录下的沙盒
+pub mod wxfile;
 
 use std::path::{Component, Path, PathBuf};
 
@@ -45,19 +47,19 @@ pub fn resolve(path: &str) -> Option<Resolved> {
     if path.is_empty() {
         return None;
     }
-    if path.starts_with(crate::wxfile::SCHEME) {
+    if path.starts_with(crate::wxfs::wxfile::SCHEME) {
         let trimmed = path.trim_end_matches('/');
-        let real = if trimmed.len() < crate::wxfile::SCHEME.len() {
-            crate::wxfile::root()
+        let real = if trimmed.len() < crate::wxfs::wxfile::SCHEME.len() {
+            crate::wxfs::wxfile::root()
         } else {
-            crate::wxfile::to_path(trimmed)?
+            crate::wxfs::wxfile::to_path(trimmed)?
         };
         let writable = path == USR || path.starts_with(&format!("{USR}/"));
         return Some(Resolved { real, writable });
     }
     if path.starts_with("file://") {
         // 沙盒里的 file://（见 wxfile::from_file_uri），沙盒外的不认
-        return resolve(&crate::wxfile::from_file_uri(path)?);
+        return resolve(&crate::wxfs::wxfile::from_file_uri(path)?);
     }
     if path.contains("://") {
         return None;
@@ -67,14 +69,14 @@ pub fn resolve(path: &str) -> Option<Resolved> {
     if rel.is_empty() || p.components().any(|c| !matches!(c, Component::Normal(_))) {
         return None;
     }
-    let root = crate::assets::app_root()?;
+    let root = crate::app::assets::app_root()?;
     Some(Resolved { real: root.join(p), writable: false })
 }
 
 /// 真实路径 → `wxfile://` 虚拟路径（readdir / getSavedFileList 回给页面用）
 pub fn to_virtual(real: &Path) -> Option<String> {
-    let rel = real.strip_prefix(crate::wxfile::root()).ok()?;
-    Some(format!("{}{}", crate::wxfile::SCHEME, rel.to_string_lossy().replace('\\', "/")))
+    let rel = real.strip_prefix(crate::wxfs::wxfile::root()).ok()?;
+    Some(format!("{}{}", crate::wxfs::wxfile::SCHEME, rel.to_string_lossy().replace('\\', "/")))
 }
 
 #[cfg(test)]

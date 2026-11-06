@@ -87,7 +87,7 @@ impl FontSpec {
 
     /// 这个字族栈的渲染器（找不到任何一项时用画布默认字体）
     pub fn renderer(&self) -> Option<Arc<TextRenderer>> {
-        crate::text_family::renderer_for_family(Some(&self.family)).or_else(|| super::CANVAS_FONT.clone())
+        crate::text::family::renderer_for_family(Some(&self.family)).or_else(|| super::CANVAS_FONT.clone())
     }
 }
 

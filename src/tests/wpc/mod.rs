@@ -4,7 +4,7 @@
 use crate::compositor::HostEnv;
 use crate::host::{EngineOptions, MiniEngine};
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 mod events;
 mod gesture;
@@ -66,10 +66,12 @@ impl std::ops::DerefMut for Wpc {
 
 pub(super) fn engine(root: &std::path::Path, opts: EngineOptions) -> Wpc {
     let s = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
-    let g = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
+    let g = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
     let data = root.join("_data");
     let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), Some(&data.to_string_lossy()), 375, 667, 1.0, HostEnv::default(), opts)
         .expect("创建引擎");
+    // 定时器与动画跟着 pump 的时刻走（不睡墙上时钟），见 `MiniEngine::use_virtual_clock`
+    e.use_virtual_clock();
     e.launch(None).expect("打开首页");
     e.pump(1);
     Wpc { e, _root: g, _s: s }
@@ -79,17 +81,30 @@ pub(super) fn js(e: &MiniEngine, code: &str) -> String {
     e.eval(code).unwrap_or_default()
 }
 
-/// 按 16ms 一帧 pump（墙上时钟也走：定时器按真实时间），直到 `cond` 成立或超时
+thread_local! {
+    /// 这个用例线程上 pump 给到的时刻（只增不减：虚拟时钟下时间不能往回走）
+    static PUMP_MS: std::cell::Cell<u64> = const { std::cell::Cell::new(100) };
+}
+
+/// 按 16ms 一帧 pump，直到 `cond` 成立或引擎时钟过了 `ms`。虚拟时钟下不睡：定时器只认 pump 的时刻。
+/// 网络、解码这类后台线程的活是真的：有活在飞时每帧让出 2ms 给它们（「在飞」是进程级的，别的用例留下的也算，
+/// 所以只让、不延长循环 —— 从前按它延长，一个连接测试留在队列里的 close 事件让后面每次 settle 都多等 5 秒）
 pub(super) fn pump_until(e: &mut MiniEngine, ms: u64, mut cond: impl FnMut(&MiniEngine) -> bool) -> bool {
-    let start = Instant::now();
-    let mut t = 100u64;
-    while start.elapsed() < Duration::from_millis(ms) {
+    let mut passed = 0u64;
+    while passed <= ms {
+        let t = PUMP_MS.with(|c| {
+            let t = c.get() + 16;
+            c.set(t);
+            t
+        });
         e.pump(t);
         if cond(e) {
             return true;
         }
-        std::thread::sleep(Duration::from_millis(8));
-        t += 16;
+        if e.net_pending() {
+            std::thread::sleep(Duration::from_millis(2));
+        }
+        passed += 16;
     }
     false
 }

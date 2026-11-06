@@ -7,7 +7,7 @@
 <view class="grid">
   <view class="pl" wx:for="{{playlists}}" wx:key="id" data-id="{{item.id}}" bindtap="onPlaylist">
     <view class="pl-cover cover" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}})">
-      <text class="pl-plays">▶ {{item.plays}}</text>
+      <view class="pl-plays row"><view class="tri"><view class="tri-in"></view></view><text class="pl-plays-t">{{item.plays}}</text></view>
       <text class="cover-initial">{{item.name}}</text>
     </view>
     <text class="pl-name">{{item.desc}}</text>

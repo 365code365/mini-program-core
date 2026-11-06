@@ -227,10 +227,10 @@ fn fetch_bytes(url: &str) -> Option<Vec<u8>> {
     Some(buf)
 }
 
-/// 磁盘缓存目录。位于宿主指定的数据目录下（见 `crate::data_dir`），
+/// 磁盘缓存目录。位于宿主指定的数据目录下（见 `crate::sys::data_dir`），
 /// 开发期回落到仓库的 `target/`，**不污染 `sample/`**（示例是像素基线的输入）。
 fn cache_dir() -> std::path::PathBuf {
-    crate::data_dir::subdir("mini-imgcache")
+    crate::sys::data_dir::subdir("mini-imgcache")
 }
 
 /// URL -> 文件名。用稳定哈希，避免 URL 里的 `/`、query 变成非法路径。

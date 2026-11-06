@@ -1,7 +1,7 @@
 //! 填充规则：扫描线默认按 even-odd 配对交点（引擎自己的 UI 绘制一直是这样，逐字节基线以它为准）；
 //! `<canvas>` 的 `fill()` / `clip()` 按 HTML 默认的 **nonzero**（`fill('evenodd')` 才是 even-odd）。
 //!
-//! 为什么用线程局部开关而不是给 `Paint` 加字段：`Paint` 在 ffi.rs 里按结构体字面量构造，加字段要动一串
+//! 为什么用线程局部开关而不是给 `Paint` 加字段：`Paint` 在 ffi/canvas.rs 里按结构体字面量构造，加字段要动一串
 //! 不相干的代码；规则只有 canvas 那几处会改，开关包住那一次 `draw_path` 即可（[`scoped`]）。
 //!
 //! 为什么 nonzero 与 even-odd 在简单图形上逐字节相同：每条子扫描线先按 x 排好交点、**按同一 x 成组**累计环绕数；

@@ -1,6 +1,6 @@
 // 首页：轮播 + 三个榜单 tab，上拉分页、下拉刷新。数据全部来自 /api/demo/movies
 const { request } = require('../../utils/api.js');
-const app = getApp();
+const store = require('../../utils/store.js');
 const SIZE = 10;
 const TABS = [{ key: 'now', name: '正在热映' }, { key: 'coming', name: '即将上映' }, { key: 'top', name: '高分榜' }];
 
@@ -12,7 +12,7 @@ function decorate(m, i, tab) {
     releaseText: Number(d[1]) + '月' + Number(d[2]) + '日',
     year: d[0],
     rank: tab === 'top' ? i + 1 : 0,
-    wished: app.isWished(m.id)
+    wished: store.isWished(m.id)
   });
 }
 
@@ -31,7 +31,7 @@ Page({
   onShow() {
     // 从详情页回来，想看状态可能变了：只刷本地字段，不重新请求
     if (this.data.list.length) {
-      this.setData({ list: this.data.list.map((m) => Object.assign({}, m, { wished: app.isWished(m.id) })) });
+      this.setData({ list: this.data.list.map((m) => Object.assign({}, m, { wished: store.isWished(m.id) })) });
     }
   },
   onPullDownRefresh() {
@@ -88,7 +88,7 @@ Page({
   onWish(e) {
     const idx = e.currentTarget.dataset.index;
     const m = this.data.list[idx];
-    const on = app.toggleWish(m);
+    const on = store.toggleWish(m);
     this.setData({ ['list[' + idx + '].wished']: on });
     wx.showToast({ title: on ? '已加入想看' : '已取消想看', icon: 'none' });
   }

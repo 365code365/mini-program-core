@@ -33,9 +33,9 @@ pub fn load(src: &str) -> Result<Pcm, (i32, String)> {
         if !(200..300).contains(&status) {
             return Err((10002, format!("HTTP {status}")));
         }
-        (body, crate::wxfile::ext_of_url(src))
+        (body, crate::wxfs::wxfile::ext_of_url(src))
     } else {
-        let path = crate::assets::resolve(src).ok_or((10003, format!("file not found: {src}")))?;
+        let path = crate::app::assets::resolve(src).ok_or((10003, format!("file not found: {src}")))?;
         let bytes = std::fs::read(&path).map_err(|e| (10003, e.to_string()))?;
         let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
         (bytes, ext)

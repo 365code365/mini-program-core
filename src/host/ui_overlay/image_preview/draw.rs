@@ -5,7 +5,7 @@ use super::*;
 /// 画进输出缓冲（0x00RRGGBB，行宽 `w`）。没有预览时什么也不写
 pub fn render(buf: &mut [u32], w: u32, h: u32, sf: f32, text: Option<&TextRenderer>) {
     let Some(p) = with(|s| s.clone()) else { return };
-    let look = FRAME_LOOK.with(|f| f.take()).unwrap_or_else(|| look_at(&p, crate::frame_clock::now()));
+    let look = FRAME_LOOK.with(|f| f.take()).unwrap_or_else(|| look_at(&p, crate::sys::frame_clock::now()));
     LAST_SIZE.with(|s| s.set((w, h)));
     let (vw, keep) = (w as f32, ((1.0 - look.bg) * 256.0).round().clamp(0.0, 256.0) as u32);
     raster::darken(buf, keep);
@@ -13,7 +13,7 @@ pub fn render(buf: &mut [u32], w: u32, h: u32, sf: f32, text: Option<&TextRender
     let mut missing = false;
     let mut paused_video = false;
     let mut fit = None;
-    let view = p.zoom.at(crate::frame_clock::now());
+    let view = p.zoom.at(crate::sys::frame_clock::now());
     let lo = look.pos.floor() as isize;
     for i in [lo, lo + 1] {
         let Some(item) = (i >= 0).then(|| p.items.get(i as usize)).flatten() else { continue };

@@ -77,6 +77,8 @@ struct MiniAppWindow {
     /// 各 scroll-view 在上一次画进页面画布时的滚动位置。
     /// 位置变了的那几个就是这一帧的损伤区（见 `scroll_area_damage_rect`）。
     drawn_area_positions: HashMap<String, f32>,
+    /// 见过的字族登记代数（mini_render::text::faces::changed_since）
+    font_gen: u64,
     /// 触控板手势与 macOS 惯性阶段的区分（见 `events::wheel::MomentumFilter`）
     wheel_filter: app_window::events::wheel::MomentumFilter,
     /// 覆盖层上一次产生的事件绑定与遮挡区域。
@@ -170,9 +172,9 @@ struct MiniAppWindow {
 impl MiniAppWindow {
     fn new(app_path: Option<std::path::PathBuf>, backend: compositor::BackendStatus) -> Result<Self, String> {
         // 登记小程序根目录：页面/组件加载与包内资源（图片）解析都依赖它
-        let app_path = app_path.unwrap_or_else(|| mini_render::app_dir::default_app());
-        // 认不出包种类就报错，不再静默套默认配置（mini_render::app_profile）
-        mini_render::app_profile::require_mini_program(&app_path)?;
+        let app_path = app_path.unwrap_or_else(|| mini_render::app::dir::default_app());
+        // 认不出包种类就报错，不再静默套默认配置（mini_render::app::profile）
+        mini_render::app::profile::require_mini_program(&app_path)?;
         page_loader::set_app_path(app_path);
         
         let mut app = MiniApp::new(LOGICAL_WIDTH, LOGICAL_HEIGHT)?;
@@ -266,6 +268,7 @@ impl MiniAppWindow {
             last_animated_bounds: Vec::new(),
             fixed_layer_animates: false,
             drawn_area_positions: HashMap::new(),
+            font_gen: mini_render::text::faces::generation(),
             wheel_filter: Default::default(),
             cached_fixed_bindings: Vec::new(),
             cached_fixed_regions: Vec::new(),
@@ -423,13 +426,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             other => {
                 // 示例小程序收在 sample/ 下，但命令行习惯写裸名字（`sample-app`），
                 // 交给解析器统一处理裸名字 / `sample/xxx` / 任意路径三种写法
-                let path = mini_render::app_dir::resolve(other);
+                let path = mini_render::app::dir::resolve(other);
                 if path.is_dir() {
                     println!("📂 加载小程序: {}", path.display());
                     app_path = Some(path);
                 } else {
                     eprintln!("❌ 找不到小程序: {}", other);
-                    let apps = mini_render::app_dir::list_apps();
+                    let apps = mini_render::app::dir::list_apps();
                     if !apps.is_empty() {
                         eprintln!("   可用的示例：{}", apps.join("、"));
                     }
@@ -463,7 +466,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 小游戏包（game.json）走小游戏入口（app_window::game_run）；认不出的包在 MiniAppWindow::new 里报错
     #[cfg(feature = "game")]
     if let Some(p) = app_path.as_ref() {
-        if mini_render::app_profile::detect(p) == Ok(mini_render::app_profile::AppProfile::MiniGame) {
+        if mini_render::app::profile::detect(p) == Ok(mini_render::app::profile::AppProfile::MiniGame) {
             let run = app_window::game_run::GameRun {
                 frames: if frames > 0 { frames } else { 1 },
                 hz: game_hz.unwrap_or(60),

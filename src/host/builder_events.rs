@@ -10,7 +10,7 @@
 use crate::renderer::{BuilderWindow, WxmlRenderer};
 use crate::runtime::MiniApp;
 use crate::ui::interaction::InteractionManager;
-use serde_json::{json, Value};
+use serde_json::json;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
@@ -57,27 +57,30 @@ pub fn tick(app: &mut MiniApp, r: &WxmlRenderer, interaction: &InteractionManage
         }
         b.retain(|k, _| !k.starts_with(route) || seen.contains(k));
     });
+    // 一帧里进出窗口的项可能有十几个（快速甩动）：拼成一段脚本只 eval 一次。从前一项一次 eval，
+    // 每次都要 QuickJS 重新解析一段脚本，外加一趟 JSON 解析 / 再序列化。各项照旧按序派发、各自 try（__dispatchEvent 里）
+    let mut script = String::new();
     for (w, name, index) in &fires {
-        dispatch(app, w, name, *index, t_ms);
+        push_dispatch(&mut script, w, name, *index, t_ms);
+    }
+    if !script.is_empty() {
+        app.eval(&script).ok();
     }
     !fires.is_empty()
 }
 
-/// 组件事件：只触发构造器自己身上的绑定（不冒泡），target / currentTarget 都是构造器
-fn dispatch(app: &mut MiniApp, w: &BuilderWindow, name: &str, index: usize, t_ms: u64) {
+/// 组件事件：只触发构造器自己身上的绑定（不冒泡），target / currentTarget 都是构造器。
+/// 没有触点：`touches` / `changedTouches` 是空数组（在 JS 里换掉，省一趟 JSON 解析）
+fn push_dispatch(script: &mut String, w: &BuilderWindow, name: &str, index: usize, t_ms: u64) {
+    use std::fmt::Write;
     for b in w.binds.iter().filter(|b| b.event_type == name) {
         let node = super::touch::NodeInfo { id: &w.id, dataset: &b.data, offset_left: 0.0, offset_top: 0.0 };
-        let detail = json!({ "index": index });
-        let mut ev: Value = serde_json::from_str(&super::touch::event_json(name, &node, &node, (0.0, 0.0), 0, t_ms, detail)).unwrap_or(Value::Null);
-        if let Some(o) = ev.as_object_mut() {
-            o.insert("touches".into(), json!([]));
-            o.insert("changedTouches".into(), json!([]));
-        }
+        let ev = super::touch::event_json(name, &node, &node, (0.0, 0.0), 0, t_ms, json!({ "index": index }));
         let h = serde_json::to_string(&b.handler).unwrap_or_else(|_| "''".into());
         let o = serde_json::to_string(&b.owner).unwrap_or_else(|_| "''".into());
-        if std::env::var("MINI_SCROLL_LOG").is_ok() {
+        if crate::renderer::draw_profile::scroll_log() {
             eprintln!("📜 {} {name} -> {} index={index}", w.key, b.handler);
         }
-        app.eval(&format!("__dispatchEvent({h}, {ev}, {o})")).ok();
+        let _ = writeln!(script, "__dispatchEvent({h}, Object.assign({ev}, {{ touches: [], changedTouches: [] }}), {o});");
     }
 }

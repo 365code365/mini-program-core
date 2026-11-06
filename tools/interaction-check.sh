@@ -34,7 +34,7 @@ fail=0
 
 shot() { # 名字, 之后是 mini-app-window 的参数
     local name="$1"; shift
-    rm -rf target/mini-storage
+    rm -rf "${MINI_DATA_DIR:-target}/mini-storage"
     "$BIN" "$@" --snapshot "$OUT/$name" >/dev/null 2>&1 \
         || { echo "  ❌ $name 跑挂了：$BIN $* --snapshot $OUT/$name"; fail=1; return; }
     printf '  ✓ %s\n' "$name"
@@ -84,7 +84,7 @@ echo "共 $n 张"
 # 这套检查最大的风险不是失败，而是**没测到**：坐标落空一像素，面板就没弹出来，
 # 快照退化成普通页面，前后自然一致，于是全绿。damage-check 第一版就这么空转过。
 echo "### 空转守卫（确认面板/弹窗真的出现过）"
-rm -rf target/mini-storage
+rm -rf "${MINI_DATA_DIR:-target}/mini-storage"
 "$BIN" sample-app --route pages/showcase/showcase --settle 0 --time 2 --scroll 300 \
     --snapshot "$OUT/_plain" >/dev/null 2>&1
 guard() { # 名字, 图A, 图B, 最小差异百分比
@@ -108,7 +108,7 @@ guard picker_面板真的弹出 "$OUT/_plain/pages/showcase/showcase/rust.png" \
 guard modal_按钮真的命中 "$OUT/modal_press/pages/profile/profile/rust.png" \
     "$OUT/modal_confirm/pages/profile/profile/rust.png" 10
 # 点胶囊左半：关于弹窗 + 遮罩盖住整页（_plain 滚了 300，所以另拍一张不滚的作对照）
-rm -rf target/mini-storage
+rm -rf "${MINI_DATA_DIR:-target}/mini-storage"
 "$BIN" sample-app --route pages/showcase/showcase --settle 0 --time 2 --snapshot "$OUT/_plain_top" >/dev/null 2>&1
 guard capsule_关于真的弹出 "$OUT/_plain_top/pages/showcase/showcase/rust.png" \
     "$OUT/capsule_about/pages/showcase/showcase/rust.png" 20
@@ -142,7 +142,7 @@ guard_box slider_松手才发change "$OUT/slider_hold/$SC" "$OUT/slider_drag/$SC
 echo "### 手势归属断言（时间相关，比日志不比像素）"
 expect_log() { # 名字, 期望的正则, 之后是参数
     local name="$1" pat="$2"; shift 2
-    rm -rf target/mini-storage
+    rm -rf "${MINI_DATA_DIR:-target}/mini-storage"
     local log
     log=$(MINI_SCROLL_LOG=1 "$BIN" "$@" 2>&1)
     if grep -qE "$pat" <<<"$log"; then
@@ -179,7 +179,7 @@ if MINI_SCROLL_LOG=1 "$BIN" sample-app --route pages/showcase/showcase --settle 
 else
     printf '  ✓ %-26s 没有触发\n' 胶囊滑出去不算点
 fi
-rm -rf target/mini-storage target/_ia_probe
+rm -rf "${MINI_DATA_DIR:-target}/mini-storage" target/_ia_probe
 
 if [ -n "$CMP" ]; then
     echo "### 与 ${CMP} 逐像素对比"

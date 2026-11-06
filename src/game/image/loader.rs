@@ -121,8 +121,8 @@ fn read(src: &str, root: &Path) -> Result<Vec<u8>, String> {
     if src.starts_with("http://") || src.starts_with("https://") {
         return http(src);
     }
-    let path = if src.starts_with(crate::wxfile::SCHEME) {
-        crate::wxfile::to_path(src).ok_or_else(|| format!("无效的路径：{src}"))?
+    let path = if src.starts_with(crate::wxfs::wxfile::SCHEME) {
+        crate::wxfs::wxfile::to_path(src).ok_or_else(|| format!("无效的路径：{src}"))?
     } else {
         package_path(src, root).ok_or_else(|| format!("路径不能跑出包根：{src}"))?
     };

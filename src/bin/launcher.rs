@@ -344,7 +344,7 @@ fn now_ms() -> u64 {
 }
 
 /// 扫 `sample/`：**一层子目录里有 `app.json` 就算一个小程序**
-/// （与 `run.sh` / `mini_render::app_dir` 同一套规则，`_archive` 这类归档不会被算进来）
+/// （与 `run.sh` / `mini_render::app::dir` 同一套规则，`_archive` 这类归档不会被算进来）
 fn scan_sample_directory() -> Vec<MiniAppInfo> {
     let sample_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("sample");
     let mut apps = Vec::new();

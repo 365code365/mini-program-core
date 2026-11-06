@@ -47,6 +47,9 @@
   height: 200rpx;
   position: relative;
 }
+.pl-plays-t {
+  margin-left: 6rpx;
+}
 .pl-plays {
   position: absolute;
   right: 12rpx;

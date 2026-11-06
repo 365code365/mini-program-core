@@ -1,0 +1,35 @@
+<view class="state" wx:if="{{status === 'loading'}}"><text>加载中…</text></view>
+<view class="state" wx:elif="{{status === 'error'}}">
+  <view class="state-icon">!</view>
+  <text>影片信息加载失败</text>
+  <view class="retry" hover-class="retry-hover" bindtap="onRetry">重新加载</view>
+</view>
+<view class="state" wx:elif="{{status === 'coming'}}">
+  <view class="state-icon">♡</view>
+  <text>《{{m.title}}》{{m.releaseDate}} 上映，上映后才能写短评</text>
+  <view class="retry" hover-class="retry-hover" bindtap="onBack">返回</view>
+</view>
+<block wx:else>
+  <view class="card movie row">
+    <image class="poster" src="{{m.poster}}" mode="aspectFill"></image>
+    <view class="col flex1 info">
+      <text class="title">{{m.title}}</text>
+      <text class="sub line">{{m.genreText}}</text>
+      <text class="sub line">{{m.releaseDate}}</text>
+    </view>
+  </view>
+  <view class="card">
+    <text class="sec-t">给这部片打个分</text>
+    <view class="row stars-row">
+      <text wx:for="{{starList}}" wx:key="*this" class="big-star {{item <= star ? 'big-star-on' : ''}}" data-n="{{item}}" bindtap="onStar">★</text>
+      <text class="star-text">{{starText}}</text>
+    </view>
+    <textarea class="ta" placeholder="写下你的观后感（5~300 字）" placeholder-class="ph" maxlength="300" value="{{content}}" bindinput="onInput"></textarea>
+    <text class="count">{{content.length}}/300</text>
+  </view>
+  <view class="tips"><text class="sub">短评保存在本机，只有你自己能看到；在详情页和全部短评里会排在最前面</text></view>
+  <view class="btns">
+    <view class="btn btn-primary" hover-class="btn-hover" bindtap="onSubmit"><text>{{editing ? '保存修改' : '发表短评'}}</text></view>
+    <view wx:if="{{editing}}" class="del" bindtap="onDelete"><text>删除这条短评</text></view>
+  </view>
+</block>

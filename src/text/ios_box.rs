@@ -1,6 +1,6 @@
 //! iOS WebKit 的行盒与基线（宿主设 `MINI_LINE_BOX=ios@<屏幕倍率>`，iOS SDK 的 MiniFonts.swift 设）。
 //!
-//! 引擎默认的行高系数（text.rs 的 CJK / LATIN_LINE_HEIGHT_FACTOR）是在 macOS 的 Chrome 上量的。
+//! 引擎默认的行高系数（text/mod.rs 的 CJK / LATIN_LINE_HEIGHT_FACTOR）是在 macOS 的 Chrome 上量的。
 //! iOS 的 WebKit（微信 iOS 的 H5 / WebView 页面也是它）不一样：行盒由字体栈的第一个字体
 //! `-apple-system`（SF）决定，汉字行、西文行都一样。上 / 下伸 = ceil(字号 × 1950/2048) / ceil(字号 × 494/2048)，
 //! 单位 CSS 像素（SF UI 的 hhea 各自向上取整）。iPhone 17 Pro 模拟器上 10~20px 逐个字号量过，十个全中

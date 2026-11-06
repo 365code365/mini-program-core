@@ -378,21 +378,37 @@ fn web_e3_e4_phaser() {
     }
 }
 
-/// 示例游戏（含萌宠小岛、3D 跑酷、保龄球、2048……）在页面里起得来：5 秒内没有报错、画面不是一片黑
-#[test]
-fn web_示例游戏都起得来() {
+/// 示例游戏（含萌宠小岛、3D 跑酷、保龄球、2048……）在页面里起得来：画出东西（颜色数 > 20）之后再看 1.5 秒，没有报错。
+/// 一个游戏一个用例（从前十个游戏挤在一个用例里、每个死等 5 秒，这一个就 60~270 秒，并行也拆不开）
+fn boot_web(g: &str) {
     let _g = serial();
-    for g in ["play-2048", "play-flappy", "play-snake", "play-breakout", "play-jump", "play-fighter", "play-3d-stack", "play-3d-runner", "play-3d-bowling", "play-3d-island"] {
-        if !std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("sample-game").join(g).is_dir() { continue; }
-        let mut h = open!(WebHarness::open(g, WebOpts { query: "auto=1", ..Default::default() }));
-        h.sleep(5000);
-        let errs = h.errors();
-        assert!(errs.is_empty(), "{g} 报错：{errs:?}\n{:?}", h.log.lock().unwrap().iter().rev().take(20).collect::<Vec<_>>());
+    if !std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("sample-game").join(g).is_dir() {
+        return;
+    }
+    let Some(mut h) = WebHarness::open(g, WebOpts { query: "auto=1", ..Default::default() }) else { return };
+    let colors = |h: &mut WebHarness| {
         let png = h.chrome.screenshot().unwrap();
         let img = image::load_from_memory(&png).unwrap().to_rgb8();
-        let colors: std::collections::HashSet<_> = img.pixels().map(|p| p.0).collect();
-        assert!(colors.len() > 20, "{g} 画面颜色数 {}（黑屏？）", colors.len());
-        eprintln!("✓ {g}：{} 种颜色", colors.len());
+        img.pixels().map(|p| p.0).collect::<std::collections::HashSet<_>>().len()
+    };
+    let t0 = std::time::Instant::now();
+    let mut n = colors(&mut h);
+    while n <= 20 && t0.elapsed().as_secs() < 10 {
+        h.sleep(250);
+        n = colors(&mut h);
     }
+    h.sleep(1500);
+    let errs = h.errors();
+    assert!(errs.is_empty(), "{g} 报错：{errs:?}\n{:?}", h.log.lock().unwrap().iter().rev().take(20).collect::<Vec<_>>());
+    assert!(n > 20, "{g} 画面颜色数 {n}（黑屏？）");
+}
+macro_rules! boot_web_cases {
+    ($($f:ident => $g:literal),* $(,)?) => { $( #[test] fn $f() { boot_web($g) } )* };
+}
+boot_web_cases! {
+    web_boot_2048 => "play-2048", web_boot_flappy => "play-flappy", web_boot_snake => "play-snake",
+    web_boot_breakout => "play-breakout", web_boot_jump => "play-jump", web_boot_fighter => "play-fighter",
+    web_boot_3d_stack => "play-3d-stack", web_boot_3d_runner => "play-3d-runner", web_boot_3d_bowling => "play-3d-bowling",
+    web_boot_3d_island => "play-3d-island",
 }
 

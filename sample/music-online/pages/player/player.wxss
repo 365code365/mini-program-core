@@ -26,10 +26,14 @@ page { background: #1d1b26; }
 .ctrl { width: 96rpx; height: 96rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
 .ctrl-s { font-size: 44rpx; color: rgba(255, 255, 255, 0.85); }
 .pv-bar, .nx-bar { width: 6rpx; height: 34rpx; background: #fff; border-radius: 2rpx; }
-.pv-tri { width: 0; height: 0; border-top: 18rpx solid transparent; border-bottom: 18rpx solid transparent; border-right: 28rpx solid #fff; }
-.nx-tri { width: 0; height: 0; border-top: 18rpx solid transparent; border-bottom: 18rpx solid transparent; border-left: 28rpx solid #fff; }
+/* 三角：border 透明边拼的三角引擎画不出来（画成方块），改成裁剪容器里放一个旋转 45° 的方块，只露出一半 */
+.pv-tri { position: relative; width: 27rpx; height: 36rpx; overflow: hidden; flex-shrink: 0; }
+.pv-tri-in { position: absolute; left: 14.27rpx; top: 5.27rpx; width: 25.46rpx; height: 25.46rpx; background: #fff; transform: scaleX(1.5) rotate(45deg); }
+.nx-tri { position: relative; width: 27rpx; height: 36rpx; overflow: hidden; flex-shrink: 0; }
+.nx-tri-in { position: absolute; left: -12.73rpx; top: 5.27rpx; width: 25.46rpx; height: 25.46rpx; background: #fff; transform: scaleX(1.5) rotate(45deg); }
 .play { width: 132rpx; height: 132rpx; border-radius: 66rpx; border: 4rpx solid rgba(255, 255, 255, 0.9); display: flex; align-items: center; justify-content: center; }
-.tri { width: 0; height: 0; border-top: 24rpx solid transparent; border-bottom: 24rpx solid transparent; border-left: 38rpx solid #fff; margin-left: 10rpx; }
+.tri { position: relative; width: 36rpx; height: 48rpx; overflow: hidden; flex-shrink: 0; margin-left: 10rpx; }
+.tri-in { position: absolute; left: -16.97rpx; top: 7.03rpx; width: 33.94rpx; height: 33.94rpx; background: #fff; transform: scaleX(1.5) rotate(45deg); }
 .pause { display: flex; flex-direction: row; }
 .pbar { width: 10rpx; height: 44rpx; background: #fff; border-radius: 4rpx; margin: 0 8rpx; }
 .tip { position: relative; font-size: 22rpx; color: rgba(255, 255, 255, 0.5); margin-top: 24rpx; }
@@ -44,3 +48,4 @@ page { background: #1d1b26; }
 .q-name { font-size: 28rpx; color: #1f2329; }
 .q-artist { font-size: 24rpx; color: #9aa0ab; }
 .q-on .q-name, .q-on .q-artist { color: #f04c4c; }
+.mode-g { width: 52rpx; height: 52rpx; line-height: 48rpx; text-align: center; border-radius: 26rpx; border: 2rpx solid rgba(255, 255, 255, 0.7); color: #fff; font-size: 24rpx; box-sizing: border-box; }

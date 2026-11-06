@@ -258,7 +258,7 @@ fn slot内容的事件绑定归使用方() {
 /// 像素：组件 + slot 与「手工展开」的等价页面逐字节一致（slot 内容只用页面样式）
 #[test]
 fn 组件加slot与手工展开逐字节一致() {
-    let comp_css = crate::using_components::scope_component_wxss(
+    let comp_css = crate::app::using_components::scope_component_wxss(
         ":host{display:block}.box{background-color:#eeeeee;padding:8px}.head{height:20px;background-color:#0088ff}",
         "my-panel",
     );
@@ -291,7 +291,7 @@ fn 组件加slot与手工展开逐字节一致() {
 /// 页面用「宿主的 class + 后代」选 slot 内容仍然有效
 #[test]
 fn 组件样式不命中slot内容() {
-    let comp_css = crate::using_components::scope_component_wxss(".t{height:40px}", "my-panel");
+    let comp_css = crate::app::using_components::scope_component_wxss(".t{height:40px}", "my-panel");
     let css = format!(".pp .s{{height:15px}}\n{comp_css}");
     let ss = WxssParser::new(&css).parse().unwrap_or_default();
     let mut r = WxmlRenderer::new_with_scale(ss, 375.0, 667.0, 1.0);

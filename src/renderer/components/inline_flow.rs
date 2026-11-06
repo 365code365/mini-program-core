@@ -165,7 +165,7 @@ fn push_text(text: &str, st: &NodeStyle, element: bool, ctx: &mut ComponentConte
         return;
     }
     let sf = ctx.scale_factor;
-    let family = crate::text_family::renderer_for_family(st.font_family.as_deref());
+    let family = crate::text::family::renderer_for_family(st.font_family.as_deref());
     let measure = family.as_deref().or(MEASURE.as_deref());
     let font_px = st.font_size * sf;
     let ls = st.letter_spacing * sf;

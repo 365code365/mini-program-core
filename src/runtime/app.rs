@@ -1,7 +1,7 @@
 //! 小程序应用
 
 use crate::js::{JsRuntime, MiniAppApi, JsBridge, BridgeEvent};
-use crate::event::Event;
+use super::event::Event;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::collections::HashMap;
@@ -320,7 +320,7 @@ impl MiniApp {
 
     /// `wx.loadFontFace` 有结论了：回给逻辑层（id 为 0 的是 `@font-face` 自己登记的，不回调）
     fn process_font_loads(&mut self) {
-        for (id, family, r) in crate::text_faces::take_completed() {
+        for (id, family, r) in crate::text::faces::take_completed() {
             if id == 0 {
                 continue;
             }
@@ -341,7 +341,7 @@ impl MiniApp {
     /// 是否有网络请求在飞或刚回来（宿主据此决定要不要继续出帧等回调）。
     /// 下载中的字体也算（下完要有一帧去回调、重排）
     pub fn has_pending_network(&self) -> bool {
-        crate::net::has_pending(self.bridge.net_owner()) || crate::text_faces::has_pending() || self.has_pending_io()
+        crate::net::has_pending(self.bridge.net_owner()) || crate::text::faces::has_pending() || self.has_pending_io()
     }
 
     /// 逻辑层交给宿主、还没办完的活，宿主据此续帧：

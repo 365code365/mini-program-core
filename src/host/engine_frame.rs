@@ -21,11 +21,30 @@ impl MiniEngine {
         if now_ms > 0 {
             let wall = std::time::Instant::now();
             self.host_clock = Some((now_ms, wall));
-            // 这一帧的动画按宿主给的 vsync 时刻取样（frame_clock.rs）：画的时刻相对 vsync 忽早忽晚，
-            // 按画的那一刻取样的话屏上每帧挪的距离忽大忽小
-            crate::frame_clock::set(Some(self.frame_anchor.frame_instant(now_ms, wall)));
+            if let Some((origin, last, acc)) = self.virtual_origin.as_mut() {
+                // 虚拟时钟（engine_life.rs `use_virtual_clock`）：定时器与动画都按宿主给的毫秒走。
+                // 只累加往前走的那部分（测试里各段 pump 的时刻各写各的，往回跳的一段当作没过时间）
+                if let Some(l) = *last {
+                    *acc += now_ms.saturating_sub(l);
+                }
+                *last = Some(now_ms);
+                let since = *acc;
+                let at = *origin + std::time::Duration::from_millis(since);
+                self.app.set_timer_clock(Some(at));
+                self.app.eval(&format!("globalThis.__vclock={since}")).ok();
+                crate::sys::frame_clock::set(Some(at));
+            } else {
+                // 同一条线程上前一台引擎开过虚拟时钟（测试一个接一个跑在同一条线程上）：这台不是，收掉
+                crate::sys::frame_clock::set_virtual(None);
+                // 这一帧的动画按宿主给的 vsync 时刻取样（sys/frame_clock.rs）：画的时刻相对 vsync 忽早忽晚，
+                // 按画的那一刻取样的话屏上每帧挪的距离忽大忽小
+                crate::sys::frame_clock::set(Some(self.frame_anchor.frame_instant(now_ms, wall)));
+            }
         } else {
-            crate::frame_clock::set(None);
+            if self.virtual_origin.is_none() {
+                crate::sys::frame_clock::set_virtual(None);
+            }
+            crate::sys::frame_clock::set(None);
         }
         let now = if now_ms > 0 { now_ms } else { self.mono_ms() };
         let dt = if self.last_pump_ms == 0 {
@@ -96,7 +115,7 @@ impl MiniEngine {
         }
         // 新字体登记好了（@font-face / wx.loadFontFace）：文字宽度变了，整棵树重排
         // textarea auto-height 的行数变了（components/input/auto_height.rs）：同样整树重排一次
-        if crate::text_faces::take_changed() | crate::renderer::components::auto_height::take_relayout() {
+        if crate::text::faces::changed_since(&mut self.font_gen) | crate::renderer::components::auto_height::take_relayout() {
             for r in [self.renderer.as_mut(), self.tabbar_renderer.as_mut()].into_iter().flatten() {
                 r.invalidate_layout();
             }
@@ -295,7 +314,7 @@ impl MiniEngine {
                         // 清屏与裁剪落在同一组整像素上（geometry::snap_out：从前边在半像素上时
                         // 多清一行底色、没人重画，快速滑动时一条横线）
                         let (cw, ch) = (canvas.read().width(), canvas.read().height());
-                        let rect = crate::geometry::snap_out(rect, cw, ch);
+                        let rect = crate::gfx::geometry::snap_out(rect, cw, ch);
                         // 声明只写了这块（GPU 镜像按它补传），再清 + 裁剪着画
                         let canvas = canvas.write_rect(rect);
                         canvas.clear_area(&rect, bg);

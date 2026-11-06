@@ -30,7 +30,7 @@ pub fn intrinsic_size(src: &str) -> Option<(u32, u32)> {
         }
     }
     // SVG 没有位图文件头：解析一次拿 width / height（只解析不栅格化，svg.rs）。比例与栅格（×2）相同
-    let v = crate::assets::resolve(src)
+    let v = crate::app::assets::resolve(src)
         .and_then(|p| image::image_dimensions(&p).ok().or_else(|| super::svg::natural_size_of_file(src, &p)))
         .filter(|(w, h)| *w > 0 && *h > 0);
     if let Ok(mut t) = headers().lock() {

@@ -73,9 +73,9 @@ impl GameEngine {
             changed = true;
         }
         // 操作菜单的起止时刻、命中都在 frame_clock 上取：一律按游戏这一帧的时刻（固定时钟下逐帧可复现）
-        crate::frame_clock::set(self.overlay.at);
+        crate::sys::frame_clock::set(self.overlay.at);
         changed |= ui_overlay::action_sheet::take_requests(&mut self.app);
-        crate::frame_clock::set(None);
+        crate::sys::frame_clock::set(None);
         let anim = ui_overlay::action_sheet::animating()
             || ui_overlay::tip_needs_recompose(self.overlay.secs, &self.overlay.toast, &self.overlay.loading);
         let visible = self.overlay.visible();
@@ -124,19 +124,19 @@ impl GameEngine {
         let rows = (0, h);
         let o = &self.overlay;
         // 按这一帧的时刻画（操作菜单的滑入动画在 frame_clock 上取样），画完还原
-        crate::frame_clock::set(o.at);
+        crate::sys::frame_clock::set(o.at);
         ui_overlay::render_sheet_overlays(&mut buf, w, h, sf, tr, rows);
         ui_overlay::render_ui_overlay(&mut buf, w, h, sf, o.secs, &o.toast, &o.loading, &o.modal, tr, rows);
-        crate::frame_clock::set(None);
+        crate::sys::frame_clock::set(None);
         u32_to_rgba(&buf, out);
         (w, h)
     }
 
     /// 触摸先给覆盖层（游戏坐标）。返回 true = 这一下归覆盖层，不进游戏
     pub(super) fn overlay_touch(&mut self, phase: i32, id: i32, x: f32, y: f32) -> bool {
-        crate::frame_clock::set(self.overlay.at);
+        crate::sys::frame_clock::set(self.overlay.at);
         let r = self.overlay_touch_inner(phase, id, x, y);
-        crate::frame_clock::set(None);
+        crate::sys::frame_clock::set(None);
         r
     }
 

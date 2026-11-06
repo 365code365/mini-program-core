@@ -309,7 +309,7 @@
     'dev.m5.h': '复杂页面超 8ms 的帧',
     'dev.m5.p': '渐变 + transform 页面慢拖。引擎线程只在交互或连续出帧时绑大核，停 800ms 就放开。',
     'dev.m6.h': 'setData 后的布局重建',
-    'dev.m6.p': '最慢那几帧里的典型值。增量布局：没变的子树连同 taffy 节点与布局缓存原样留着，只重建变了的，列表增删也一样。整套测试每次增量后都与整棵重建逐节点比过：0 处不一致。',
+    'dev.m6.p': '最慢那几帧里的典型值。增量布局：没变的子树连同 taffy 节点与布局缓存原样留着，只重建变了的，列表增删也一样。整套测试每次增量后都与整棵重建逐节点比过：0 处不一致。桌面上，200 行的列表改一行后重排：taffy 的量尺寸缓存不再自己挤掉自己之后，1.38ms → 0.18ms。',
     'dev.m7.h': '原生 Android View',
     'dev.m7.p': '同一个引擎库、同样的拖动：视图不再把每帧拷进 Bitmap 再在 <code>onDraw</code> 里画，改由引擎线程直接画进自己的 <code>SurfaceView</code>。首页慢拖：7.1% → 0.4%。',
     'dev.m8.h': '拖动时地图与页面的错位',
@@ -412,7 +412,7 @@
     'perf.real.r3v': '商城闭环：购物车 → 下单 → 订单 / 物流，跨页状态走 storage',
     'perf.real.r4k': '<code>news-app</code><small>6 页</small>',
     'perf.real.r4v': '资讯闭环：频道横滑、字号即时生效、评论、收藏持久化',
-    'perf.real.r5k': '演示目录<small>34 页</small>',
+    'perf.real.r5k': '演示目录<small>36 页</small>',
     'perf.real.r5v': 'Flutter 示例、原生 Android 示例与原生 iOS 示例共用：含 Skyline 组件在内的组件目录、新补的 API、模拟 HTTP 信息流、瓦片地图、带本地 H5 页的 web-view、live-player 与同层渲染的视频',
 
     /* ── 关键取舍 ── */
@@ -586,7 +586,7 @@
     'stack.reg.r7v': '34/34 逐字节一致',
     'stack.reg.r8k': 'Flutter 插件测试',
     'stack.reg.r6k': '全量回归',
-    'stack.reg.r6v': '<code>bash tools/regress-async.sh</code>，约 5 分钟，结果按时间戳落成批次',
+    'stack.reg.r6v': '<code>bash tools/regress-async.sh</code>，约 4 分钟，结果按时间戳落成批次',
     'stack.todo.h': '最大的三件待办',
     'stack.todo.1': '<b>iPhone 真机上的 <code>&lt;camera&gt;</code> 与 <code>&lt;live-pusher&gt;</code></b> —— iOS 那份（AVCaptureSession、VideoToolbox、RTMP）编得过、模拟器上没有相机那条路走得通，但还只在 Android 真机上跑过',
     'stack.todo.2': '<b>增量布局剩下的缺口</b> —— 带 transform / 动画的子树整段重建，内容变矮仍出整帧',

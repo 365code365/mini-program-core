@@ -15,8 +15,8 @@ use crate::host::MiniEngine;
 /// 对方写的购物车/设置，页面内容随之变化 —— 表现是「单独跑必过、全量跑偶发失败」。
 pub(crate) fn engine_in(route: &str, slot: &str) -> super::LockedEngine {
     let g = super::LockedEngine::lock();
-    let root = crate::app_dir::resolve("sample-app");
-    let data = crate::data_dir::subdir(&format!("engine-input-tests/{slot}"));
+    let root = crate::app::dir::resolve("sample-app");
+    let data = crate::sys::data_dir::subdir(&format!("engine-input-tests/{slot}"));
     std::fs::remove_dir_all(&data).ok();
     let mut e = MiniEngine::new(
         &root.to_string_lossy(),

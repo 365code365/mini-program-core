@@ -12,7 +12,7 @@
 
 use crate::parser::template::WXS_BUNDLE_ATTR;
 use crate::parser::wxml::{WxmlNode, WxmlNodeType};
-use crate::using_components::normalize;
+use crate::app::using_components::normalize;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 

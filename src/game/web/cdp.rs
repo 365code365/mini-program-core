@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 use tungstenite::{Message, WebSocket};
 
 pub struct Chrome {
-    child: Child,
+    proc: Proc,
     ws: WebSocket<TcpStream>,
     next: u64,
     profile: PathBuf,
@@ -34,13 +34,40 @@ pub fn chrome_path() -> Option<PathBuf> {
     })
 }
 
+/// 起起来的 Chrome，外面套一层看门狗 shell：shell 读自己的标准输入，我们这边一退（正常放掉、panic、被 SIGKILL）
+/// 管道就断，shell 杀掉 Chrome 再退。从前直接起 Chrome、只在 `Drop` 里 kill：起到一半出错（20 秒没起来）的那份没人管，
+/// 测试进程被超时杀掉的那份也没人管 —— 2026-11-06 机器上攒了 275 个孤儿 Chrome，后面的测试全被它们拖慢、超时
+struct Proc {
+    shell: Child,
+    stdin: Option<std::process::ChildStdin>,
+}
+
+impl Drop for Proc {
+    fn drop(&mut self) {
+        drop(self.stdin.take());
+        let t0 = Instant::now();
+        while t0.elapsed() < Duration::from_secs(3) {
+            if matches!(self.shell.try_wait(), Ok(Some(_))) {
+                return;
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        let _ = self.shell.kill();
+        let _ = self.shell.wait();
+    }
+}
+
+const WATCHDOG: &str = r#""$@" & c=$!; cat >/dev/null; kill $c 2>/dev/null; sleep 1; kill -9 $c 2>/dev/null; wait $c 2>/dev/null; exit 0"#;
+
 impl Chrome {
     /// 起一个 headless Chrome，视口 `w × h`（CSS 像素）、`dpr` 倍，打开触摸模拟（移动端页面）
     pub fn launch(w: u32, h: u32, dpr: f32) -> Result<Self, String> {
         let exe = chrome_path().ok_or("找不到 Chrome（设 MINI_CHROME=<路径>）")?;
         let profile = std::env::temp_dir().join(format!("wg-chrome-{}-{}", std::process::id(), rand_tag()));
         std::fs::create_dir_all(&profile).map_err(|e| e.to_string())?;
-        let child = Command::new(exe)
+        let mut shell = Command::new("/bin/sh")
+            .args(["-c", WATCHDOG, "sh"])
+            .arg(exe)
             .args([
                 "--headless=new", "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check",
                 "--autoplay-policy=no-user-gesture-required", "--use-angle=swiftshader", "--enable-unsafe-swiftshader",
@@ -53,10 +80,13 @@ impl Chrome {
             .arg(format!("--user-data-dir={}", profile.display()))
             .arg(format!("--window-size={w},{h}"))
             .arg("about:blank")
+            .stdin(Stdio::piped())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
             .map_err(|e| format!("起 Chrome 失败：{e}"))?;
+        // 从这里起任何一条出错的路都会放掉 proc，看门狗跟着杀掉 Chrome
+        let proc = Proc { stdin: shell.stdin.take(), shell };
         // DevToolsActivePort：第一行端口
         let port_file = profile.join("DevToolsActivePort");
         let t0 = Instant::now();
@@ -79,7 +109,7 @@ impl Chrome {
             .to_string();
         let stream = TcpStream::connect(("127.0.0.1", port)).map_err(|e| e.to_string())?;
         let (ws, _) = tungstenite::client(url.as_str(), stream).map_err(|e| e.to_string())?;
-        let mut c = Self { child, ws, next: 0, profile };
+        let mut c = Self { proc, ws, next: 0, profile };
         c.send("Emulation.setDeviceMetricsOverride", json!({ "width": w, "height": h, "deviceScaleFactor": dpr, "mobile": true }))?;
         c.send("Emulation.setTouchEmulationEnabled", json!({ "enabled": true, "maxTouchPoints": 10 }))?;
         Ok(c)
@@ -142,8 +172,9 @@ impl Chrome {
 
 impl Drop for Chrome {
     fn drop(&mut self) {
-        let _ = self.child.kill();
-        let _ = self.child.wait();
+        // 先停 Chrome（Proc 的 Drop 在这个函数返回之后才跑，profile 目录要等 Chrome 退了再删）
+        drop(self.proc.stdin.take());
+        let _ = self.proc.shell.wait();
         let _ = std::fs::remove_dir_all(&self.profile);
     }
 }

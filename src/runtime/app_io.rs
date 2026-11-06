@@ -9,9 +9,9 @@ impl MiniApp {
     /// WebSocket 与音频：取事件回给 JS（`__resolveSocket` / `__resolveAudio`）
     pub(super) fn process_io_events(&mut self) {
         crate::audio_ctx::tick();
-        let sockets = crate::websocket::take_events();
+        let sockets = crate::net::websocket::take_events();
         let audio = crate::audio_ctx::take_events();
-        let raw = crate::net_socket::take_events();
+        let raw = crate::net::socket::take_events();
         if sockets.is_empty() && audio.is_empty() && raw.is_empty() {
             return;
         }
@@ -41,24 +41,24 @@ impl MiniApp {
 
     /// 有连接开着、有音频在播 / 在加载：宿主据此续帧（与「有请求在飞」同一个判据）
     pub(super) fn has_pending_io(&self) -> bool {
-        crate::websocket::has_pending() || crate::audio_ctx::has_pending() || crate::net_socket::has_pending()
+        crate::net::websocket::has_pending() || crate::audio_ctx::has_pending() || crate::net::socket::has_pending()
     }
 
-    /// wx.request / downloadFile 的过程事件（net_stream.rs）：`__netEvent(id, kind, json)`
+    /// wx.request / downloadFile 的过程事件（net/stream.rs）：`__netEvent(id, kind, json)`
     pub(super) fn process_net_events(&mut self) {
-        let evs = crate::net_stream::take_events(self.bridge.net_owner());
+        let evs = crate::net::stream::take_events(self.bridge.net_owner());
         if evs.is_empty() {
             return;
         }
         let rt = self.runtime.lock().unwrap();
         for (id, e) in evs {
             let (kind, payload) = match e {
-                crate::net_stream::NetEvent::Headers { status, headers } => {
+                crate::net::stream::NetEvent::Headers { status, headers } => {
                     let h: serde_json::Map<String, serde_json::Value> = headers.into_iter().map(|(k, v)| (k, serde_json::Value::String(v))).collect();
                     ("headers", serde_json::json!({ "statusCode": status, "header": h }))
                 }
-                crate::net_stream::NetEvent::Chunk => ("chunk", serde_json::Value::Null),
-                crate::net_stream::NetEvent::Progress { written, expected } => ("progress", serde_json::json!({ "written": written, "expected": expected })),
+                crate::net::stream::NetEvent::Chunk => ("chunk", serde_json::Value::Null),
+                crate::net::stream::NetEvent::Progress { written, expected } => ("progress", serde_json::json!({ "written": written, "expected": expected })),
             };
             let code = format!("typeof __netEvent === 'function' && __netEvent({id}, {}, {})", serde_json::json!(kind), serde_json::json!(payload.to_string()));
             if let Err(e) = rt.eval(&code) {

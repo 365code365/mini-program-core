@@ -41,7 +41,7 @@ static CACHE: once_cell::sync::Lazy<Mutex<Cache>> = once_cell::sync::Lazy::new(|
 
 /// 本地文件路径与它的 (长度, 修改时间)
 fn local_path(src: &str) -> Option<std::path::PathBuf> {
-    crate::assets::resolve(src)
+    crate::app::assets::resolve(src)
         .filter(|p| p.is_file())
         .or_else(|| Some(std::path::PathBuf::from(src)).filter(|p| p.is_file()))
         .or_else(|| Some(std::path::PathBuf::from(src.trim_start_matches('/'))).filter(|p| p.is_file()))

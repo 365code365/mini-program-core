@@ -16,7 +16,8 @@ Page({
     toView: '',
     showQueue: false,
     queue: [],
-    curIndex: -1
+    curIndex: -1,
+    sleepText: ''
   },
   onLoad(q) {
     // ?id=3：直接放某一首（队列为全部单曲）
@@ -37,7 +38,7 @@ Page({
   },
   apply(snap) {
     const s = snap.song
-    const patch = { playing: snap.playing, mode: snap.mode, modeText: snap.modeText, modeIcon: snap.modeIcon, curIndex: snap.index }
+    const patch = { playing: snap.playing, mode: snap.mode, modeText: snap.modeText, modeIcon: snap.modeIcon, curIndex: snap.index, sleepText: snap.sleepText }
     if (!s) return this.setData(patch)
     if (!this.data.song || this.data.song.id !== s.id) {
       // 换歌：歌词、收藏状态、队列跟着换
@@ -80,6 +81,17 @@ Page({
   onMode() {
     const m = P.cycleMode()
     wx.showToast({ title: m.text, icon: 'none' })
+  },
+  // 定时关闭：几分钟后 / 播完本首 暂停
+  onSleep() {
+    const opts = [15, 30, 60, -1, 0]
+    wx.showActionSheet({
+      itemList: ['15 分钟后', '30 分钟后', '60 分钟后', '播完本首', '取消定时'],
+      success: r => {
+        const t = P.setSleep(opts[r.tapIndex])
+        wx.showToast({ title: t ? t.replace('关闭', '暂停播放') : '已取消定时关闭', icon: 'none' })
+      }
+    })
   },
   onFav() {
     if (!this.data.song) return

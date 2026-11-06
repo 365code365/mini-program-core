@@ -132,7 +132,7 @@ impl DevServer {
         let game: Shared = Arc::new(Mutex::new(game));
         let on_event: Arc<dyn Fn(&str) + Send + Sync> = Arc::new(on_event);
         let renderer = if plus {
-            Some(Arc::new(Renderer::spawn(spec.0, Some(crate::data_dir::data_dir().to_string_lossy().into_owned()), spec.1, game.clone(), on_event.clone())?))
+            Some(Arc::new(Renderer::spawn(spec.0, Some(crate::sys::data_dir::data_dir().to_string_lossy().into_owned()), spec.1, game.clone(), on_event.clone())?))
         } else {
             None
         };

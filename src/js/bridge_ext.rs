@@ -5,7 +5,7 @@
 //! | `__native_random(n)` | `wx.getRandomValues`、`UserCryptoManager.getRandomValues`（base64） |
 //! | `__native_local_ip()` | `wx.getLocalIPAddress` |
 //! | `__native_storage_keys()` / `__native_storage_size()` | `getStorageInfo(Sync)`：全部键（含上次会话存下、本次还没读过的）与字节数 |
-//! | `__native_tcp_*` / `__native_udp_*` / `__native_net_close` | `wx.createTCPSocket` / `wx.createUDPSocket`（`crate::net_socket`） |
+//! | `__native_tcp_*` / `__native_udp_*` / `__native_net_close` | `wx.createTCPSocket` / `wx.createUDPSocket`（`crate::net::socket`） |
 //! | `__native_video_info(src)` | `wx.getVideoInfo`（`crate::wxfs::video_info`） |
 //! | `__native_canvas_offscreen(key, w, h)` | `wx.createOffscreenCanvas`：没有 `<canvas>` 元素也要有后备缓冲 |
 //!
@@ -23,7 +23,7 @@ pub(super) fn register(rt: &JsRuntime, storage: Arc<Mutex<HashMap<String, String
             Err(_) => String::new(),
         }
     })?;
-    rt.register_function("__native_local_ip", move |_| crate::net_socket::local_ip().unwrap_or_default())?;
+    rt.register_function("__native_local_ip", move |_| crate::net::socket::local_ip().unwrap_or_default())?;
 
     let s = storage.clone();
     rt.register_function("__native_storage_keys", move |_| {
@@ -38,37 +38,37 @@ pub(super) fn register(rt: &JsRuntime, storage: Arc<Mutex<HashMap<String, String
         s.lock().unwrap().iter().map(|(k, v)| k.len() + v.len()).sum::<usize>().to_string()
     })?;
 
-    // ── TCP：(id, address, port, timeoutMs)；写入走 bin_stash.rs 的 __native_tcp_write_bin ──
+    // ── TCP：(id, address, port, timeoutMs)；写入走 net/bin_stash.rs 的 __native_tcp_write_bin ──
     rt.register_function("__native_tcp_connect", move |args| {
         let a = |i: usize| args.get(i).cloned().unwrap_or_default();
-        crate::net_socket::tcp_connect(a(0).parse().unwrap_or(0), &a(1), a(2).parse().unwrap_or(0), a(3).parse().unwrap_or(2000))
+        crate::net::socket::tcp_connect(a(0).parse().unwrap_or(0), &a(1), a(2).parse().unwrap_or(0), a(3).parse().unwrap_or(2000))
             .err()
             .unwrap_or_default()
     })?;
     rt.register_function("__native_net_close", move |args| {
-        crate::net_socket::close(args.first().and_then(|s| s.parse().ok()).unwrap_or(0)).err().unwrap_or_default()
+        crate::net::socket::close(args.first().and_then(|s| s.parse().ok()).unwrap_or(0)).err().unwrap_or_default()
     })?;
     // ── UDP：bind (id, port, ipv6) → 端口或 "err:…"；send (id, addr, port, b64, broadcast) ──
     rt.register_function("__native_udp_bind", move |args| {
         let a = |i: usize| args.get(i).cloned().unwrap_or_default();
-        match crate::net_socket::udp_bind(a(0).parse().unwrap_or(0), a(1).parse().unwrap_or(0), a(2) == "1") {
+        match crate::net::socket::udp_bind(a(0).parse().unwrap_or(0), a(1).parse().unwrap_or(0), a(2) == "1") {
             Ok(p) => p.to_string(),
             Err(e) => format!("err:{e}"),
         }
     })?;
     rt.register_function("__native_udp_connect", move |args| {
         let a = |i: usize| args.get(i).cloned().unwrap_or_default();
-        crate::net_socket::udp_connect(a(0).parse().unwrap_or(0), &a(1), a(2).parse().unwrap_or(0)).err().unwrap_or_default()
+        crate::net::socket::udp_connect(a(0).parse().unwrap_or(0), &a(1), a(2).parse().unwrap_or(0)).err().unwrap_or_default()
     })?;
     rt.register_function("__native_udp_ttl", move |args| {
         let a = |i: usize| args.get(i).cloned().unwrap_or_default();
-        crate::net_socket::udp_set_ttl(a(0).parse().unwrap_or(0), a(1).parse().unwrap_or(64)).err().unwrap_or_default()
+        crate::net::socket::udp_set_ttl(a(0).parse().unwrap_or(0), a(1).parse().unwrap_or(64)).err().unwrap_or_default()
     })?;
 
     // createBufferURL：(base64) → wxfile://tmp/…（扩展名按内容认，`<image>` / `<video>` 照常解码）
     rt.register_function("__native_temp_write", move |args| {
         let bytes = crate::wxfs::codec::unb64(args.first().map(|s| s.as_str()).unwrap_or("")).unwrap_or_default();
-        let (uri, real) = crate::wxfile::new_temp(sniff_ext(&bytes));
+        let (uri, real) = crate::wxfs::wxfile::new_temp(sniff_ext(&bytes));
         if let Some(dir) = real.parent() {
             std::fs::create_dir_all(dir).ok();
         }
@@ -81,7 +81,7 @@ pub(super) fn register(rt: &JsRuntime, storage: Arc<Mutex<HashMap<String, String
     rt.register_function("__native_temp_remove", move |args| {
         let uri = args.first().map(|s| s.as_str()).unwrap_or("");
         if uri.starts_with("wxfile://tmp/") {
-            if let Some(p) = crate::wxfile::to_path(uri) {
+            if let Some(p) = crate::wxfs::wxfile::to_path(uri) {
                 std::fs::remove_file(p).ok();
             }
         }

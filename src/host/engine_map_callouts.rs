@@ -14,7 +14,7 @@ pub(super) fn export(r: &mut WxmlRenderer, key: &str, dpr: f32) -> Value {
     if list.is_empty() {
         return Value::Array(Vec::new());
     }
-    let dir = crate::wxfile::temp_dir();
+    let dir = crate::wxfs::wxfile::temp_dir();
     let dpr = dpr.max(0.1);
     let mut out = Vec::new();
     for (id, w, h, rgba) in list {

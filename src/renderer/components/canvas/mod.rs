@@ -35,8 +35,8 @@ pub struct Canvas2DContext {
     /// 全局透明度
     global_alpha: f32,
     /// 线帽 / 线连接
-    line_cap: crate::paint::StrokeCap,
-    line_join: crate::paint::StrokeJoin,
+    line_cap: crate::gfx::paint::StrokeCap,
+    line_join: crate::gfx::paint::StrokeJoin,
     /// 设备像素比：后备缓冲按物理像素分配，绘制指令（小程序 API 用逻辑 px）
     /// 由基础矩阵预乘这个比例 —— 这样 2x 屏上的 canvas 内容是原生分辨率而不是放大的马赛克。
     dpr: f32,
@@ -326,4 +326,21 @@ mod tests {
         let data = ctx.get_image_data();
         assert!(data.iter().any(|&b| b > 0), "命令执行后画布应有内容");
     }
+}
+
+/// 小游戏的慢帧归因（`MINI_GAME_SLOW_MS`，game/slow_frame.rs）。画布代码两边共用，关掉 game feature 的构建里
+/// 这两个恒为「没开」/ 什么都不做 —— 从前直接写 `crate::game::…`，`--no-default-features` 编不过
+pub(crate) fn slow_frame_enabled() -> bool {
+    #[cfg(feature = "game")]
+    return crate::game::slow_frame::enabled();
+    #[cfg(not(feature = "game"))]
+    false
+}
+
+/// 记一段子项耗时（`fx`：fx 蒙版 / 裁剪快照）
+pub(crate) fn slow_frame_note(fx: bool, ns: u64) {
+    #[cfg(feature = "game")]
+    crate::game::slow_frame::note_sub(fx, ns);
+    #[cfg(not(feature = "game"))]
+    let _ = (fx, ns);
 }

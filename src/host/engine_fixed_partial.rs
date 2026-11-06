@@ -65,7 +65,7 @@ impl MiniEngine {
     pub(super) fn render_fixed_partial(&mut self, vp: f32, rect: GeoRect) {
         let Self { renderer, fixed_canvas, page_stack, page_data, interaction, dmg, .. } = self;
         let (cw, ch) = (fixed_canvas.read().width(), fixed_canvas.read().height());
-        let rect = crate::geometry::snap_out(rect, cw, ch);
+        let rect = crate::gfx::geometry::snap_out(rect, cw, ch);
         if rect.width <= 0.0 || rect.height <= 0.0 {
             dmg.fixed_dirty = false;
             return;

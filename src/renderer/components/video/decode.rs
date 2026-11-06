@@ -10,7 +10,7 @@ impl VideoPlayer {
     pub fn load(&mut self) -> Result<(), String> {
         // 与图片同一套解析（`assets::resolve`：当前小程序根目录优先）。从前这里写死了
         // sample-app 作为根，别的小程序（news-app、宿主嵌入的包）里的视频全都找不到
-        let path = crate::assets::resolve(&self.src).ok_or_else(|| format!("Cannot find video: {}", self.src))?;
+        let path = crate::app::assets::resolve(&self.src).ok_or_else(|| format!("Cannot find video: {}", self.src))?;
         self.file_path = Some(path.clone());
         
         println!("🎬 Loading video: {}", path.display());

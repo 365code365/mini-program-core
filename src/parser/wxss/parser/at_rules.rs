@@ -192,7 +192,7 @@ impl WxssParser {
         if family.is_empty() || src.is_empty() {
             return None;
         }
-        crate::text_faces::load(0, &family, &src);
+        crate::text::faces::load(0, &family, &src);
         Some(FontFace { family, src })
     }
 

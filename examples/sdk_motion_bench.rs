@@ -95,8 +95,8 @@ fn main() {
         }
     }
     let app = pos.first().cloned().unwrap_or_else(|| "sdk/flutter/example/assets/demo".into());
-    let root = mini_render::app_dir::resolve(&app);
-    let data = mini_render::data_dir::subdir("sdk-motion-bench");
+    let root = mini_render::app::dir::resolve(&app);
+    let data = mini_render::sys::data_dir::subdir("sdk-motion-bench");
     std::fs::remove_dir_all(&data).ok();
     mini_render::renderer::components::reset_shared_component_state();
     let opts = EngineOptions {

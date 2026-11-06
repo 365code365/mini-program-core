@@ -105,7 +105,7 @@ fn main() {
     // 3) 一个大字体集合（宋体 63.8MB，tea-app 的字体栈会落到它）
     let songti = "/System/Library/Fonts/Supplemental/Songti.ttc";
     if std::path::Path::new(songti).exists() {
-        let r = mini_render::text_family::renderer_for_family(Some("\"Songti SC\", serif"));
+        let r = mini_render::text::family::renderer_for_family(Some("\"Songti SC\", serif"));
         s.mark("加载 Songti.ttc（63.8MB 字体集合）");
         std::hint::black_box(&r);
     }
@@ -136,7 +136,7 @@ fn main() {
     // 6) 指定的小程序页面（可选）
     if let (Some(app), Some(route)) = (app, route) {
         println!("\n（下面这段需要窗体环境，这里只做资源加载：{app} / {route}）");
-        let root = mini_render::app_dir::resolve(&app);
+        let root = mini_render::app::dir::resolve(&app);
         let wxml_path = root.join(&route).with_extension("wxml");
         let wxss_path = root.join(&route).with_extension("wxss");
         let wxml = std::fs::read_to_string(&wxml_path).unwrap_or_default();

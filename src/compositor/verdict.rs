@@ -84,7 +84,7 @@ pub struct VerdictCache {
 /// 默认位置：数据目录下的 `gpu/verdict.json`（开发机上是 `target/gpu/verdict.json`，
 /// `clean-target.sh` 会顺手清掉；移动端落在宿主给的沙盒目录）
 pub fn default_path() -> PathBuf {
-    crate::data_dir::subdir("gpu").join("verdict.json")
+    crate::sys::data_dir::subdir("gpu").join("verdict.json")
 }
 
 impl VerdictCache {

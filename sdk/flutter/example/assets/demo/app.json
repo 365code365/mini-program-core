@@ -9,6 +9,8 @@
     "pages/picker/picker",
     "pages/swiper/swiper",
     "pages/scroll/scroll",
+    "pages/longlist/longlist",
+    "pages/table/table",
     "pages/media/media",
     "pages/canvas/canvas",
     "pages/custom/custom",

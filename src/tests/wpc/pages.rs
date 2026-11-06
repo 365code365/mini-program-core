@@ -101,7 +101,7 @@ fn snapshot_截图_file_png_与_arraybuffer_rgba() {
     let l = log(&e);
     let parts: Vec<&str> = l[0].split(' ').collect();
     assert_eq!(parts[..2], ["takeSnapshot:ok", "60x30"], "{l:?}");
-    let path = crate::wxfile::to_path(parts[2]).expect("wxfile 路径");
+    let path = crate::wxfs::wxfile::to_path(parts[2]).expect("wxfile 路径");
     let img = image::open(&path).expect("是 PNG").to_rgba8();
     assert_eq!((img.width(), img.height()), (60, 30));
     assert_eq!(img.get_pixel(30, 15).0, [0, 255, 0, 255], "画的是子树");

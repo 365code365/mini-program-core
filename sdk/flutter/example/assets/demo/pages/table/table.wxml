@@ -1,0 +1,19 @@
+<view class="card">
+  <view class="title">横竖同时滚（scroll-x + scroll-y）</view>
+  <view><text class="desc">斜着拖：两个方向一起动。scrollLeft {{left}} · scrollTop {{top}}</text></view>
+  <view><text class="desc">点格子：{{picked}}</text></view>
+  <view class="btns">
+    <view class="btn-s" bindtap="toEnd">滚到右下角</view>
+    <view class="btn-o" bindtap="toStart">回到左上角</view>
+  </view>
+  <scroll-view scroll-x scroll-y class="grid" scroll-left="{{toLeft}}" scroll-top="{{toTop}}" scroll-with-animation bindscroll="onScroll">
+    <view class="tr head">
+      <view class="td name">门店</view>
+      <view wx:for="{{cols}}" wx:key="*this" class="td">{{item}}</view>
+    </view>
+    <view wx:for="{{rows}}" wx:for-item="row" wx:for-index="r" wx:key="id" class="tr {{r % 2 ? 'odd' : ''}}">
+      <view class="td name">{{row.name}}</view>
+      <view wx:for="{{row.cells}}" wx:for-index="c" wx:key="*this" class="td {{item > 80 ? 'up' : ''}}" bindtap="onCell" data-r="{{r}}" data-c="{{c}}" hover-class="td-hover">{{item}}</view>
+    </view>
+  </scroll-view>
+</view>

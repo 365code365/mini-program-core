@@ -48,7 +48,7 @@ pub struct WebGame {
     opts_system_info: serde_json::Map<String, Value>,
     safe_area: Option<crate::host::SafeAreaInsets>,
     entry_subpackage: Option<String>,
-    /// 网络请求的归属号（net.rs）
+    /// 网络请求的归属号（net/mod.rs）
     net_owner: u64,
     /// 要在页面里执行的 JS（网络回包、宿主回包、生命周期）
     js: VecDeque<String>,
@@ -74,12 +74,12 @@ impl WebGame {
             return Err("包里没有 game.js".into());
         }
         if let Some(d) = data_dir {
-            crate::data_dir::set_data_dir(d);
+            crate::sys::data_dir::set_data_dir(d);
         }
         let app_id = opts.app_id.clone().unwrap_or_else(|| root.file_name().and_then(|s| s.to_str()).unwrap_or("game").to_string());
-        crate::data_dir::set_app_scope(Some(&app_id));
+        crate::sys::data_dir::set_app_scope(Some(&app_id));
         crate::host::page_loader::set_app_path(root.clone());
-        let storage = crate::storage_file::load();
+        let storage = crate::sys::storage_file::load();
         let mut g = Self {
             root,
             config,
@@ -220,13 +220,13 @@ impl WebGame {
 
     /// 还有没有在等的异步活（网络请求在飞、有待执行的 JS）：宿主据此决定要不要继续轮询
     pub fn pending(&self) -> bool {
-        !self.js.is_empty() || crate::net::has_pending(self.net_owner) || crate::net_stream::has_pending(self.net_owner)
+        !self.js.is_empty() || crate::net::has_pending(self.net_owner) || crate::net::stream::has_pending(self.net_owner)
     }
 
     /// storage 攒着改、轮询时落一次盘（页面每帧 setStorageSync 也只写一次文件）
     fn flush_storage(&mut self) {
         if std::mem::take(&mut self.storage_dirty) {
-            crate::storage_file::save(&self.storage);
+            crate::sys::storage_file::save(&self.storage);
         }
     }
 
@@ -239,7 +239,7 @@ impl Drop for WebGame {
     fn drop(&mut self) {
         self.flush_storage();
         crate::net::forget_owner(self.net_owner);
-        crate::net_stream::forget_owner(self.net_owner);
+        crate::net::stream::forget_owner(self.net_owner);
     }
 }
 

@@ -2,6 +2,8 @@ const PAGES = [
   { path: 'sticky', title: '吸顶', desc: 'position: sticky · sticky-section · sticky-header · stickontopchange' },
   { path: 'text', title: '文本与富文本', desc: 'line-clamp · max-lines · decode · space · rich-text HTML · span 混排' },
   { path: 'list', title: '列表构造器', desc: 'list-builder · grid-builder · itembuild / itemdispose · grid-view 瀑布流' },
+  { path: 'longlist', title: '长列表改一行', desc: '300 行 wx:for · 只改一行 / 顶上计数 / 追加 50 行，看 setData 到画完的耗时' },
+  { path: 'table', title: '横竖同时滚', desc: 'scroll-x + scroll-y 表格 · bindscroll 的 scrollLeft / scrollTop · 滚过之后点格子' },
   { path: 'form', title: '表单与输入', desc: 'focus · hold-keyboard · auto-height · radio 分组 · loading · progress active' },
   { path: 'picker', title: '选择器', desc: 'region 区划码 · custom-item · level · time start/end · picker-view 选中框' },
   { path: 'scroll', title: '滚动', desc: '下拉二级 · show-scrollbar · paging · min-drag-distance · ScrollViewContext · item-id' },

@@ -27,7 +27,7 @@ impl WxmlRenderer {
         // `RESYNC_MS`（frame_clock::Anchor）：抬手后的第一帧 elapsed 常是负的几毫秒。
         // 从前负的一律给终态 —— 开关先「啪」地跳到开、下一帧回到关、再滑过去（iOS 上「打开时抖一下」）。
         // 这个范围里的负数按「刚开始」算；更负的是动画钟被定住了（无头快照 `--time`），照旧给终态
-        const CLOCK_LAG: f32 = crate::frame_clock::RESYNC_MS as f32 / 1000.0;
+        const CLOCK_LAG: f32 = crate::sys::frame_clock::RESYNC_MS as f32 / 1000.0;
         let target = if checked { 1.0 } else { 0.0 };
         // 只认「真正拨动」的时刻；按压起点（`transitions`）不算，否则按一下就假拨一次
         let Some(started) = interaction.toggled_at.get(id).copied() else { return target };

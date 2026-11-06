@@ -1,0 +1,44 @@
+<view class="bar row">
+  <view class="box row flex1">
+    <view class="glass"></view>
+    <input class="ipt flex1" placeholder="搜索歌名、歌手" value="{{kw}}" focus confirm-type="search" bindinput="onInput" bindconfirm="onConfirm" />
+    <view class="clear" wx:if="{{kw}}" bindtap="onClear"><text>×</text></view>
+  </view>
+  <text class="go" bindtap="onConfirm">搜索</text>
+</view>
+<block wx:if="{{status === 'idle'}}">
+  <view class="block" wx:if="{{history.length}}">
+    <view class="sec-h"><text class="sec-t">搜索历史</text><text class="more" bindtap="onClearHistory">清空</text></view>
+    <view class="words">
+      <text class="word" wx:for="{{history}}" wx:key="*this" data-kw="{{item}}" bindtap="onPick">{{item}}</text>
+    </view>
+  </view>
+  <view class="block">
+    <view class="sec-h"><text class="sec-t">热门搜索</text></view>
+    <view class="words">
+      <text class="word {{index < 3 ? 'word-hot' : ''}}" wx:for="{{hot}}" wx:key="*this" data-kw="{{item}}" bindtap="onPick">{{item}}</text>
+    </view>
+  </view>
+</block>
+<view class="state" wx:elif="{{status === 'loading'}}"><text>搜索中…</text></view>
+<view class="state" wx:elif="{{status === 'error'}}">
+  <text>搜索失败，请检查网络</text>
+  <view class="retry" bindtap="onRetry">重试</view>
+</view>
+<view class="state" wx:elif="{{status === 'empty'}}"><text>没有找到「{{kw}}」相关的歌曲</text></view>
+<view class="list" wx:else>
+  <text class="count">找到 {{total}} 首</text>
+  <view class="song {{playingId === item.id ? 'song-on' : ''}}" wx:for="{{list}}" wx:key="id" data-index="{{index}}" bindtap="onSong" hover-class="song-hover">
+    <image class="cover" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="song-main">
+      <text class="song-name">{{item.name}}</text>
+      <view class="row"><text class="vip" wx:if="{{item.vip}}">VIP</text><text class="song-meta">{{item.singer.name}} · {{item.album.name}}</text></view>
+    </view>
+    <text class="dur">{{item.durationText}}</text>
+  </view>
+  <view class="foot" wx:if="{{more === 'loading'}}">加载中…</view>
+  <view class="foot" wx:elif="{{more === 'error'}}" bindtap="onRetryMore"><text>加载失败，点击重试</text></view>
+  <view class="foot" wx:elif="{{more === 'end'}}">— 没有更多了 —</view>
+</view>
+<view class="mp-gap" wx:if="{{hasSong}}"></view>
+<mini-player></mini-player>

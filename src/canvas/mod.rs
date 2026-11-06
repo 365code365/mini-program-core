@@ -195,7 +195,7 @@ impl Canvas {
             return 0;
         }
         let w = self.width as usize;
-        crate::mem_probe::release(&mut self.pixels[y0 * w..y1 * w])
+        crate::sys::mem_probe::release(&mut self.pixels[y0 * w..y1 * w])
     }
 
     pub fn height(&self) -> u32 { self.height }

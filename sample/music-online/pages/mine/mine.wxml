@@ -1,10 +1,11 @@
 <view class="hero">
   <view class="row">
-    <view class="avatar">听</view>
+    <view class="avatar"><text>听</text></view>
     <view class="col flex1">
       <text class="nick">云听用户</text>
       <text class="lv">Lv.6 · 听歌 {{recent.length}} 首</text>
     </view>
+    <view class="search-btn" bindtap="onSearch"><text>搜索</text></view>
   </view>
   <view class="ref ref-dark" wx:if="{{referrer}}">
     <view class="ref-dot"></view>
@@ -16,15 +17,26 @@
   <view class="seg row">
     <text class="seg-i {{tab === 'recent' ? 'seg-on' : ''}}" data-tab="recent" bindtap="onTab">最近播放 {{recent.length}}</text>
     <text class="seg-i {{tab === 'liked' ? 'seg-on' : ''}}" data-tab="liked" bindtap="onTab">我喜欢 {{liked.length}}</text>
+    <text class="seg-i {{tab === 'fav' ? 'seg-on' : ''}}" data-tab="fav" bindtap="onTab">收藏歌单 {{favs.length}}</text>
     <view class="flex1"></view>
     <text class="sub" wx:if="{{list.length}}" bindtap="onClear">清空</text>
   </view>
   <view class="state" wx:if="{{!list.length}}">
-    <text>{{tab === 'recent' ? '还没有播放记录' : '还没有喜欢的歌'}}</text>
+    <text>{{tab === 'recent' ? '还没有播放记录' : tab === 'liked' ? '还没有喜欢的歌' : '还没有收藏歌单'}}</text>
     <view class="retry" bindtap="onGo">去发现音乐</view>
   </view>
+  <block wx:elif="{{tab === 'fav'}}">
+    <view class="fav row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onPlaylist" hover-class="song-hover">
+      <image class="fav-cover" src="{{item.cover}}" mode="aspectFill"></image>
+      <view class="song-main">
+        <text class="song-name">{{item.name}}</text>
+        <text class="song-meta">{{item.songCount}} 首 · {{item.creator}}</text>
+      </view>
+      <view class="arrow"></view>
+    </view>
+  </block>
   <block wx:else>
-    <view class="play-all row" bindtap="onPlayAll"><view class="pa-tri"></view><text class="pa-t">播放全部</text></view>
+    <view class="play-all row" bindtap="onPlayAll"><view class="pa-tri"><view class="pa-tri-in"></view></view><text class="pa-t">播放全部</text></view>
     <view class="song {{playingId === item.id ? 'song-on' : ''}}" wx:for="{{list}}" wx:key="id" data-index="{{index}}" bindtap="onSong" hover-class="song-hover">
       <image class="cover" src="{{item.cover}}" mode="aspectFill"></image>
       <view class="song-main">

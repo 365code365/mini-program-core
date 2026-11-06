@@ -55,4 +55,9 @@ impl MiniEngine {
             // 键盘顶起 / 收回的那 200ms
             || self.keyboard_shift_animating()
     }
+
+    /// 有网络请求在飞 / 刚回来、图片在下载（测试的虚拟时钟据此等真实的网络：`use_virtual_clock` 只管定时器，网络是真的）
+    pub fn net_pending(&self) -> bool {
+        self.app.has_pending_network() || crate::renderer::components::image_net::has_pending()
+    }
 }

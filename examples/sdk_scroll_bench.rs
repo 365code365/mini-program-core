@@ -9,6 +9,9 @@
 //! cargo run --release --example sdk_scroll_bench -- [小程序目录] [页面] [--hz 60] [--rounds 3]
 //! # 默认：Flutter 示例的内置小程序（长列表 + 无限旋转的 CSS 动画 + 每秒 setData + 原生 video），
 //! # 411×786 @2.625（模拟器 1080×2400 / 420dpi 的视口）
+//! # 拖页面里的 scroll-view：--at x,y,len（从 (x,y) 起往上推 len pt），例：
+//! #   sample/wx-components pages/list/list --hz 120 --at 200,420,200
+//! # BENCH_DUMP=<文件>：拖动停手那一帧的 RGBA 原始像素写出去，两种设置各跑一次比 md5
 //! ```
 //!
 //! 判据看**最慢一帧**与超预算帧数，不看平均（steering 10）。机器负载高时 p99 / 最慢会抖
@@ -31,6 +34,8 @@ struct Viewport {
     dpr: f32,
     /// `--start <pt>`：先慢拖这么多再开始量（复杂元素在页面下半截时用，例如 WXSS 页的 transform 区）
     start: f32,
+    /// `--at x,y,len`：拖动从 (x, y) 起、往上推 len pt（拖页面里的 scroll-view 时用；缺省 200,650,500 拖页面）
+    at: (f32, f32, f32),
 }
 
 struct Frame {
@@ -86,7 +91,7 @@ fn report(label: &str, frames: &[Frame], budget_ms: f32) {
 }
 
 fn run_once(app: &str, route: &str, hz: f32, vp: Viewport) -> (Vec<Frame>, Vec<Frame>, Vec<Frame>, Vec<Frame>) {
-    let data = mini_render::data_dir::subdir("sdk-scroll-bench");
+    let data = mini_render::sys::data_dir::subdir("sdk-scroll-bench");
     std::fs::remove_dir_all(&data).ok();
     mini_render::renderer::components::reset_shared_component_state();
     // 与 Flutter 宿主同一组选项（引擎画导航栏 + 转场 + 胶囊，安全区按真机）：从前只开了原生组件，
@@ -181,20 +186,29 @@ fn run_once(app: &str, route: &str, hz: f32, vp: Viewport) -> (Vec<Frame>, Vec<F
         }
     }
     // 拖动：手指从 y=650 匀速上推 500pt（每帧 10pt），与真机「慢慢往上滑」同一种手势
+    let (ax, ay, alen) = vp.at;
+    let steps = (alen / 10.0).max(1.0) as i32;
     let mut drag = Vec::new();
-    e.pointer_down(200.0, 650.0);
-    for i in 1..=50 {
+    e.pointer_down(ax, ay);
+    for i in 1..=steps {
         t += step_ms;
-        e.pointer_move(200.0, 650.0 - 10.0 * i as f32);
+        e.pointer_move(ax, ay - 10.0 * i as f32);
         drag.push(frame(&mut e, t));
     }
     // 松手前最后几帧快一些，带出惯性
+    let top = ay - 10.0 * steps as f32;
     for i in 1..=4 {
         t += step_ms;
-        e.pointer_move(200.0, 150.0 - 30.0 * i as f32);
+        e.pointer_move(ax, top - (top - 30.0).max(0.0) / 4.0 * i as f32);
         drag.push(frame(&mut e, t));
     }
-    e.pointer_up(200.0, 30.0);
+    // `BENCH_DUMP=<文件>`：拖动停手那一帧的 RGBA 原始像素写出去（对照两种绘制路径逐字节比，如分块开 / 关）
+    if let Some(p) = std::env::var_os("BENCH_DUMP") {
+        let mut px = vec![0u8; stride * ph as usize];
+        e.write_pixels(&mut px, stride, PixelFormat::Rgba8);
+        std::fs::write(&p, &px).expect("写 BENCH_DUMP");
+    }
+    e.pointer_up(ax, 30.0f32.min(top));
     let mut fling = Vec::new();
     for _ in 0..240 {
         t += step_ms;
@@ -207,13 +221,15 @@ fn run_once(app: &str, route: &str, hz: f32, vp: Viewport) -> (Vec<Frame>, Vec<F
     }
     // 拖回顶上：手指每帧往下 10pt，页面往回滚、条带从上面补（首页头图那截渐变 + 半透明文字最贵）
     let mut back = Vec::new();
-    e.pointer_down(200.0, 100.0);
-    for i in 1..=70 {
+    let back_from = if vp.at.2 == 500.0 { 100.0 } else { ay - alen };
+    let back_steps = if vp.at.2 == 500.0 { 70 } else { steps * 3 };
+    e.pointer_down(ax, back_from);
+    for i in 1..=back_steps {
         t += step_ms;
-        e.pointer_move(200.0, 100.0 + 10.0 * i as f32);
+        e.pointer_move(ax, back_from + 10.0 * (i % (steps.max(1) + 1)) as f32);
         back.push(frame(&mut e, t));
     }
-    e.pointer_up(200.0, 800.0);
+    e.pointer_up(ax, back_from + 10.0 * steps as f32);
     for _ in 0..60 {
         t += step_ms;
         let f = frame(&mut e, t);
@@ -230,7 +246,7 @@ fn main() {
     let mut pos = Vec::new();
     let mut hz = 60.0f32;
     let mut rounds = 1usize;
-    let mut vp = Viewport { w: W, h: H, dpr: DPR, start: 0.0 };
+    let mut vp = Viewport { w: W, h: H, dpr: DPR, start: 0.0, at: (200.0, 650.0, 500.0) };
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
         match a.as_str() {
@@ -238,6 +254,12 @@ fn main() {
             "--rounds" => rounds = args.next().and_then(|v| v.parse().ok()).unwrap_or(rounds),
             "--start" => vp.start = args.next().and_then(|v| v.parse().ok()).unwrap_or(0.0),
             "--dpr" => vp.dpr = args.next().and_then(|v| v.parse().ok()).unwrap_or(vp.dpr),
+            "--at" => {
+                let v: Vec<f32> = args.next().unwrap_or_default().split(',').filter_map(|s| s.trim().parse().ok()).collect();
+                if v.len() == 3 {
+                    vp.at = (v[0], v[1], v[2]);
+                }
+            }
             "--size" => {
                 if let Some((w, h)) = args.next().as_deref().and_then(|s| s.split_once('x')) {
                     vp.w = w.parse().unwrap_or(vp.w);
@@ -252,7 +274,7 @@ fn main() {
     // 内置示例的首页改成了导航中心（tabBar 页），原来的「长列表 + 动画 + 定时器 + video」
     // 场景原样搬到了 pages/perf/perf
     let route = pos.get(1).cloned().unwrap_or_else(|| "pages/perf/perf".into());
-    let root = mini_render::app_dir::resolve(&app);
+    let root = mini_render::app::dir::resolve(&app);
     let budget = 1000.0 / hz;
     println!("SDK 滚动基准：{} {route}  {}×{} @{}（{}×{} 像素）  {hz}Hz 预算 {budget:.1}ms",
         root.display(), vp.w, vp.h, vp.dpr, (vp.w as f32 * vp.dpr) as u32, (vp.h as f32 * vp.dpr) as u32);

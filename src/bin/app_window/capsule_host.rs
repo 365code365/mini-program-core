@@ -1,7 +1,7 @@
 //! 桌面窗体的右上角胶囊：与 SDK 同一份几何与画法（`mini_render::host::capsule`），
 //! 只在 `navigationStyle: custom` 的页面上画（普通页面桌面窗体没有导航栏，也就没有胶囊）。
 //!
-//! - 「•••」：查看关于 —— 弹一个 Modal 展示小程序信息（`mini_render::app_about`，演示用）；
+//! - 「•••」：查看关于 —— 弹一个 Modal 展示小程序信息（`mini_render::app::about`，演示用）；
 //! - 「⊙」：返回宿主 —— 交互窗体关掉窗口；无头模式只打一行日志（脚本断言用）。
 //!
 //! 按下整串触摸归胶囊（不建手势、不发 touchstart），抬手还在按下的那一半里才算点了。
@@ -28,7 +28,7 @@ pub struct DesktopCapsule {
 impl DesktopCapsule {
     pub fn new() -> Self {
         let app_json = serde_json::from_str::<Value>(&super::page_loader::load_app_json()).unwrap_or(Value::Null);
-        let about = mini_render::app_about::about(&super::page_loader::get_app_path(), &app_json);
+        let about = mini_render::app::about::about(&super::page_loader::get_app_path(), &app_json);
         Self {
             enabled: std::env::var("MINI_MENU_BUTTON").map(|v| v != "0").unwrap_or(true),
             app_window: app_json.get("window").cloned().unwrap_or(Value::Null),
@@ -138,7 +138,7 @@ impl crate::MiniAppWindow {
         match half {
             Half::Menu => {
                 println!("🔘 胶囊 menu：查看关于");
-                let (title, content) = mini_render::app_about::dialog_text(&self.capsule.about);
+                let (title, content) = mini_render::app::about::dialog_text(&self.capsule.about);
                 let mut m = super::ui_overlay::ModalState::new(&title, &content);
                 m.show_cancel = false;
                 self.modal = Some(m);

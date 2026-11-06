@@ -38,12 +38,12 @@ print('\n'.join(d.get('pages',[])))
 rm -rf "$OUT"
 n=0
 for p in $PAGES; do
-    rm -rf target/mini-storage
+    rm -rf "${MINI_DATA_DIR:-target}/mini-storage"
     if "$BIN" "$APP" --route "$p" "${EXTRA[@]}" --snapshot "$OUT" >/dev/null 2>&1; then
         if [ -f "$OUT/$p/rust.png" ]; then n=$((n+1)); else echo "  ⚠️  $p 没出图"; fi
     else
         echo "  ❌ $p 截图失败"
     fi
 done
-rm -rf target/mini-storage
+rm -rf "${MINI_DATA_DIR:-target}/mini-storage"
 echo "$APP -> $OUT : $n/$(echo "$PAGES" | wc -l | tr -d ' ') 页"

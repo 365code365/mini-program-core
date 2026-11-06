@@ -15,7 +15,7 @@
       <view class="pl" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onPlaylist">
         <view class="pl-cover-wrap">
           <image class="pl-cover" src="{{item.cover}}" mode="aspectFill"></image>
-          <text class="pl-count">▶ {{item.playCountText}}</text>
+          <view class="pl-count row"><view class="pc-tri"><view class="pc-tri-in"></view></view><text>{{item.playCountText}}</text></view>
         </view>
         <text class="pl-name">{{item.name}}</text>
       </view>

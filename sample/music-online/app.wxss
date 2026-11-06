@@ -38,3 +38,8 @@ page { background: #f6f7f9; color: #1f2329; font-size: 28rpx; }
 .ref-t { flex: 1; font-size: 24rpx; color: #b2443d; }
 .ref-back { font-size: 24rpx; color: #fff; background: #f04c4c; border-radius: 24rpx; padding: 6rpx 22rpx; margin-left: 12rpx; }
 .ref-x { font-size: 34rpx; color: #c98a85; padding: 0 0 0 18rpx; }
+/* 右箭头用边框画（字体里的 › 引擎画不出来） */
+.arrow { width: 14rpx; height: 14rpx; border-top: 3rpx solid #c4c7cc; border-right: 3rpx solid #c4c7cc; transform: rotate(45deg); margin: 0 8rpx 0 12rpx; flex-shrink: 0; }
+/* 播放数前的小三角（▶ 会被当成彩色 emoji 画；border 透明边的三角画不出来）：裁剪容器里放旋转方块 */
+.pc-tri { position: relative; width: 12rpx; height: 16rpx; overflow: hidden; flex-shrink: 0; margin-right: 6rpx; }
+.pc-tri-in { position: absolute; left: -5.66rpx; top: 2.34rpx; width: 11.31rpx; height: 11.31rpx; background: #fff; transform: scaleX(1.5) rotate(45deg); }

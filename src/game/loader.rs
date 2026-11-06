@@ -117,8 +117,8 @@ mod tests {
     #[test]
     fn 销毁实例_闭包捏着的状态全部释放_含走字节码缓存的大脚本() {
         // 建实例会改进程级的数据命名空间与包根（同 ffi_game/tests.rs 的 scope_lock）
-        let _scope = crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-        let _root = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
+        let _scope = crate::sys::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _root = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
         let dir = std::env::temp_dir().join(format!("mr-game-drop-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(dir.join("js")).unwrap();

@@ -3,7 +3,7 @@ package dev.minirender
 import org.json.JSONObject
 
 /**
- * 小程序的「关于」信息：引擎启动后第一帧的 `app` 事件带上来（字段见引擎的 `src/app_about.rs`）。
+ * 小程序的「关于」信息：引擎启动后第一帧的 `app` 事件带上来（字段见引擎的 `src/app/about.rs`）。
  *
  * 胶囊「•••」的默认行为就是弹框展示它；宿主要换成自己的页面，设 [MiniProgramView.onAbout]。
  */

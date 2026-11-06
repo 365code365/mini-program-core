@@ -1,6 +1,6 @@
 //! 字体加载：系统默认字体（候选见 `text_system`）、按 `font-family` 加载、同集合里探测粗体字面、符号回退字体。
 //!
-//! 从 `text.rs` 按职责拆出（**纯搬迁**，原本私有的几个函数改成 `pub(super)` 供父模块调用，其余一字未改）：
+//! 从 `text/mod.rs`（当时的 text.rs）按职责拆出（**纯搬迁**，原本私有的几个函数改成 `pub(super)` 供父模块调用，其余一字未改）：
 //! 那个文件到了 667 行，加载与绘制 / 度量混在一起。
 use super::{shared_fonts, TextRenderer};
 use fontdue::{Font, FontBytes, FontSettings};
@@ -112,7 +112,7 @@ impl TextRenderer {
 
     /// 单独文件里的粗体字面（读不出来就返回 None，调用方退回 faux-bold）
     pub(super) fn face_from_file(spec: &str) -> Option<Font> {
-        let (path, weight, opsz) = crate::text_system::font_spec(spec);
+        let (path, weight, opsz) = crate::text::system::font_spec(spec);
         let data = map_font_file(path).ok()?;
         Font::from_shared(data, settings_wo(0, weight, opsz)).ok()
     }
@@ -199,7 +199,7 @@ impl TextRenderer {
 
         // 加载主字体，并在同一字体集合里寻找真正的粗体字面
         let mut renderer: Option<TextRenderer> = None;
-        for c in crate::text_system::main_font_candidates() {
+        for c in crate::text::system::main_font_candidates() {
             // 断掉的符号链接 `exists()` 也是 false（ColorOS 的 SysFont-*.ttf 就是这样）
             if !Path::new(&c.path).exists() {
                 continue;

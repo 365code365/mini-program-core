@@ -64,12 +64,23 @@ Flutter 示例要对照「盖上去」时 `flutter build apk --dart-define=SAME_
 **一条命令跑完**（下面七项 + 逐页快照 + H5 双端对比，每步计时，汇总在 `target/_regress/summary.txt`）：
 
 ```bash
-bash tools/regress.sh            # 全量：改了引擎之后约 4 分钟（编译 ~20s + 各项 ~200s）
+bash tools/regress.sh            # 全量：改了引擎之后 3~4 分钟（编译 ~20~100s + 用例 ~60s + 后面七步四路并行 ~60s）
 bash tools/regress.sh --no-h5    # 不起 headless Chrome
 ```
 
 跑完自己清掉快照与对比图，只留日志。**迭代中别每次都全量**：先跑相关的
 `cargo test --release --lib <过滤词>` / `--test <文件名>`，收尾再全量一次。
+
+**全部 Rust 用例用 `python3 tools/test-fast.py`，不用 `cargo test --release`**（2026-11-06：707s → 61s，1708 个）：
+按 `target/test_timings.json` 里的耗时把每个测试二进制切成约 6s 一片、按核数并行，起 Chrome 的用例另排、最多 `--chrome N` 个同时开；
+失败的单独重跑一次，过了记「偶发」。`--quick` 跳过起 Chrome 的、`--changed` 只跑改动相关的、`--only <名>` 只跑一个文件。
+
+- **写新用例别真睡**：引擎类用例用 `MiniEngine::use_virtual_clock()`（定时器、JS `Date`、动画时钟跟 pump 给的毫秒走），
+  等条件用轮询 + 虚拟毫秒，不写 `thread::sleep`。示例小程序 e2e 从每个文件 20 多秒降到 1 秒以内靠的就是这个。
+- **PATH 上的 `python3` 是 x86 的 3.7（Rosetta）**：从它起的 Chrome 也在 Rosetta 下，慢约 5 倍。要起 Chrome 的脚本照
+  `test-fast.py` 的 `ensure_native()` 换成 `arch -arm64` 的原生 Python。
+- **用例之间别共享进程级的「改过一次」标记**：一个引擎读了就清的全局标记，同进程里第二个引擎永远看不到（字体注册踩过，
+  改成代数计数 `text_faces::generation()`）。并行分片会把这类用例排到同一个进程里。
 
 耗时去哪了（2026-10-21 同一份源码背靠背实测，别凭感觉优化）：
 

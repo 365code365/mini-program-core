@@ -261,7 +261,7 @@ pub struct WxmlRenderer {
     full_why: std::cell::RefCell<Option<String>>,
     /// 布局之后才改的样式（换行补高、包含块修正、覆盖层重排）改之前的原样：增量重建时先还原，
     /// 留下来的子树才与「重新建」时的样式一致（layout_incremental.rs）。只记缓存那棵树上的
-    layout_touched: std::cell::RefCell<HashMap<NodeId, Style>>,
+    layout_touched: std::cell::RefCell<HashMap<NodeId, reflow::Touched>>,
     /// 正在改的是缓存那棵树（要记进 `layout_touched`）
     record_touch: std::cell::Cell<bool>,
     /// 上一次重建留下了几个子树、重建了几个节点（诊断与测试，见 `last_reuse`）

@@ -69,7 +69,7 @@ fn unknown_tag_is_not_expanded() {
 /// 组件里的可点区域必须登记进宿主的事件绑定，否则底部导航点不动。
 #[test]
 fn component_renders_and_registers_its_events() {
-    let comp_wxss = crate::using_components::scope_component_wxss(
+    let comp_wxss = crate::app::using_components::scope_component_wxss(
         ":host{display:flex}.bar{height:50px;background-color:#fff}.cell{flex:1;height:50px}",
         "tab-bar",
     );
@@ -97,7 +97,7 @@ fn component_renders_and_registers_its_events() {
 /// 作用域前缀让组件样式不会漏出去命中页面里的同名类。
 #[test]
 fn component_styles_do_not_leak_to_page() {
-    let comp_wxss = crate::using_components::scope_component_wxss(".label{height:40px}", "tab-bar");
+    let comp_wxss = crate::app::using_components::scope_component_wxss(".label{height:40px}", "tab-bar");
     let ss = WxssParser::new(&comp_wxss).parse().unwrap_or_default();
     let mut r = WxmlRenderer::new_with_scale(ss, 375.0, 667.0, 1.0);
     r.set_component_templates(templates(&[("tab-bar", r#"<view class="label"></view>"#)]));

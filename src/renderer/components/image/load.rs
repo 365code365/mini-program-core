@@ -85,7 +85,7 @@ pub(super) fn load_image(src: &str) -> Option<Arc<ImageData>> {
 
     // 本地大文件（选图 / 拍照的原图、下载的大图）：后台解码并缩到长边 [`LARGE_MAX_SIDE`]，本帧先画占位。
     // 小文件（包内图标、切图）照旧同步：读盘 + 解码很快，也避免首帧闪空、逐字节基线不变
-    if let Some(path) = crate::assets::resolve(src) {
+    if let Some(path) = crate::app::assets::resolve(src) {
         if std::fs::metadata(&path).map(|m| m.len() > LARGE_FILE_BYTES).unwrap_or(false) {
             let key = src.to_string();
             return crate::renderer::components::image_net::get_or_load::<ImageData, _>(&format!("local:{src}"), move || {
@@ -143,7 +143,7 @@ pub(super) fn load_image_from_file(path: &str) -> Option<ImageData> {
         let bytes = crate::renderer::components::canvas_data_uri(path)?;
         return decode_with_animation(path, &bytes);
     }
-    let resolved = crate::assets::resolve(path)?;
+    let resolved = crate::app::assets::resolve(path)?;
     let bytes = std::fs::read(&resolved).ok()?;
     decode_with_animation(path, &bytes)
 }

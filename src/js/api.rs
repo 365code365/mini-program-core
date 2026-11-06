@@ -100,7 +100,7 @@ const PRELUDE: &[Prelude] = prelude![
     "system" => "system.js",
     // 原生 tabBar 的运行时 API（角标、红点、改项、改样式、显隐），由 host::tabbar_api 落地
     "tabbar" => "tabbar.js",
-    // WebSocket（SocketTask 与旧式全局 API），连接在原生线程（src/websocket.rs）
+    // WebSocket（SocketTask 与旧式全局 API），连接在原生线程（src/net/websocket.rs）
     "socket" => "socket.js",
     // FileSystemManager 与旧式 saveFile / getFileInfo：路径权限与文件操作在 src/wxfs
     "fs" => "fs.js",
@@ -115,7 +115,7 @@ const PRELUDE: &[Prelude] = prelude![
     "base-ext" => "base-ext.js",
     // 由宿主承载的对象：MapContext / CameraContext / LivePlayer / LivePusher / NFC / MediaRecorder / VideoDecoder …
     "host-objects" => "host-objects.js",
-    // wx.createTCPSocket / createUDPSocket / getLocalIPAddress（src/net_socket.rs）
+    // wx.createTCPSocket / createUDPSocket / getLocalIPAddress（src/net/socket.rs）
     "net-socket" => "net-socket.js",
     // 路由：校验、success 时机、EventChannel、路由事件、返回询问、rewriteRoute、exit / restart
     "route-ext" => "route-ext.js",

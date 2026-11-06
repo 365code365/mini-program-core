@@ -67,7 +67,7 @@ impl TextComponent {
         // 而非写死 1.5，避免与 HTML 逐行累积垂直漂移。
         // 度量必须用**这段文字实际会用的字体**：字体不同，字形宽度与自然行高都不同，
         // 用默认字体量、用宋体画的话盒子宽度与文字对不上（换行位置也会错）。
-        let family_font = crate::text_family::renderer_for_family(ns.font_family.as_deref());
+        let family_font = crate::text::family::renderer_for_family(ns.font_family.as_deref());
         let measure_font_arc = family_font.clone().or_else(|| TEXT_MEASURE_FONT.clone());
         let natural_lh = measure_font_arc
             .as_ref()
@@ -270,7 +270,7 @@ impl TextComponent {
             if seg_text.trim().is_empty() && !seg_text.contains(' ') {
                 continue;
             }
-            let family = crate::text_family::renderer_for_family(seg_style.font_family.as_deref());
+            let family = crate::text::family::renderer_for_family(seg_style.font_family.as_deref());
             let font_px = seg_style.font_size * sf;
             let ls = seg_style.letter_spacing * sf;
             let bold = matches!(
@@ -371,7 +371,7 @@ impl TextComponent {
         let color = node.style.text_color.unwrap_or(Color::BLACK);
         let size = node.style.font_size * sf;
         // `font-family` 指定的字族优先（度量端用的是同一个，见 build / measure_text_node）
-        let family = crate::text_family::renderer_for_family(node.style.font_family.as_deref());
+        let family = crate::text::family::renderer_for_family(node.style.font_family.as_deref());
         let text_renderer = family.as_deref().or(text_renderer);
         let natural_lh = text_renderer
             .map(|tr| tr.natural_line_height_for(&node.text, size))
@@ -621,7 +621,7 @@ fn draw_text_decoration(
     let mut line_paint = paint.clone();
     line_paint.style = PaintStyle::Stroke;
     
-    use crate::path::Path;
+    use crate::gfx::path::Path;
     let mut path = Path::new();
     path.move_to(x, line_y);
     path.line_to(x + w, line_y);

@@ -22,7 +22,7 @@ OUT=target/_sdk_parity
 # `target/sdk-parity/`，与桌面的 `target/mini-storage` 不是一处。两边都要清 ——
 # 只清一处的下场：news-app 的「已读 N 篇」在 SDK 侧一轮轮攒下去，
 # 下次对比就冒出个 0.07% 的假差异（第一次遇到时以为是渲染改坏了）。
-rm -rf "$OUT" target/mini-storage target/sdk-parity
+rm -rf "$OUT" "${MINI_DATA_DIR:-target}/mini-storage" target/sdk-parity
 cargo run --release --example sdk_parity -- "$APP" "$OUT" >/dev/null 2>&1 || {
     echo "❌ 渲染失败，单独跑一次看报错：cargo run --release --example sdk_parity -- $APP $OUT"; exit 1; }
 

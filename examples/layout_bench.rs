@@ -22,8 +22,8 @@ fn main() {
     let app = pos.first().cloned().unwrap_or_else(|| "sdk/flutter/example/assets/demo".into());
     let route = pos.get(1).cloned().unwrap_or_else(|| "pages/query/query".into());
     let field = pos.get(2).cloned().unwrap_or_else(|| "scrollTop".into());
-    let root = mini_render::app_dir::resolve(&app);
-    let data = mini_render::data_dir::subdir("layout-bench");
+    let root = mini_render::app::dir::resolve(&app);
+    let data = mini_render::sys::data_dir::subdir("layout-bench");
     std::fs::remove_dir_all(&data).ok();
     let opts = EngineOptions { navigation_bar: true, route_animation: true, menu_button: true, ..Default::default() };
     let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), Some(&data.to_string_lossy()), 360, 785, 3.0, HostEnv::from_process(), opts)

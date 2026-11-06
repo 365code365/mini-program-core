@@ -155,13 +155,13 @@ pub fn take_requests(app: &mut MiniApp) -> bool {
             .and_then(crate::host::tabbar::parse_color)
             .unwrap_or(Color::BLACK);
         let alert = req.get("alertText").and_then(Value::as_str).unwrap_or("").to_string();
-        with(|s| *s = Some(ActionSheet { id, alert, items, color, opened: crate::frame_clock::now(), closing: None, pressed: None, armed: false, settled: false }));
+        with(|s| *s = Some(ActionSheet { id, alert, items, color, opened: crate::sys::frame_clock::now(), closing: None, pressed: None, armed: false, settled: false }));
         changed = true;
     }
     // 退场起点是抬手那一刻（两帧之间，帧时钟没设 = 墙上时钟），走没走完也按墙上时钟判：
     // 从前按帧时钟判，帧时钟可以落后墙上时钟最多 250ms（frame_clock 的 RESYNC_MS），
     // 菜单看着收完了还「在」，紧接着的长按被它吃掉（新示例的测试里 10 次见 3 次）
-    let now = std::time::Instant::now().max(crate::frame_clock::now());
+    let now = crate::sys::frame_clock::latest();
     let done = with(|s| s.as_ref().and_then(|st| st.closing).map(|t| now.saturating_duration_since(t).as_secs_f32() >= ANIM_SECS).unwrap_or(false));
     if done {
         clear();
@@ -183,7 +183,7 @@ fn hit(st: &ActionSheet, vp: (f32, f32), y: f32) -> Option<i32> {
     let h = sheet_height(st);
     // 与画、与 take_requests 判退场结束同一个钟（帧时钟）：从前这里用墙上时钟、收尾用帧时钟，
     // 帧时钟最多落后 250ms，收起动画看着走完了、菜单却还「在」，吃掉紧接着的那一下（新示例的测试里 10 次见 3 次）
-    let top = vp.1 - h + h * hidden_ratio(st, crate::frame_clock::now());
+    let top = vp.1 - h + h * hidden_ratio(st, crate::sys::frame_clock::now());
     if y < top {
         return None;
     }
@@ -230,7 +230,7 @@ pub fn on_release(app: &mut MiniApp, vp: (f32, f32), _x: f32, y: f32) -> bool {
         if r == Some(i32::MIN) {
             return Some(None);
         }
-        st.closing = Some(crate::frame_clock::now());
+        st.closing = Some(crate::sys::frame_clock::now());
         st.settled = false;
         Some(Some((st.id, r)))
     });
@@ -263,7 +263,7 @@ pub fn render_over(buf: &mut [u32], base: &[u32], w: u32, h: u32, sf: f32, text:
 
 fn render_impl(buf: &mut [u32], base: Option<&[u32]>, w: u32, h: u32, sf: f32, text: Option<&TextRenderer>, rows: (u32, u32)) -> Footprint {
     let mut fp = Footprint::NONE;
-    let now = FROZEN.with(|f| f.take()).unwrap_or_else(crate::frame_clock::now);
+    let now = FROZEN.with(|f| f.take()).unwrap_or_else(crate::sys::frame_clock::now);
     let Some(st) = with(|s| s.clone()) else { return fp };
     let hidden = hidden_ratio(&st, now);
     let t0 = st.closing.unwrap_or(st.opened);
@@ -390,7 +390,7 @@ pub fn reach(w: u32, h: u32, sf: f32, text: Option<&TextRenderer>) -> (Footprint
     let (mut rows, mut base) = (Footprint::NONE, Footprint::NONE);
     PLACED.with(|c| c.set(None));
     if let Some(st) = with(|s| s.clone()) {
-        let now = crate::frame_clock::now();
+        let now = crate::sys::frame_clock::now();
         FROZEN.with(|f| f.set(Some(now)));
         let sheet_h = sheet_height(&st);
         let top = h as f32 / sf - sheet_h + sheet_h * hidden_ratio(&st, now);

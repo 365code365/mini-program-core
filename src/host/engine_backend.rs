@@ -167,7 +167,7 @@ impl MiniEngine {
             diag::emit(&format!("🎞E {} {:.2} {:.2}", self.last_pump_ms, self.scroll.get_position(), top));
         }
         // 这一帧的时刻只在这一帧里有效（两帧之间的输入按此刻记起点，见 frame_clock::set）
-        crate::frame_clock::set(None);
+        crate::sys::frame_clock::set(None);
         if let Some(t0) = pump_t0 {
             let ms = t0.elapsed().as_secs_f32() * 1000.0;
             // 与 🩹 行同一道线（8ms）：90Hz 的周期是 11.1ms，再加上合成 / 上屏就悬了

@@ -5,7 +5,8 @@
     "pages/mine/mine",
     "pages/playlists/playlists",
     "pages/playlist/playlist",
-    "pages/player/player"
+    "pages/player/player",
+    "pages/search/search"
   ],
   "window": {
     "navigationBarTitleText": "云听音乐",

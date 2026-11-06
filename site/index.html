@@ -175,7 +175,7 @@
         <div><dt data-i18n="stat.2.k">Repeated frames, 90 Hz phone</dt><dd><span data-count="1.5">1.5</span><small>%</small></dd><p data-i18n="stat.2.v">list scrolling with setData, down from 11.2%</p></div>
         <div><dt data-i18n="stat.3.k">GPU vs CPU</dt><dd><span data-count="34">34</span><small>/34</small></dd><p data-i18n="stat.3.v">scenes byte-identical, fallback included</p></div>
         <div><dt data-i18n="stat.4.k">Difference vs Chrome</dt><dd><span data-count="4.57">4.57</span><small>%</small></dd><p data-i18n="stat.4.v">15 pages of the same source, per pixel</p></div>
-        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1689">1689</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
+        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1708">1708</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
         <div><dt data-i18n="stat.6.k">Official wx.* APIs</dt><dd><span data-count="503">503</span><small>/503</small></dd><p data-i18n="stat.6.v">every name in the index, plus 76 component tags</p></div>
       </dl>
     </div>
@@ -853,7 +853,7 @@ XComponent({ type: <span class="s">'surface'</span>,
             <article class="metric spot">
               <b class="metric-num">7.3 → 0.9–1.3ms</b>
               <h3 data-i18n="dev.m6.h">Layout rebuild after setData</h3>
-              <p data-i18n="dev.m6.p">Typical value among the slowest scroll frames. Incremental layout: unchanged subtrees keep their taffy nodes and cached layout, only what changed is rebuilt, including lists that grow or shrink. Checked against a full rebuild node by node across the whole test suite: 0 mismatches.</p>
+              <p data-i18n="dev.m6.p">Typical value among the slowest scroll frames. Incremental layout: unchanged subtrees keep their taffy nodes and cached layout, only what changed is rebuilt, including lists that grow or shrink. Checked against a full rebuild node by node across the whole test suite: 0 mismatches. On desktop, re-laying out a 200-row list after one row changes dropped from 1.38 to 0.18 ms once taffy’s measure cache stopped evicting its own entries.</p>
             </article>
             <article class="metric spot">
               <b class="metric-num">19.9 → 2.5–3.3%</b>
@@ -1115,7 +1115,7 @@ XComponent({ type: <span class="s">'surface'</span>,
               <tr><th scope="row" data-i18n="perf.real.r2k"><code>real-sample</code><small>8 pages</small></th><td data-i18n="perf.real.r2v">WeChat's official demo</td></tr>
               <tr><th scope="row" data-i18n="perf.real.r3k"><code>sample-app</code><small>15 pages</small></th><td data-i18n="perf.real.r3v">Full shop flow: cart → checkout → orders / shipping, cross-page state in storage</td></tr>
               <tr><th scope="row" data-i18n="perf.real.r4k"><code>news-app</code><small>6 pages</small></th><td data-i18n="perf.real.r4v">Full news flow: channel swiping, live font size, comments, persisted bookmarks</td></tr>
-              <tr><th scope="row" data-i18n="perf.real.r5k">Demo catalog<small>34 pages</small></th><td data-i18n="perf.real.r5v">Shared by the Flutter, native Android and native iOS examples: components incl. the Skyline set, new APIs, a mock HTTP feed, a tile map, web-view with a local H5 page, live-player and same-layer video</td></tr>
+              <tr><th scope="row" data-i18n="perf.real.r5k">Demo catalog<small>36 pages</small></th><td data-i18n="perf.real.r5v">Shared by the Flutter, native Android and native iOS examples: components incl. the Skyline set, new APIs, a mock HTTP feed, a tile map, web-view with a local H5 page, live-player and same-layer video</td></tr>
             </tbody>
           </table>
         </div>
@@ -1530,13 +1530,13 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card">
           <h3 data-i18n="stack.reg.h">Regression suite<small>all green on every change</small></h3>
           <table class="kv"><tbody>
-            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>1689</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>1708</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r2k">Scene gallery</th><td data-i18n="stack.reg.r2v">65 images, byte-reproducible</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r3k">Partial-repaint check</th><td data-i18n="stack.reg.r3v">5 desktop scenes + 12 SDK cases, frame by frame</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r4k">SDK vs desktop</th><td data-i18n="stack.reg.r4v">sample 15/15, news 6/6 pixel-identical</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r7k">GPU vs CPU</th><td data-i18n="stack.reg.r7v">34/34 byte-identical</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r8k">Flutter plugin tests</th><td>36</td></tr>
-            <tr><th scope="row" data-i18n="stack.reg.r6k">Full run</th><td data-i18n="stack.reg.r6v"><code>bash tools/regress-async.sh</code>, about 5 min, logged into timestamped batches</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r6k">Full run</th><td data-i18n="stack.reg.r6v"><code>bash tools/regress-async.sh</code>, about 4 min, logged into timestamped batches</td></tr>
           </tbody></table>
         </article>
         <article class="card">

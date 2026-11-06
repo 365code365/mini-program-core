@@ -48,9 +48,9 @@ fn custom_font_files_have_an_upper_bound() {
         "Menlo, monospace",
         "\"Courier New\", monospace",
     ] {
-        let _ = crate::text_family::renderer_for_family(Some(stack));
+        let _ = crate::text::family::renderer_for_family(Some(stack));
     }
-    let files = crate::text_family::loaded_font_files();
+    let files = crate::text::family::loaded_font_files();
     assert!(
         files.len() <= 8,
         "自定义字体文件数应有上限（默认 2，可用 MINI_FONT_CACHE_MAX 调），实际 {} 个: {:?}",

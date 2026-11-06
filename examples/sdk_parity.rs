@@ -17,7 +17,7 @@ fn main() {
     let mut args = std::env::args().skip(1);
     let app = args.next().unwrap_or_else(|| "sample-app".to_string());
     let out = args.next().unwrap_or_else(|| "target/_sdk".to_string());
-    let root = mini_render::app_dir::resolve(&app);
+    let root = mini_render::app::dir::resolve(&app);
     let app_json: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(root.join("app.json")).expect("app.json"))
             .expect("app.json 不是合法 JSON");
@@ -27,7 +27,7 @@ fn main() {
         .unwrap_or_default();
 
     // 与桌面基线同样的参数：375x667 @2x
-    let data = mini_render::data_dir::subdir("sdk-parity");
+    let data = mini_render::sys::data_dir::subdir("sdk-parity");
     let mut ok = 0usize;
     for route in &routes {
         // 每个页面单开一个实例，避免上一页的状态影响（与逐页快照的语义一致）。

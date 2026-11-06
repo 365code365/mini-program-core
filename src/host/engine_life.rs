@@ -108,6 +108,26 @@ impl MiniEngine {
     pub(crate) fn freeze_clock_for_test(&mut self) {
         self.clock_frozen = true;
     }
+
+    /// 虚拟时钟（测试与无头驱动用）：引擎时钟停在宿主 pump 给的时刻（同 `freeze_clock_for_test`），**`setTimeout` /
+    /// `setInterval` 与动画帧时刻也按它走**。之后 pump 的 `now_ms` 推进多少，定时器就过了多少 —— 等一个 1.5s 的 Toast 收起、
+    /// 轮播自动翻页、倒计时，测试里推 100 帧就到，不用真的睡。从前示例 e2e 一个二进制 20 多秒，CPU 只用了 1 秒，其余都在等墙上时钟
+    pub fn use_virtual_clock(&mut self) {
+        self.clock_frozen = true;
+        let now = std::time::Instant::now();
+        // 第一次 pump 之前（onLoad 里）设的定时器也按这个零点算：零点对应第一次 pump 给的毫秒
+        self.virtual_origin = Some((now, None, 0));
+        self.app.set_timer_clock(Some(now));
+        crate::sys::frame_clock::set_virtual(Some(now));
+        // JS 的 `Date.now()` / `new Date()` 也跟着走（倒计时、阅读时长这类按 Date 算的）：起点是此刻的真实时间，
+        // 每帧把过了多少写进 `__vclock`（engine_frame.rs）。带参数的构造照常透传，原型不变（instanceof 照旧）
+        self.app
+            .eval(
+                "(function(){var R=Date,b=R.now();globalThis.__vclock=0;function D(){return arguments.length?Reflect.construct(R,Array.prototype.slice.call(arguments)):new R(b+globalThis.__vclock)}\
+                 D.prototype=R.prototype;D.now=function(){return b+globalThis.__vclock};D.parse=R.parse;D.UTC=R.UTC;Date=D})()",
+            )
+            .ok();
+    }
     /// 把本实例的安全区、屏幕尺寸与深浅色放进本线程，供之后的 WXSS 解析求 `env()` 与 `@media` 用
     pub(crate) fn apply_env_context(opts: &EngineOptions, width: u32, height: u32) {
         let base = crate::parser::wxss::EnvContext::default();
@@ -121,5 +141,14 @@ impl MiniEngine {
             screen_height: height as f32,
             dark,
         });
+    }
+}
+
+impl Drop for super::engine::MiniEngine {
+    /// 虚拟时钟是线程级的（frame_clock）：这台引擎没了，同一条线程上后面的引擎不能还停在它的钟上
+    fn drop(&mut self) {
+        if self.virtual_origin.is_some() {
+            crate::sys::frame_clock::set_virtual(None);
+        }
     }
 }

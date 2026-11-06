@@ -17,7 +17,7 @@ pub fn measure_text_node(
 ) -> taffy::geometry::Size<f32> {
     use taffy::style::AvailableSpace;
     // 指定了 font-family 就用那一族的字体来数换行：与绘制端同一把尺子
-    let family = crate::text_family::renderer_for_family(tm.font_family.as_deref());
+    let family = crate::text::family::renderer_for_family(tm.font_family.as_deref());
     let tr = family.as_deref().or(tr);
     let pad_w = tm.pad_l + tm.pad_r;
     let pad_h = tm.pad_t + tm.pad_b;

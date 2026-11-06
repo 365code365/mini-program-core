@@ -1,4 +1,4 @@
-// 收藏与最近播放：落在本地 storage（mu_favs / mu_recent，都是歌曲 id 数组，新的在前）
+// 收藏与最近播放：落在本地 storage（mu_favs / mu_recent，都是歌曲 id 数组，新的在前；mu_pl_favs 是收藏的歌单 id）
 const RECENT_MAX = 20
 function favs() {
   return wx.getStorageSync('mu_favs') || []
@@ -26,4 +26,17 @@ function addRecent(id) {
 function clearRecent() {
   wx.removeStorageSync('mu_recent')
 }
-module.exports = { favs, isFav, toggleFav, recent, addRecent, clearRecent }
+function plFavs() {
+  const v = wx.getStorageSync('mu_pl_favs')
+  return Array.isArray(v) ? v : []
+}
+function isPlFav(id) {
+  return plFavs().indexOf(id) >= 0
+}
+function togglePlFav(id) {
+  const list = plFavs()
+  const on = list.indexOf(id) < 0
+  wx.setStorageSync('mu_pl_favs', on ? [id].concat(list) : list.filter(x => x !== id))
+  return on
+}
+module.exports = { favs, isFav, toggleFav, recent, addRecent, clearRecent, plFavs, isPlFav, togglePlFav }

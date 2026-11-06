@@ -37,7 +37,7 @@ impl MiniEngine {
         let expired = self
             .toast
             .as_ref()
-            .map(|t| t.visible && t.start_time.elapsed().as_millis() as u32 >= t.duration_ms)
+            .map(|t| t.visible && crate::sys::frame_clock::latest().saturating_duration_since(t.start_time).as_millis() as u32 >= t.duration_ms)
             .unwrap_or(false);
         if expired {
             self.toast = None;

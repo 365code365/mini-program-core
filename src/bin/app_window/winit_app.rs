@@ -17,7 +17,7 @@ impl ApplicationHandler for crate::MiniAppWindow {
             .with_title("Mini App").with_inner_size(winit::dpi::LogicalSize::new(LOGICAL_WIDTH, LOGICAL_HEIGHT)).with_resizable(false)).unwrap());
         window.set_ime_allowed(true);
         // 交互窗体：wx.setClipboardData / getClipboardData 走系统剪贴板（无头与测试不碰它）
-        mini_render::clipboard::use_system(true);
+        mini_render::sys::clipboard::use_system(true);
         // 依据显示器刷新率设定每帧间隔，适配 60/120/144Hz 等高刷屏
         let monitor_mhz = window.current_monitor()
             .and_then(|m| m.refresh_rate_millihertz())

@@ -98,7 +98,7 @@ impl WebGame {
             return self.module_js(key).map(|s| Resource::text(s, "application/javascript; charset=utf-8"));
         }
         if let Some(rest) = path.strip_prefix("/__wg/file/") {
-            let real = crate::wxfile::to_path(&format!("{}{rest}", crate::wxfile::SCHEME))?;
+            let real = crate::wxfs::wxfile::to_path(&format!("{}{rest}", crate::wxfs::wxfile::SCHEME))?;
             let bytes = std::fs::read(&real).ok()?;
             return Some(Resource { bytes, mime: mime_of(rest) });
         }

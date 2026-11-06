@@ -55,7 +55,7 @@
   </view>
 
   <view class="card card-flush">
-    <view class="sec-h pad"><text class="sec-t">演职人员</text><text class="more">{{people.length}} 人</text></view>
+    <view class="sec-h pad"><text class="sec-t">演职人员</text><text class="sub">{{people.length}} 人</text></view>
     <scroll-view scroll-x class="hscroll" show-scrollbar="{{false}}">
       <view class="hrow">
         <view class="person" wx:for="{{people}}" wx:key="id">
@@ -68,7 +68,7 @@
   </view>
 
   <view class="card card-flush">
-    <view class="sec-h pad"><text class="sec-t">剧照</text><text class="more">{{m.stills.length}} 张 · 点击查看大图</text></view>
+    <view class="sec-h pad"><text class="sec-t">剧照</text><text class="more" data-index="0" bindtap="onStill">{{m.stills.length}} 张 · 点击查看大图</text></view>
     <scroll-view scroll-x class="hscroll" show-scrollbar="{{false}}">
       <view class="hrow">
         <image class="still" wx:for="{{m.stills}}" wx:key="*this" src="{{item}}" mode="aspectFill" data-index="{{index}}" bindtap="onStill"></image>
@@ -77,15 +77,17 @@
   </view>
 
   <view class="card">
-    <view class="sec-h"><text class="sec-t">热门短评</text><text class="more" bindtap="onComments">全部 {{m.commentCount}} 条 ›</text></view>
+    <view class="sec-h"><text class="sec-t">热门短评</text><view class="row" bindtap="onComments"><text class="more">全部 {{commentTotal}} 条</text><view class="arrow"></view></view></view>
     <view class="cmt" wx:for="{{comments}}" wx:key="id">
       <view class="row">
-        <image class="c-avatar" src="{{item.user.avatar}}" mode="aspectFill"></image>
+        <image wx:if="{{item.user.avatar}}" class="c-avatar" src="{{item.user.avatar}}" mode="aspectFill"></image>
+        <view wx:else class="c-avatar me-avatar"><text class="me-g">我</text></view>
         <view class="col flex1">
-          <text class="c-name">{{item.user.name}}</text>
+          <view class="row"><text class="c-name">{{item.user.name}}</text><text class="mine-tag" wx:if="{{item.mine}}">我的短评</text></view>
           <view class="stars stars-sm"><text class="stars-bg">★★★★★</text><text class="stars-fg" style="width: {{item.starWidth}}%">★★★★★</text></view>
         </view>
-        <text class="sub">{{item.likes}} 赞</text>
+        <text wx:if="{{item.mine}}" class="edit" bindtap="onWrite">修改</text>
+        <text wx:else class="sub">{{item.likes}} 赞</text>
       </view>
       <text class="c-text">{{item.content}}</text>
       <text class="sub">{{item.date}}</text>
@@ -94,7 +96,7 @@
   </view>
   <view class="bottom-gap"></view>
   <view class="bar row">
-    <view class="bar-btn" bindtap="onWrite">写短评</view>
+    <view class="bar-btn" bindtap="onWrite"><text>{{myComment ? '改短评' : '写短评'}}</text></view>
     <view class="btn btn-primary flex1" hover-class="btn-hover" bindtap="onWish">{{wished ? '已想看 · 上映提醒' : '想看 · 上映提醒我'}}</view>
   </view>
 </block>

@@ -2,6 +2,7 @@
 //! 覆盖布局、渲染、CSS 解析、组件等功能
 
 pub mod layout_tests;
+pub mod layout_cache_tests;
 pub mod flex_shrink_tests;
 pub mod custom_component_tests;
 pub mod component_instance_tests;
@@ -109,7 +110,7 @@ impl LockedEngine {
             d.set(d.get() + 1);
             d.get() == 1
         });
-        RootGuard(first.then(|| crate::data_dir::ROOT_TEST_LOCK.read().unwrap_or_else(|e| e.into_inner())))
+        RootGuard(first.then(|| crate::sys::data_dir::ROOT_TEST_LOCK.read().unwrap_or_else(|e| e.into_inner())))
     }
     pub(crate) fn new(e: crate::host::MiniEngine, g: RootGuard) -> Self {
         Self { e, _g: g }

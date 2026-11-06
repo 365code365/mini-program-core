@@ -32,7 +32,7 @@ python3 -m venv /tmp/fv && /tmp/fv/bin/pip install fonttools
 
 | 变量 | 值 | 作用（代码） |
 |------|----|------|
-| `MINI_MAIN_FONT` / `MINI_BOLD_FONT` | 随包的 MiniRender Sans | 主字体与粗体（`text_system.rs`、`text/load.rs`） |
+| `MINI_MAIN_FONT` / `MINI_BOLD_FONT` | 随包的 MiniRender Sans | 主字体与粗体（`text/system.rs`、`text/load.rs`） |
 | `MINI_LATIN_FONT` / `MINI_LATIN_BOLD_FONT` | `…/SFUI.ttf@400@17` / `@700@17` | 西文用 SF，并加 SF 的 `trak` 字距（`text/latin.rs`） |
 | `MINI_LINE_BOX` | `ios@<屏幕倍率>` | 按 WebKit 的口径定行盒、基线、汉字字宽、emoji 大小（`text/ios_box.rs`） |
 

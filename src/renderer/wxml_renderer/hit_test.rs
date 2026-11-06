@@ -151,7 +151,7 @@ impl WxmlRenderer {
                 let natural = src
                     .to_ascii_lowercase()
                     .ends_with(".svg")
-                    .then(|| crate::assets::resolve(src))
+                    .then(|| crate::app::assets::resolve(src))
                     .flatten()
                     .and_then(|p| crate::renderer::components::image::svg::natural_size_of_file(src, &p));
                 let (width, height) = natural.unwrap_or((width, height));

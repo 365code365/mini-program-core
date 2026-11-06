@@ -138,7 +138,7 @@ impl MiniEngine {
         // wxfileRoot：宿主把 `wxfile://…`（下载 / 选图得到的临时文件）当图标路径时按它找真实文件
         self.events.push(json!({
             "type": "sameLayerViews", "views": list,
-            "wxfileRoot": crate::wxfile::root().to_string_lossy(),
+            "wxfileRoot": crate::wxfs::wxfile::root().to_string_lossy(),
         }));
     }
 

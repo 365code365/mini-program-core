@@ -49,7 +49,7 @@ pub fn enabled() -> bool {
 }
 
 fn dir() -> PathBuf {
-    crate::data_dir::data_dir().join("jscache")
+    crate::sys::data_dir::data_dir().join("jscache")
 }
 
 /// 预编译线程正在编的键：实例读到这些键时等一下

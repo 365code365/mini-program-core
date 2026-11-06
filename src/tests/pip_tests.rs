@@ -46,7 +46,7 @@ struct T {
 
 impl T {
     fn new(root: &std::path::Path, route: &str) -> Self {
-        let g = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
+        let g = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
         let opts = EngineOptions { same_layer: vec!["live-pusher".into()], ..Default::default() };
         let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), Some(&root.join("_data").to_string_lossy()), W, H, DPR, HostEnv::default(), opts)
             .expect("创建引擎");

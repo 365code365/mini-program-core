@@ -32,8 +32,8 @@ fn 消息体解析_参数一律字符串() {
 
 #[test]
 fn 资源_包内文件_不许跳出包根_模块包装同一行() {
-    let _scope = crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-    let _root = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
+    let _scope = crate::sys::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _root = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
     let (g, base) = game("res", &[("game.json", "{}"), ("game.js", "var a = 1;"), ("js/b.js", "\"use strict\"; module.exports = 2; // 尾注释"), ("img/a.png", "PNG")]);
     let r = g.resource("/img/a.png").unwrap();
     assert_eq!((r.bytes.as_slice(), r.mime), (b"PNG".as_slice(), "image/png"));
@@ -58,16 +58,16 @@ fn 资源_包内文件_不许跳出包根_模块包装同一行() {
 
 #[test]
 fn storage_与_quickjs_模式同一个文件_轮询时落盘() {
-    let _scope = crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-    let _root = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
+    let _scope = crate::sys::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _root = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
     let (mut g, base) = game("st", &[("game.json", "{}"), ("game.js", "")]);
     g.post("storage_clear", &[]);
     g.post("storage_set", &["k".into(), "{\"a\":1}".into()]);
     g.post("storage_set", &["gone".into(), "1".into()]);
     g.post("storage_remove", &["gone".into()]);
     let _ = g.take_js();
-    assert_eq!(crate::storage_file::load().get("k").map(String::as_str), Some("{\"a\":1}"));
-    assert!(crate::storage_file::load().get("gone").is_none());
+    assert_eq!(crate::sys::storage_file::load().get("k").map(String::as_str), Some("{\"a\":1}"));
+    assert!(crate::sys::storage_file::load().get("gone").is_none());
     // 下一次启动：启动数据里带着整张表（页面读不过桥）
     drop(g);
     let opts = GameOptions { app_id: Some("wxst".into()), ..Default::default() };
@@ -79,8 +79,8 @@ fn storage_与_quickjs_模式同一个文件_轮询时落盘() {
 
 #[test]
 fn 尺寸与方向_变了才派发_同_quickjs_模式() {
-    let _scope = crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-    let _root = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
+    let _scope = crate::sys::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _root = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
     let (mut g, base) = game("rz", &[("game.json", "{}"), ("game.js", "")]);
     g.resize(375, 667, 2.0, None);
     assert!(g.take_js().is_none(), "没变不派发");
@@ -94,8 +94,8 @@ fn 尺寸与方向_变了才派发_同_quickjs_模式() {
 
 #[test]
 fn 宿主事件_hostcall_补_tempdir_宿主回包导入文件() {
-    let _scope = crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-    let _root = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
+    let _scope = crate::sys::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _root = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
     let (mut g, base) = game("hc", &[("game.json", "{}"), ("game.js", "")]);
     g.post("host_event", &[r#"{"type":"hostCall","id":3,"api":"login","args":{}}"#.into()]);
     g.post("host_event", &["not json".into()]);
@@ -113,8 +113,8 @@ fn 宿主事件_hostcall_补_tempdir_宿主回包导入文件() {
 
 #[test]
 fn 文件系统与临时文件走同一份_rust_实现() {
-    let _scope = crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-    let _root = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
+    let _scope = crate::sys::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _root = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
     let (mut g, base) = game("fs", &[("game.json", "{}"), ("game.js", "")]);
     let w = g.call("fs", &["writeFile".into(), r#"{"filePath":"wxfile://usr/a.txt","data":"hi","encoding":"utf8"}"#.into()]);
     assert!(w.contains("\"ok\":true"), "{w}");

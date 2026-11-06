@@ -15,7 +15,7 @@
     <view class="row head-row">
       <view class="cover-wrap">
         <image class="cover" src="{{p.cover}}" mode="aspectFill"></image>
-        <text class="pl-count">▶ {{p.playCountText}}</text>
+        <view class="pl-count row"><view class="pc-tri"><view class="pc-tri-in"></view></view><text>{{p.playCountText}}</text></view>
       </view>
       <view class="col flex1 head-info">
         <text class="name">{{p.name}}</text>
@@ -27,15 +27,15 @@
       </view>
     </view>
     <text class="desc {{descOpen ? '' : 'desc-fold'}}" bindtap="onDesc">{{p.description}}</text>
-    <view class="ops row">
-      <view class="op" bindtap="onCollect"><text class="op-n">{{p.subscribed}}</text><text class="op-l">收藏</text></view>
-      <view class="op"><text class="op-n">{{p.songCount}}</text><text class="op-l">首歌</text></view>
-      <view class="op"><text class="op-n">{{p.playCountText}}</text><text class="op-l">播放</text></view>
+    <view class="nums row">
+      <view class="op {{fav ? 'op-on' : ''}}" bindtap="onCollect"><text class="op-n">{{favCount}}</text><text class="op-l">{{fav ? '已收藏' : '收藏'}}</text></view>
+      <view class="op" bindtap="onSongsTap"><text class="op-n">{{p.songCount}}</text><text class="op-l">首歌</text></view>
+      <view class="op" bindtap="onPlayAll"><text class="op-n">{{p.playCountText}}</text><text class="op-l">播放</text></view>
     </view>
   </view>
   <view class="list">
     <view class="play-all row" bindtap="onPlayAll" hover-class="song-hover">
-      <view class="pa-icon"><view class="pa-tri"></view></view>
+      <view class="pa-icon"><view class="pa-tri"><view class="pa-tri-in"></view></view></view>
       <text class="pa-t">播放全部</text>
       <text class="sub">（{{songs.length}}）</text>
     </view>

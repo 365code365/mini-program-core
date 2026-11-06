@@ -26,16 +26,16 @@
       <text class="time">{{durText}}</text>
     </view>
     <view class="ctrls row">
-      <view class="ctrl" bindtap="onLike"><text class="ctrl-s">{{liked ? '♥' : '♡'}}</text></view>
-      <view class="ctrl" bindtap="onPrev"><view class="pv-bar"></view><view class="pv-tri"></view></view>
+      <view class="ctrl" bindtap="onMode"><text class="mode-g">{{mode.g}}</text></view>
+      <view class="ctrl" bindtap="onPrev"><view class="pv-bar"></view><view class="pv-tri"><view class="pv-tri-in"></view></view></view>
       <view class="play" bindtap="onToggle">
         <view class="pause" wx:if="{{playing}}"><view class="pbar"></view><view class="pbar"></view></view>
-        <view class="tri" wx:else></view>
+        <view class="tri" wx:else><view class="tri-in"></view></view>
       </view>
-      <view class="ctrl" bindtap="onNext"><view class="nx-tri"></view><view class="nx-bar"></view></view>
+      <view class="ctrl" bindtap="onNext"><view class="nx-tri"><view class="nx-tri-in"></view></view><view class="nx-bar"></view></view>
       <view class="ctrl" bindtap="onQueue"><text class="ctrl-s">≡</text></view>
     </view>
-    <text class="tip">{{waiting ? '缓冲中…' : '试听片段 · 第 ' + (index + 1) + ' / ' + queue.length + ' 首'}}</text>
+    <text class="tip">{{waiting ? '缓冲中…' : mode.name + ' · 试听片段 · 第 ' + (index + 1) + ' / ' + queue.length + ' 首'}}</text>
   </block>
   <view class="none" wx:else>
     <text class="none-t">还没有在播放的歌曲</text>

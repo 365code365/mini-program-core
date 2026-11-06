@@ -11,6 +11,8 @@ mod page_hooks;
 mod window;
 /// `{{m.f(x)}}` 的执行方：渲染层表达式引擎 → 逻辑层 QuickJS
 mod wxs_host;
+/// App 级生命周期事件（切前后台）
+pub mod event;
 
 pub use app::{MiniApp, UiEvent};
 pub use window::Window;

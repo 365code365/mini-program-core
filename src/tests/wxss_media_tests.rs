@@ -2,7 +2,7 @@
 //!
 //! `@media` 在解析期按本线程的环境量求值（屏宽 / 屏高 / 深浅色，见 parser/wxss/media.rs），
 //! 成立的块里的规则**就地**并进样式表（书写顺序决定层叠）；`@font-face` 登记字族
-//! （src/text_faces.rs），`font-family` 写它的文字换成那个字体。
+//! （src/text/faces.rs），`font-family` 写它的文字换成那个字体。
 use crate::parser::wxml::WxmlParser;
 use crate::parser::wxss::{set_env_context, EnvContext, StyleValue, WxssParser};
 use crate::renderer::wxml_renderer::WxmlRenderer;
@@ -70,6 +70,8 @@ fn width_of(css: &str, wxml: &str) -> f32 {
 
 #[test]
 fn font_face_registers_family_and_changes_metrics() {
+    // 字族登记是进程级的：别的用例的引擎看见新字族会整树重排（逐帧比整帧次数的用例会被它打断），独占
+    let _g = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
     let mono = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/Monaco.ttf");
     // 横排容器：文字按内容宽度排（竖排时块级文字一律撑满整行，量不出差别）
     let wxml = r#"<view style="display:flex;flex-direction:row"><text class="t">iiiiiiii</text></view>"#;
@@ -78,7 +80,7 @@ fn font_face_registers_family_and_changes_metrics() {
     let ss = WxssParser::new(&css).parse().unwrap();
     assert_eq!(ss.font_faces.len(), 1);
     assert_eq!(ss.font_faces[0].family, "E2E Mono Media");
-    assert!(crate::text_faces::face_path("e2e mono media").is_some(), "@font-face 解析时就登记了");
+    assert!(crate::text::faces::face_path("e2e mono media").is_some(), "@font-face 解析时就登记了");
     let with_face = width_of(&css, wxml);
     // Monaco 是等宽字体：一串 i 比比例字体宽得多
     assert!(with_face > base * 1.3, "等宽字体下 i 变宽：默认 {base}，登记后 {with_face}");
@@ -86,13 +88,14 @@ fn font_face_registers_family_and_changes_metrics() {
 
 #[test]
 fn font_face_rejects_woff() {
+    let _g = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
     let dir = std::env::temp_dir().join("mini-render-woff-test");
     std::fs::create_dir_all(&dir).unwrap();
     let p = dir.join("x.woff2");
     std::fs::write(&p, b"wOF2\0\0\0\0").unwrap();
-    let r = crate::text_faces::register_file("E2E Woff", &p);
+    let r = crate::text::faces::register_file("E2E Woff", &p);
     assert!(r.unwrap_err().contains("woff"));
-    assert!(crate::text_faces::face_path("e2e woff").is_none());
+    assert!(crate::text::faces::face_path("e2e woff").is_none());
     std::fs::remove_dir_all(&dir).ok();
 }
 

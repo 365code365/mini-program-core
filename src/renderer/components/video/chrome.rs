@@ -15,7 +15,7 @@
 //! 坐标：调用方给框（自己坐标系里的 x / y / w / h）与 `u`（一个逻辑像素等于几个单位）：
 //! 画在页面画布上 `u` 是像素比，点击命中用逻辑坐标 `u = 1`。
 use super::ui::{attr_flag, Status};
-use crate::geometry::Rect as GeoRect;
+use crate::gfx::geometry::Rect as GeoRect;
 use crate::text::TextRenderer;
 use crate::{Canvas, Color, Paint, PaintStyle, Path};
 use std::collections::HashMap;

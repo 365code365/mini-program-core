@@ -9,7 +9,7 @@
 //! 解析到小程序目录之外的路径一律拒绝 —— 包里的 WXML 不该能读到包外的文件。
 
 use crate::parser::wxml::{WxmlNode, WxmlNodeType};
-use crate::using_components::{normalize, resolve_component_path};
+use crate::app::using_components::{normalize, resolve_component_path};
 use std::path::{Path, PathBuf};
 
 /// 文件嵌套深度上限（include 与 import 共用）。正常工程两三层就到头了，

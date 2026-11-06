@@ -358,8 +358,8 @@ mini_render::memory_report();
 
 ## 二、App 级 C ABI（已实现）
 
-实现在 `src/ffi_app.rs`，声明在 `include/mini_render.h`。Kotlin 走
-`src/ffi_jni.rs`（`jni` crate，只在 android 目标编译），Swift 直接调 C。
+实现在 `src/ffi/app.rs`，声明在 `include/mini_render.h`。Kotlin 走
+`src/ffi/jni.rs`（`jni` crate，只在 android 目标编译），Swift 直接调 C。
 
 整套只有十几个函数，没有回调注册：
 
@@ -400,7 +400,7 @@ const char* mr_version(void);
 
 ### 渲染后端（只增不改）
 
-实现在 `src/ffi_backend.rs`，声明在 `include/mini_render.h` 末尾。引擎的内容永远由 CPU 光栅；
+实现在 `src/ffi/backend.rs`，声明在 `include/mini_render.h` 末尾。引擎的内容永远由 CPU 光栅；
 后端只决定「谁把各图层合成上屏」。GPU 合成器（`compositor::gpu`）与 CPU 逐字节一致（启动自检守着），
 桌面窗体、无头、**SDK 的 surface 上屏**共用同一份（SDK 侧接线在 `src/host/engine_gpu.rs`）。
 Android 的库默认编进 `gpu`（`build-mobile.sh`，`ANDROID_GPU=0` 关掉，arm64 实测 +5.1MB：36.3→41.4MB）；
@@ -497,7 +497,7 @@ int  mr_app_pump_ex(MRApp*, uint64_t now_ms);              // MR_FRAME_* 的按�
   宿主再给这条线程开一个 ADPF 会话（`FrameBoost.kt`，目标为刷新周期的一半）。所以**引擎必须在一条专用线程上创建与驱动**，
   别在 UI 线程上建。回桌面 Surface 被收走时合成器只放 surface，回来挂新 surface 不重开设备（约 25ms）。
 - **动画按宿主帧时间取样**：`pump(now_ms)` 给的是 vsync 时刻（Choreographer 的 frameTimeNanos、CADisplayLink）时，
-  操作菜单 / picker / `@keyframes` 这一帧都按它取样（`frame_clock.rs`）。传 0 就退回墙上时钟 —— 宿主别传「此刻」，
+  操作菜单 / picker / `@keyframes` 这一帧都按它取样（`sys/frame_clock.rs`）。传 0 就退回墙上时钟 —— 宿主别传「此刻」，
   画的时刻相对 vsync 忽早忽晚，动画会抖。
 - **真机采样**：示例 App 的清单带 `<profileable android:shell="true"/>`，release 包也能
   `adb shell simpleperf record --app <包名> -g --duration 9 -o /data/local/tmp/perf.data`；符号用
@@ -510,7 +510,7 @@ int  mr_app_pump_ex(MRApp*, uint64_t now_ms);              // MR_FRAME_* 的按�
   开着 `MINI_FPS` 时 Android 直写 Surface 还会每秒打一行 `📤 [直写] … 等缓冲 / 写像素 / 提交`（引擎的 📊 行不含上屏）。
   SDK 不做 `MINI_GPU_VERIFY` 的逐帧对拍（surface 读不回来），GPU 正确性靠启动自检与 `tools/gpu-parity.sh`。
 
-Kotlin 侧对应的 JNI（`src/ffi_jni.rs`，老的 `native*` 一个没动）：`nativeSetBackend(h, pref): Boolean`、
+Kotlin 侧对应的 JNI（`src/ffi/jni.rs`，老的 `native*` 一个没动）：`nativeSetBackend(h, pref): Boolean`、
 `nativeSetDeviceInfo(h, totalMem: Long, lowRam: Boolean, api: Int)`、`nativeAttachSurface(h, surface: Surface): Int`、
 `nativeDetachSurface(h)`、`nativeBackend(h): Int`、`nativeBackendReason(h): String`、`nativePumpEx(h, nowMs): Int`。
 `nativeAttachSurface` 内部 `ANativeWindow_fromSurface` → `mr_app_attach_surface`（引擎 acquire 自己那份）→
@@ -527,7 +527,7 @@ Swift 本身只在 Mac Catalyst 下 typecheck 过，没上过 iPhone）。新的
 
 ### 嵌入宿主接口（Flutter 插件 / 原生 View 用，只增不改）
 
-实现在 `src/ffi_embed.rs`（Android 绑定在 `src/ffi_jni_embed.rs`），声明在 `include/mini_render.h` 末尾。
+实现在 `src/ffi/embed.rs`（Android 绑定在 `src/ffi/jni_embed.rs`），声明在 `include/mini_render.h` 末尾。
 不调这组函数的宿主行为与从前一致（`tools/sdk-parity.sh` 15/15、6/6 守着）。
 
 | 函数 | 解决什么 |
@@ -703,7 +703,7 @@ Flutter Android 插件同一份（盖在引擎那块平台视图上，`builtinWe
 - 普通页面的胶囊画在**宿主自己的导航栏**右侧（Flutter 插件的 `MiniProgramScaffold` 已经这样做，几何与配色同上）。
 - 语义：「•••」= **查看关于**，「⊙」= **返回宿主**。引擎只发事件，做什么由宿主定。关于信息在启动后第一帧的
   `app` 事件里（`about`：`name` / `appId` / `description` / `entryPage` / `pageCount` / `engine`，取自
-  project.config.json 与 app.json，见 `src/app_about.rs`），没开胶囊也发。
+  project.config.json 与 app.json，见 `src/app/about.rs`），没开胶囊也发。
 - 现成的宿主都留了口子、带了默认实现（演示用）：
 
   | 宿主 | 「•••」查看关于 | 「⊙」返回宿主 |
@@ -856,7 +856,7 @@ cargo build --release --target aarch64-apple-ios
 - 数据目录：`NSCachesDirectory`（可清理）或 Application Support（要备份的）；
 - 字体：iOS **没有** `/System/Library/Fonts/Hiragino Sans GB.ttc` 这类路径。
   要么把字体打进包（注意版权），要么用 `CTFontManagerCopyAvailableFontFamilyNames`
-  拿到路径喂给引擎。**当前 `text_family.rs` 的候选路径表是 macOS 的，iOS 上要另配一张。**
+  拿到路径喂给引擎。**当前 `text/family.rs` 的候选路径表是 macOS 的，iOS 上要另配一张。**
 - 限制：`devtools` 之类的私有 API 别开（上架审核）。
 
 ### Android

@@ -4,7 +4,7 @@ use super::GameAudio;
 
 /// 读一个音频源：包内路径按包根（跑出包根拒绝）、`wxfile://`、http(s)
 pub(super) fn load_src(src: &str, root: &std::path::Path) -> Result<Pcm, (i32, String)> {
-    if src.starts_with("http://") || src.starts_with("https://") || src.starts_with(crate::wxfile::SCHEME) {
+    if src.starts_with("http://") || src.starts_with("https://") || src.starts_with(crate::wxfs::wxfile::SCHEME) {
         return decode::load(src);
     }
     let path = crate::game::image::loader::package_path(src, root).ok_or((10003, format!("路径不能跑出包根：{src}")))?;

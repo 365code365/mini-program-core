@@ -157,3 +157,8 @@ page {
 .bottom-space-tab {
   height: 260rpx;
 }
+/* 三角：▶ 会被当成彩色 emoji 画，border 透明边的三角引擎画不出来；裁剪容器里放一个旋转 45° 的方块，只露出一半 */
+.tri { position: relative; width: 12rpx; height: 16rpx; overflow: hidden; flex-shrink: 0; }
+.tri-in { position: absolute; left: -5.66rpx; top: 2.34rpx; width: 11.31rpx; height: 11.31rpx; background: #ffffff; transform: scaleX(1.5) rotate(45deg); }
+.tri-lg { width: 16.5rpx; height: 22rpx; margin-left: 4rpx; }
+.tri-lg .tri-in { left: -7.78rpx; top: 3.22rpx; width: 15.56rpx; height: 15.56rpx; }

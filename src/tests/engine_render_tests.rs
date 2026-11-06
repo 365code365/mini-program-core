@@ -7,8 +7,8 @@ use crate::host::MiniEngine;
 
 fn engine_in(route: &str, slot: &str) -> super::LockedEngine {
     let g = super::LockedEngine::lock();
-    let root = crate::app_dir::resolve("sample-app");
-    let data = crate::data_dir::subdir(&format!("engine-render-tests/{slot}"));
+    let root = crate::app::dir::resolve("sample-app");
+    let data = crate::sys::data_dir::subdir(&format!("engine-render-tests/{slot}"));
     std::fs::remove_dir_all(&data).ok();
     let mut e = MiniEngine::new(
         &root.to_string_lossy(),
@@ -112,8 +112,8 @@ fn 进页面就发的selector_query与回调里的画布指令不靠输入也能
     // 用 sample-app 的登录页：没有 swiper、定时器、动画。不用临时目录搭页面 ——
     // `MiniEngine::new` 会改进程级的小程序根目录，并行跑的别的用例会找不到自己的页面。
     // 也不断言「办完就停帧」：swiper 状态是进程级的，并行的首页用例会让它一直要续帧
-    let root = crate::app_dir::resolve("sample-app");
-    let data = crate::data_dir::subdir("engine-render-tests/sq-wake");
+    let root = crate::app::dir::resolve("sample-app");
+    let data = crate::sys::data_dir::subdir("engine-render-tests/sq-wake");
     std::fs::remove_dir_all(&data).ok();
     let mut e = MiniEngine::new(&root.to_string_lossy(), Some(&data.to_string_lossy()), 375, 667, 2.0)
         .expect("创建引擎");
@@ -374,7 +374,7 @@ fn e1_canvas_id_重复_第二个起派_binderror_一次() {
         std::fs::create_dir_all(p.parent().unwrap()).unwrap();
         std::fs::write(p, text).unwrap();
     }
-    let _g = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
+    let _g = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
     let mut e = MiniEngine::new(&root.to_string_lossy(), Some(&root.join("_data").to_string_lossy()), 375, 667, 1.0).expect("创建引擎");
     e.launch(None).expect("打开首页");
     for t in 1..=4 {

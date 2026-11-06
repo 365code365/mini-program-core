@@ -239,7 +239,7 @@ my-mini-app/                                                    ┌────�
 根因是 fontdue 在加载时把字体里每个字形的几何一次性展开。缓存都已按字节封顶
 （图片 64MB / 字形 24MB / 2 个字体文件，LRU），也有 `trim_memory()` 给宿主在内存告警时调用，
 但真正压峰值只有换惰性字体后端（`swash` / `cosmic-text`）这一条路。**换后端的代码面很小**
-（fontdue 的调用全在 `src/text.rs`：5 处 `Font::from_bytes`、4 处 `metrics`、2 处 `rasterize`），
+（fontdue 的调用全在 `src/text/mod.rs`：5 处 `Font::from_bytes`、4 处 `metrics`、2 处 `rasterize`），
 难的是它会改变每个字形的抗锯齿 —— 65 张画廊 + 21 页整帧 + 7 张交互快照的基线全部要重定，
 所以这是单独一轮的活，不是一次重构。
 
@@ -346,7 +346,7 @@ GPU 初始化失败、自检不一致、运行中设备丢失或 surface 无法�
 | `MINI_GAME_DUMP=<n>` | 小游戏：第 n 次 pump 时把输出帧（WebGL 在上屏前读回、GPU 2D 读回、覆盖层）存成系统临时目录下的 `mini-game-dump.png`。iOS 真机用 `xcrun devicectl device copy from --domain-type appDataContainer --domain-identifier <bundle id> --source tmp/mini-game-dump.png` 取回：画面在 CAMetalLayer 里，脚本截不到 |
 | `MINI_AUDIO_LOG=1` | iOS 小游戏：SDK 每 2 秒打一行 `🔊 [GAME] 音频 {…}`，前半是引擎的输出统计（`mr_game_audio_stats`：`callbacks`、`peak`、`suspended` / `interrupted`、`restarts`），后半是 AVAudioSession（类别、音量、输出路由、别的 App 在不在放）。`callbacks` 不涨 = 设备不拉数据了；`peak` 为 0 = 混音器交出去的全是静音。引擎要出声而回调停了 600ms，引擎自己重启输出流（日志「🔊 音频输出 …ms 没拉数据…已重启」） |
 | `MINI_AUDIO_FAULT=open\|stall@N` | 小游戏音频故障注入（创建选项 `fault` 优先）：`open` = 当作设备打不开（静音的离线模式）；`stall@N` = 设备第 N 次回调之后不再计数，看门狗看到的就是输出停了（iOS / 桌面，测试 `au10`） |
-| `MINI_EMOJI_FONT=<路径>` | 彩色 emoji 字体（先于内置候选；Android 上同一个开关选 COLR 字体，格式不对的那套自动跳过）。iOS SDK 按 CoreText 问到的路径设它：iOS 的 Apple Color Emoji 在 `Fonts/CoreAddition/` 下，`sbix` 字形是苹果私有的 `emjc`（`src/emoji_emjc.rs` 解码；macOS 那份是 PNG）。从前找不到，iOS 上 emoji 全画成豆腐块 |
+| `MINI_EMOJI_FONT=<路径>` | 彩色 emoji 字体（先于内置候选；Android 上同一个开关选 COLR 字体，格式不对的那套自动跳过）。iOS SDK 按 CoreText 问到的路径设它：iOS 的 Apple Color Emoji 在 `Fonts/CoreAddition/` 下，`sbix` 字形是苹果私有的 `emjc`（`src/text/emoji/emjc.rs` 解码；macOS 那份是 PNG）。从前找不到，iOS 上 emoji 全画成豆腐块 |
 | `MINI_ANGLE_DIR=<目录>` | 小游戏 WebGL：ANGLE 动态库（libEGL / libGLESv2）所在目录；默认找可执行文件旁、`../Frameworks`、仓库 `third_party/angle/<平台>/`（`tools/fetch-angle.sh` 拉） |
 | `MINI_GPU_FAULT=lost@N`（小游戏） | 小游戏里作用于 WebGL：第 N 次上屏时让主画布的上下文丢失，派发 `webglcontextlost`（A8.4） |
 | `MINI_GAME_WATCHDOG_MS=<毫秒>` | 小游戏：单次进入 JS 的时间上限（默认 5000），超时中断抛 `InternalError: interrupted`，交给 `wx.onError` 并发宿主 `error{kind:"watchdog"}` |
@@ -563,7 +563,8 @@ Android 在 ubuntu runner 上编、iOS 在 macOS runner 上编，然后把两个
 ## 测试与回归
 
 一条命令跑完下面全部（含逐页快照与 H5 对比），每步计时，汇总在 `target/_regress/summary.txt`。
-改了引擎之后约 4 分钟：编全部目标 ~20s、各项检查 ~200s。为此 `release` 关了 LTO、开了增量
+改了引擎之后 3~4 分钟：编全部目标 20~100s、全部 Rust 用例约 60s（`tools/test-fast.py` 按核分片并行）、
+其余检查分四路并行约 60s。为此 `release` 关了 LTO、开了增量
 （thin LTO 要给五十来个二进制各重新优化一遍：2905s 对 20s，gallery 输出逐字节相同）；
 发出去的移动端库由 `tools/build-mobile.sh` 开回 thin LTO。
 
@@ -575,7 +576,7 @@ bash tools/regress.sh            # 加 --no-h5 跳过 H5 对比
 
 ```bash
 rm -rf target/mini-storage                 # ① 必做，见下
-cargo test --release                       # ② lib 774 + bin 26 + 集成 72
+python3 tools/test-fast.py                 # ② 全部 1708 个 Rust 用例，分片并行（--quick 跳过起 Chrome 的）
 bash tools/damage-check.sh                 # ③ 增量重绘 == 整帧重绘（逐字节）
 cargo run --release --example gallery      # ④ 65 张场景图
 bash tools/tab-click-check.sh              # ⑤ 三个 app 的 tabBar 点击
@@ -652,8 +653,8 @@ src/
 ├── compiler/html/   编译成 HTML 工程（双端对比的参照实现）
 │                    `transpile/` 4 片（CSS / 标签 / 组件内部结构 / 输出），
 │                    `runtime/*.js` 是浏览器端响应式运行时（9 片，按序 include_str! 拼接）
-├── ffi_app.rs       App 级 C ABI（mr_app_*）
-├── ffi_jni.rs       Android JNI 入口
+├── ffi/app.rs       App 级 C ABI（mr_app_*）
+├── ffi/jni.rs       Android JNI 入口
 └── bin/             桌面宿主
     ├── window.rs      只剩 struct + new() + main()（从前 1877 行装了四件事）
     └── app_window/    按职责分片：winit_app（winit 适配）/ frame（出帧闸门）/

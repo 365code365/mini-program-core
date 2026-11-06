@@ -1,0 +1,8 @@
+.grid { height: 760rpx; margin-top: 16rpx; background: #fff; }
+.tr { display: flex; flex-direction: row; width: 2120rpx; }
+.tr.head { background: #07c160; color: #fff; font-weight: bold; }
+.tr.odd { background: #f7f8fa; }
+.td { width: 120rpx; flex-shrink: 0; height: 72rpx; line-height: 72rpx; text-align: center; font-size: 24rpx; border-right: 1rpx solid #eee; border-bottom: 1rpx solid #eee; }
+.td.name { width: 200rpx; text-align: left; padding-left: 16rpx; box-sizing: border-box; }
+.td.up { color: #e5484d; }
+.td-hover { background: #d9f7d6; }

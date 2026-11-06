@@ -207,7 +207,7 @@ pub fn take_requests(app: &mut MiniApp) -> bool {
     for req in app.take_host_requests("previewImage") {
         changed |= open(&req);
     }
-    let now = crate::frame_clock::now();
+    let now = crate::sys::frame_clock::now();
     let done = with(|s| {
         let Some(p) = s.as_mut() else { return false };
         if let Some((t0, x0, v0)) = p.slide {
@@ -266,7 +266,7 @@ fn open(req: &Value) -> bool {
         _ => 0,
     }
     .min(items.len() - 1);
-    let now = crate::frame_clock::now();
+    let now = crate::sys::frame_clock::now();
     raster::clear_cache();
     with(|s| {
         *s = Some(Preview {
@@ -337,7 +337,7 @@ pub fn opaque() -> bool {
 /// 顺带定住这一帧的样子：紧接着的 [`render`] 用同一份 —— 两次各取一次时刻的话，关闭的第一帧
 /// 可能这里判「盖满」（页面没合成）、画的时候黑底已经透了一点，压暗的是一块没画过的缓冲
 pub fn covers_page() -> bool {
-    let look = with(|s| s.as_ref().map(|p| look_at(p, crate::frame_clock::now())));
+    let look = with(|s| s.as_ref().map(|p| look_at(p, crate::sys::frame_clock::now())));
     FRAME_LOOK.with(|f| f.set(look));
     look.is_some_and(|l| l.bg >= 0.999)
 }

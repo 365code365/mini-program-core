@@ -1,0 +1,16 @@
+page { padding-top: 24rpx; }
+.movie { align-items: flex-start; }
+.poster { width: 120rpx; height: 172rpx; border-radius: 10rpx; background: #eceef1; flex-shrink: 0; }
+.info { margin-left: 22rpx; }
+.title { font-size: 32rpx; font-weight: bold; }
+.line { margin-top: 10rpx; }
+.stars-row { margin-top: 18rpx; }
+.big-star { font-size: 60rpx; color: #e3e5e8; margin-right: 14rpx; }
+.big-star-on { color: #ffb400; }
+.star-text { font-size: 26rpx; color: #ffb400; margin-left: 8rpx; }
+.ta { width: 100%; height: 260rpx; margin-top: 20rpx; background: #f5f6f8; border-radius: 14rpx; padding: 20rpx; box-sizing: border-box; font-size: 28rpx; }
+.ph { color: #b0b4ba; }
+.count { display: block; text-align: right; font-size: 22rpx; color: #b0b4ba; margin-top: 10rpx; }
+.tips { padding: 0 32rpx; line-height: 36rpx; }
+.btns { padding: 32rpx 24rpx 40rpx; }
+.del { margin-top: 28rpx; text-align: center; font-size: 26rpx; color: #9aa0a6; }

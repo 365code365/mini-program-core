@@ -28,7 +28,7 @@ static APP_PATH: std::sync::RwLock<Option<PathBuf>> = std::sync::RwLock::new(Non
 
 /// 设置小程序目录路径（同时登记到引擎，供图片等包内资源路径解析）
 pub fn set_app_path(path: PathBuf) {
-    crate::assets::set_app_root(path.clone());
+    crate::app::assets::set_app_root(path.clone());
     if let Ok(mut g) = APP_PATH.write() {
         *g = Some(path);
     }
@@ -104,7 +104,7 @@ pub(crate) fn load_page(app_path: &Path, page_path: &str) -> Option<PageInfo> {
         .unwrap_or_else(app_enables_pull_down_refresh);
 
     // 页面 json 的 `usingComponents`：自定义组件三件套（含组件自己再声明的组件）
-    let mut components = crate::using_components::load_page_components(app_path, page_path);
+    let mut components = crate::app::using_components::load_page_components(app_path, page_path);
     // 引擎内置的官方组件（page-container、match-media、手势组件……）：页面用到了才加（builtin_components）
     let builtin = crate::builtin_components::for_page(&wxml, &components);
     components.extend(builtin);

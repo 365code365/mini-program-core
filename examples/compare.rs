@@ -322,7 +322,7 @@ fn run() -> Result<(), String> {
 
 fn parse_args() -> Result<Option<Config>, String> {
     let mut config = Config {
-        app_root: mini_render::app_dir::default_app(),
+        app_root: mini_render::app::dir::default_app(),
         html_root: PathBuf::from("dist-html"),
         output_root: PathBuf::from("target/render-compare"),
         browser: None,
@@ -341,7 +341,7 @@ fn parse_args() -> Result<Option<Config>, String> {
             "--all" => config.all = true,
             "--no-compile" => config.compile_html = false,
             // 走解析器：裸名字（news-app）、sample/xxx、任意路径都接受
-            "--app" => config.app_root = mini_render::app_dir::resolve(&next_value(&mut args, "--app")?),
+            "--app" => config.app_root = mini_render::app::dir::resolve(&next_value(&mut args, "--app")?),
             "--html" => config.html_root = PathBuf::from(next_value(&mut args, "--html")?),
             "--out" => config.output_root = PathBuf::from(next_value(&mut args, "--out")?),
             "--rust-from" => {

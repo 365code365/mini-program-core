@@ -28,6 +28,9 @@
       <view class="ctrl next-btn" bindtap="onNext"><text class="ctrl-big">下一首</text></view>
       <view class="ctrl queue-btn" bindtap="onQueue"><text class="ctrl-text">列</text><text class="ctrl-label">{{curIndex + 1}}/{{queue.length}}</text></view>
     </view>
+    <view class="extras row">
+      <view class="sleep-btn {{sleepText ? 'sleep-on' : ''}}" bindtap="onSleep"><text>{{sleepText || '定时关闭'}}</text></view>
+    </view>
   </block>
   <view class="none" wx:else>
     <text class="none-title">还没有在播放的歌曲</text>

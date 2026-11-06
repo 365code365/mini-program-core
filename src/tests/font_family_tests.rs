@@ -29,7 +29,7 @@ fn ink(c: &Canvas) -> u64 {
 }
 
 fn has_songti() -> bool {
-    crate::text_family::family_font_path("Songti SC").is_some()
+    crate::text::family::family_font_path("Songti SC").is_some()
 }
 
 /// 声明宋体后，同一段文字的字形必须和默认黑体不同。
@@ -93,7 +93,7 @@ fn unknown_family_falls_back_and_still_draws() {
 /// 西文衬线（Times New Roman，没有汉字）+ 中文：汉字要按回退链画出来，不能是豆腐块。
 #[test]
 fn latin_only_family_falls_back_for_cjk() {
-    if crate::text_family::family_font_path("Times New Roman").is_none() {
+    if crate::text::family::family_font_path("Times New Roman").is_none() {
         return;
     }
     let wxml = r#"<view><text class="t">凤凰</text></view>"#;

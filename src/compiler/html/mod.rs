@@ -101,8 +101,8 @@ impl CompileTarget for HtmlTarget {
             }
         }
 
-        // 关于信息（胶囊「•••」默认弹它；三端同一份，见 app_about.rs）
-        let about = crate::app_about::about(Path::new(&app.root), &app.config);
+        // 关于信息（胶囊「•••」默认弹它；三端同一份，见 app/about.rs）
+        let about = crate::app::about::about(Path::new(&app.root), &app.config);
 
         // ── 逐页面 ──
         let mut nav_items = String::new();

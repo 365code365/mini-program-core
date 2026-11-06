@@ -313,7 +313,7 @@ The root cause is that fontdue expands the geometry of every glyph in the font a
 caches are byte-capped (images 64 MB / glyphs 24 MB / two font files, LRU) and `trim_memory()` is
 there for hosts to call on a memory warning, but the only real fix for the peak is a lazy font
 backend (`swash` / `cosmic-text`). **The code surface of that swap is small** (every fontdue call
-is in `src/text.rs`: five `Font::from_bytes`, four `metrics`, two `rasterize`); the hard part is
+is in `src/text/mod.rs`: five `Font::from_bytes`, four `metrics`, two `rasterize`); the hard part is
 that it changes the anti-aliasing of every glyph, so 65 gallery images + 21 full-page frames + 7
 interaction snapshots all need new baselines. That makes it its own round of work, not a refactor.
 
@@ -435,7 +435,7 @@ and the log says why:
 | `MINI_GAME_DUMP=<n>` | Mini-game: on the n-th pump save the output frame (WebGL read back before present, GPU 2D read back, overlays) as `mini-game-dump.png` in the system temp dir. On iOS fetch it with `xcrun devicectl device copy from --domain-type appDataContainer --domain-identifier <bundle id> --source tmp/mini-game-dump.png`: screenshots can't see the CAMetalLayer content from a script |
 | `MINI_AUDIO_LOG=1` | iOS mini-game: every 2 s the SDK logs `🔊 [GAME] 音频 {…}` with the engine's output stats (`mr_game_audio_stats`: `callbacks`, `peak`, `suspended` / `interrupted`, `restarts`) and the AVAudioSession state (category, volume, route, whether another app is playing). `callbacks` that stop growing = the device stopped pulling samples; `peak` 0 = the mixer only produced silence. If callbacks stall for 600 ms while the engine wants sound, the engine restarts the output stream itself (log `🔊 音频输出 …ms 没拉数据…已重启`) |
 | `MINI_AUDIO_FAULT=open\|stall@N` | Mini-game audio fault injection (the `fault` creation option wins): `open` = treat the device as unavailable (silent offline mode); `stall@N` = the device callback stops counting after N callbacks, which the watchdog sees as a stopped stream (iOS / desktop, test `au10`) |
-| `MINI_EMOJI_FONT=<path>` | Color emoji font (tried before the built-in candidates; the same switch picks the COLR font on Android, a font of the other format is skipped). The iOS SDK sets it from CoreText: on iOS Apple Color Emoji lives under `Fonts/CoreAddition/` and its `sbix` glyphs are Apple's private `emjc` format, decoded in `src/emoji_emjc.rs` (macOS's copy is PNG). Without it every emoji on iOS drew as a tofu box |
+| `MINI_EMOJI_FONT=<path>` | Color emoji font (tried before the built-in candidates; the same switch picks the COLR font on Android, a font of the other format is skipped). The iOS SDK sets it from CoreText: on iOS Apple Color Emoji lives under `Fonts/CoreAddition/` and its `sbix` glyphs are Apple's private `emjc` format, decoded in `src/text/emoji/emjc.rs` (macOS's copy is PNG). Without it every emoji on iOS drew as a tofu box |
 | `MINI_ANGLE_DIR=<dir>` | Mini-game WebGL: directory with the ANGLE libraries (libEGL / libGLESv2); defaults to next to the executable, `../Frameworks`, then `third_party/angle/<platform>/` (fetched by `tools/fetch-angle.sh`) |
 | `MINI_GPU_FAULT=lost@N` (mini-game) | In a mini-game it applies to WebGL: the main canvas context is lost at the N-th present and `webglcontextlost` is dispatched |
 | `MINI_GAME_WATCHDOG_MS=<ms>` | Mini-game: time limit for one entry into JS (default 5000); exceeded → `InternalError: interrupted`, `wx.onError`, host `error{kind:"watchdog"}` |
@@ -665,7 +665,8 @@ components, Skyline-only layout components in `scroll-view`, …) are listed in
 
 One command runs everything below (plus per-page snapshots and the H5 comparison), times each
 step and writes a summary to `target/_regress/summary.txt`. After an engine change it takes about
-4 minutes: ~20 s to rebuild all targets, ~200 s for the checks. The `release` profile has LTO off
+3–4 minutes: 20–100 s to rebuild all targets, ~60 s for all Rust tests (`tools/test-fast.py` shards them across
+cores), ~60 s for the remaining checks run in four parallel lanes. The `release` profile has LTO off
 and incremental on for this reason (thin LTO re-optimised every one of ~50 binaries: 2905 s vs 20 s,
 byte-identical gallery output); the shipped mobile libraries turn thin LTO back on in `tools/build-mobile.sh`.
 
@@ -677,7 +678,7 @@ Step by step:
 
 ```bash
 rm -rf target/mini-storage                 # ① mandatory, see below
-cargo test --release                       # ② lib 774 + bin 26 + integration 72
+python3 tools/test-fast.py                 # ② all 1708 Rust tests, sharded (--quick skips Chrome-based ones)
 bash tools/damage-check.sh                 # ③ incremental repaint == full frame (byte-identical)
 cargo run --release --example gallery      # ④ 65 scene images
 bash tools/tab-click-check.sh              # ⑤ tabBar clicks across three apps
@@ -758,8 +759,8 @@ src/
 ├── compiler/html/   compile to an HTML project (the reference implementation for cross-checking)
 │                    `transpile/` in 4 pieces (CSS / tags / component internals / emit),
 │                    `runtime/*.js` is the browser-side reactive runtime (9 pieces, include_str! in order)
-├── ffi_app.rs       app-level C ABI (mr_app_*)
-├── ffi_jni.rs       Android JNI entry
+├── ffi/app.rs       app-level C ABI (mr_app_*)
+├── ffi/jni.rs       Android JNI entry
 └── bin/             desktop host
     ├── window.rs      now just struct + new() + main() (used to be 1877 lines doing four jobs)
     └── app_window/    split by responsibility: winit_app (winit glue) / frame (frame gate) /

@@ -238,7 +238,7 @@ impl MiniEngine {
             }
         }
         if let Some((rgba, iw, ih)) = crate::renderer::components::image_rgba("/frameset/placeholder.png")
-            .filter(|_| crate::assets::resolve("/frameset/placeholder.png").is_some())
+            .filter(|_| crate::app::assets::resolve("/frameset/placeholder.png").is_some())
         {
             // 按 1 个图片像素 = 1 个逻辑像素摆（与 `<image>` 默认一样），超出一栏就等比缩小
             let scale = (self.dpr).min(w as f32 / iw as f32).min(h as f32 / ih as f32);

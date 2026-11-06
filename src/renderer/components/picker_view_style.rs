@@ -10,7 +10,7 @@
 //!
 //! 写了选中框高度时，列里每一项的高度也设成它（WebView 版按选中框的高度当项高，见 picker_view_draw.rs）。
 //! 建树时解析一次（类要查样式表），结果写在节点属性上，绘制时只读这几个短串。
-use crate::color::Color;
+use crate::gfx::color::Color;
 use crate::parser::wxss::{LengthUnit, StyleSheet, StyleValue};
 use std::collections::HashMap;
 

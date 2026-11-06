@@ -2,7 +2,7 @@
 //! 从 app.rs 拆出（那边已过 500 行）。
 //!
 //! ## 文件怎么在小程序与宿主之间来回
-//! 小程序只认虚拟路径（`wxfile://tmp/…`，见 `crate::wxfile`），宿主只认真实路径。两头各翻译一次，
+//! 小程序只认虚拟路径（`wxfile://tmp/…`，见 `crate::wxfs::wxfile`），宿主只认真实路径。两头各翻译一次，
 //! 而且都在这里做 —— 每个宿主（Flutter 插件、原生 View、桌面窗体）就不用各自去猜沙盒目录长什么样：
 //!
 //! - **引擎 → 宿主**（[`MiniApp::take_host_events`]）：`hostCall` 事件补两个字段
@@ -69,7 +69,7 @@ pub(crate) fn annotate_host_call(v: &mut Value) {
         collect_wxfiles(args, &mut files);
     }
     let Some(o) = v.as_object_mut() else { return };
-    o.insert("tempDir".into(), Value::String(crate::wxfile::temp_dir().to_string_lossy().into_owned()));
+    o.insert("tempDir".into(), Value::String(crate::wxfs::wxfile::temp_dir().to_string_lossy().into_owned()));
     if !files.is_empty() {
         o.insert("files".into(), Value::Object(files));
     }
@@ -77,8 +77,8 @@ pub(crate) fn annotate_host_call(v: &mut Value) {
 
 fn collect_wxfiles(v: &Value, out: &mut Map<String, Value>) {
     match v {
-        Value::String(s) if s.starts_with(crate::wxfile::SCHEME) && !out.contains_key(s) => {
-            if let Some(p) = crate::wxfile::to_path(s).filter(|p| p.is_file()) {
+        Value::String(s) if s.starts_with(crate::wxfs::wxfile::SCHEME) && !out.contains_key(s) => {
+            if let Some(p) = crate::wxfs::wxfile::to_path(s).filter(|p| p.is_file()) {
                 out.insert(s.clone(), Value::String(p.to_string_lossy().into_owned()));
             }
         }
@@ -110,7 +110,7 @@ fn import_in(v: &mut Value, seen: &mut HashMap<String, String>) {
                 return;
             }
             let imported = file_uri_path(s).ok_or_else(|| "文件不存在".to_string()).and_then(|p| {
-                crate::wxfile::import(&p).map_err(|e| e.to_string())
+                crate::wxfs::wxfile::import(&p).map_err(|e| e.to_string())
             });
             match imported {
                 Ok(uri) => {

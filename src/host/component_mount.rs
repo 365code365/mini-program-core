@@ -14,7 +14,7 @@
 use crate::parser::template::{ComponentTemplates, TemplateEngine};
 use crate::parser::wxml::{WxmlNode, WxmlParser};
 use crate::runtime::MiniApp;
-use crate::using_components::ComponentSource;
+use crate::app::using_components::ComponentSource;
 use serde_json::Value as JsonValue;
 
 /// 对账轮数上限。每一轮只能多看见「刚建出来的组件」里的子组件（它们要等外层有了 data

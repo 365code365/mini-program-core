@@ -1,5 +1,5 @@
 //! 字体度量：Canvas `measureText` 的 `TextMetrics`（小游戏，game-doc/03 §2.2）与按真实度量对基线。
-//! 从 text.rs 拆出来（那边已到 500 行）；只读字形度量，不光栅化。
+//! 从 text/mod.rs 拆出来（那边已到 500 行）；只读字形度量，不光栅化。
 
 use super::TextRenderer;
 
@@ -18,7 +18,7 @@ impl TextRenderer {
         let bold_face = bold && self.has_bold_face();
         let (mut x, mut left, mut right, mut asc, mut desc) = (0.0f32, f32::MAX, f32::MIN, f32::MIN, f32::MIN);
         for ch in text.chars() {
-            if crate::emoji::is_zero_width(ch) {
+            if crate::text::emoji::is_zero_width(ch) {
                 continue;
             }
             let m = self.font_for_weight(ch, bold_face).metrics(ch, size);

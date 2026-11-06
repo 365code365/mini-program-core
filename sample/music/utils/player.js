@@ -7,7 +7,8 @@ const MODES = [
   { key: 'one', text: '单曲循环', icon: '单' },
   { key: 'rand', text: '随机播放', icon: '随' }
 ]
-const st = { queue: [], index: -1, playing: false, pos: 0, mode: 0 }
+// sleepAt：定时关闭的时刻（毫秒，0 = 没开）；sleepEnd：播完当前这首就停
+const st = { queue: [], index: -1, playing: false, pos: 0, mode: 0, sleepAt: 0, sleepEnd: false }
 const subs = []
 let timer = null
 
@@ -25,7 +26,8 @@ function snapshot() {
     modeText: MODES[st.mode].text,
     modeIcon: MODES[st.mode].icon,
     index: st.index,
-    queue: st.queue.slice()
+    queue: st.queue.slice(),
+    sleepText: sleepText()
   }
 }
 function emit() {
@@ -43,11 +45,33 @@ function off(fn) {
 function ensureTimer() {
   if (!timer) timer = setInterval(tick, 1000)
 }
+function sleepText() {
+  if (st.sleepEnd) return '播完本首关闭'
+  if (!st.sleepAt) return ''
+  return Math.max(1, Math.ceil((st.sleepAt - Date.now()) / 60000)) + ' 分钟后关闭'
+}
+// 定时关闭：min > 0 几分钟后暂停；min === -1 播完当前这首暂停；0 取消
+function setSleep(min) {
+  st.sleepAt = min > 0 ? Date.now() + min * 60000 : 0
+  st.sleepEnd = min === -1
+  emit()
+  return sleepText()
+}
+function sleepNow() {
+  st.playing = false
+  st.sleepAt = 0
+  st.sleepEnd = false
+  emit()
+  wx.showToast({ title: '定时关闭：已暂停播放', icon: 'none' })
+}
 function tick() {
   const s = current()
   if (!st.playing || !s) return
+  if (st.sleepAt && Date.now() >= st.sleepAt) return sleepNow()
   st.pos += 1
   if (st.pos >= s.duration) {
+    // 定了「播完本首」：停在开头，不切歌
+    if (st.sleepEnd) { st.pos = 0; return sleepNow() }
     // 播完：单曲循环从头再来，其余模式自动下一首
     if (st.mode === 1) st.pos = 0
     else return next()
@@ -109,4 +133,4 @@ function cycleMode() {
   emit()
   return MODES[st.mode]
 }
-module.exports = { MODES, on, off, playList, next, prev, toggle, seek, cycleMode, snapshot }
+module.exports = { MODES, on, off, playList, next, prev, toggle, seek, cycleMode, setSleep, snapshot }

@@ -48,8 +48,8 @@ fn take(r: &mut WxmlRenderer, im: &InteractionManager, q: &Value) -> Result<Valu
     let (w, h, rgba) = r.snapshot_subtree(cid, im)?;
     let bytes = if rgba_out { rgba } else { encode_png(w, h, rgba)? };
     if file {
-        let (uri, path) = crate::wxfile::new_temp(if rgba_out { "rgba" } else { "png" });
-        crate::wxfile::temp_dir(); // 临时目录不存在就建
+        let (uri, path) = crate::wxfs::wxfile::new_temp(if rgba_out { "rgba" } else { "png" });
+        crate::wxfs::wxfile::temp_dir(); // 临时目录不存在就建
         std::fs::write(&path, &bytes).map_err(|e| e.to_string())?;
         Ok(json!({ "tempFilePath": uri, "width": w, "height": h }))
     } else {

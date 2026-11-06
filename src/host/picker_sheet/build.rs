@@ -112,7 +112,7 @@ pub fn build(binding: &PickerBinding) -> PickerSheetState {
         outbox: Vec::new(),
         visible: true,
         pressed: None,
-        anim_from: Instant::now(),
+        anim_from: crate::sys::frame_clock::now(),
         closing: false,
         date_fields,
         date_range,

@@ -21,7 +21,7 @@ static CLOCK: OnceLock<Instant> = OnceLock::new();
 /// 不是画到这个节点的那一刻 —— 同一帧里所有动画同一个相位，帧与帧之间按 vsync 均匀走
 pub fn now_secs() -> f32 {
     let origin = *CLOCK.get_or_init(Instant::now);
-    crate::frame_clock::now().saturating_duration_since(origin).as_secs_f32()
+    crate::sys::frame_clock::now().saturating_duration_since(origin).as_secs_f32()
 }
 
 /// 时钟起点还没定的话定在 `t`（`frame_clock::set` 调：起点不能晚于任何一帧的时刻）

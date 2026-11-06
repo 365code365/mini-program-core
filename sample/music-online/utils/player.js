@@ -2,12 +2,15 @@
 // 只用引擎实现了的接口（src/js/prelude/audio.js）：src / play / pause / stop / seek、currentTime / duration / paused，
 // 事件 onPlay / onPause / onStop / onEnded / onTimeUpdate / onCanplay / onError / onWaiting。
 const RECENT_KEY = 'music_recent';
+const MODE_KEY = 'music_mode';
+// 播放模式：列表循环 / 单曲循环 / 随机播放
+const MODES = [{ key: 'loop', name: '列表循环', g: '循' }, { key: 'one', name: '单曲循环', g: '单' }, { key: 'shuffle', name: '随机播放', g: '随' }];
 let ctx = null;
 const listeners = [];
 
 function state() {
   const g = getApp().globalData;
-  if (!g.player) g.player = { queue: [], index: -1, song: null, playing: false, current: 0, duration: 0, waiting: false };
+  if (!g.player) g.player = { queue: [], index: -1, song: null, playing: false, current: 0, duration: 0, waiting: false, mode: wx.getStorageSync(MODE_KEY) || 'loop' };
   return g.player;
 }
 
@@ -31,11 +34,12 @@ function ensure() {
     s.duration = ctx.duration || (s.song && s.song.trialSeconds) || 0;
     emit('time');
   });
-  // 播完自动下一首；队列只有一首就停在结尾
+  // 播完：单曲循环从头再来；否则自动下一首（随机模式随机挑）；队列只有一首就停在结尾
   ctx.onEnded(() => {
     const s = state();
     s.playing = false;
     s.current = s.duration;
+    if (s.mode === 'one') { playIndex(s.index); return; }
     if (s.queue.length > 1) next();
     else emit('state');
   });
@@ -81,7 +85,29 @@ function toggle() {
   else ensure().play();
 }
 
-function next() { playIndex(state().index + 1); }
+function next() {
+  const s = state();
+  if (s.mode === 'shuffle' && s.queue.length > 1) {
+    let i = s.index;
+    while (i === s.index) i = Math.floor(Math.random() * s.queue.length);
+    playIndex(i);
+    return;
+  }
+  playIndex(s.index + 1);
+}
+function modeInfo() {
+  const s = state();
+  return MODES.find((m) => m.key === s.mode) || MODES[0];
+}
+// 依次切换播放模式，返回新模式
+function cycleMode() {
+  const s = state();
+  const i = MODES.findIndex((m) => m.key === s.mode);
+  s.mode = MODES[(i + 1) % MODES.length].key;
+  wx.setStorageSync(MODE_KEY, s.mode);
+  emit('state');
+  return modeInfo();
+}
 function prev() {
   // 播了 3 秒以上按「上一首」先回到本首开头（与常见播放器一致）
   if (state().current > 3) { seek(0); return; }
@@ -109,4 +135,4 @@ function fmt(sec) {
   return Math.floor(sec / 60) + ':' + (sec % 60 < 10 ? '0' : '') + (sec % 60);
 }
 
-module.exports = { state, playQueue, playIndex, toggle, next, prev, seek, subscribe, fmt, RECENT_KEY };
+module.exports = { state, playQueue, playIndex, toggle, next, prev, seek, subscribe, fmt, modeInfo, cycleMode, RECENT_KEY };

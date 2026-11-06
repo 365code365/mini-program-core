@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use crate::parser::wxml::WxmlNode;
 use crate::parser::wxss::StyleSheet;
 use crate::parser::template::ComponentTemplates;
-use crate::using_components::ComponentSource;
+use crate::app::using_components::ComponentSource;
 
 /// 页面信息
 pub struct PageInfo {

@@ -10,8 +10,11 @@
 # 这里把各步串成一条命令，**每步给出耗时**，哪一步慢一眼可见；
 # 开跑前先打一行负载与交换区占用（内存吃紧时换页能把构建拖慢一个数量级）。
 #
-# 各步之间**不并行**：它们共用 target/mini-storage（无头点击会落盘），
-# 并行会读到对方刚写的数据，出来的是假差异。
+# 2026-11-06 起压到 2 分钟左右（从前 15~17 分钟）：
+#   - test 一步换成 tools/test-fast.py：测试切成几百个进程排满所有核（进程之间不共享包根 / 数据目录这些全局状态），
+#     示例 e2e 用虚拟时钟不再睡墙上时钟，起 Chrome 的小游戏用例单独一段并发跑；
+#   - 测试之后的七步分四条线**并行**：每条线一份自己的数据目录（`MINI_DATA_DIR`，storage 落在它下面），
+#     不会读到别人刚写的 storage（从前全串行，就是怕这个）。有先后关系的串在同一条线里（快照 → sdk-parity → H5）。
 #
 # 退出码：0 = 全部通过；1 = 有步骤失败（看汇总里标 FAIL 的那一行与它的日志）。
 # 「看图」= 不判失败但需要人看：gallery 与 HEAD 有差异（附差异占比与包围盒）。
@@ -43,7 +46,8 @@ SUMMARY="$OUT/summary.txt"
 FAILED=0
 T0=$(date +%s)
 
-# step <名字> <函数>：跑一步，记耗时、退出码，结论取日志最后一行非空行
+# step <名字> <函数>：跑一步，记耗时、退出码，结论取日志最后一行非空行。结果写进 $OUT/<名字>.res（并行的线各写各的，
+# 最后按固定顺序拼进汇总）；返回码与这一步相同
 step() {
     local name="$1" fn="$2" log="$OUT/$1.log" s rc mark verdict
     s=$(date +%s)
@@ -52,28 +56,36 @@ step() {
     case $rc in
         0) mark=OK ;;
         3) mark=看图 ;;
-        *) mark=FAIL; FAILED=$((FAILED + 1)) ;;
+        *) mark=FAIL ;;
     esac
     verdict=$(grep -vE '^[[:space:]]*$' "$log" | tail -1 | cut -c1-110)
-    printf '%-12s %5ss  %-4s  %s\n' "$name" "$(( $(date +%s) - s ))" "$mark" "$verdict" | tee -a "$SUMMARY"
+    printf '%-12s %5ss  %-4s  %s\n' "$name" "$(( $(date +%s) - s ))" "$mark" "$verdict" > "$OUT/$name.res"
+    cat "$OUT/$name.res"
+    [ "$mark" = FAIL ] && return 1
+    return 0
 }
 
-clear_storage() { rm -rf target/mini-storage target/sdk-parity/mini-storage; }
+# 这条线自己的数据目录（storage 落在它下面；工具脚本清的也是它）
+clear_storage() { rm -rf "${MINI_DATA_DIR:-target}/mini-storage" target/sdk-parity/mini-storage; }
+lane() { # lane <名字> <步…>：开一份数据目录，按顺序跑这几步，前一步失败后面的不跑
+    local lname="$1"
+    shift
+    export MINI_DATA_DIR="$OUT/data_$lname"
+    mkdir -p "$MINI_DATA_DIR"
+    local st
+    for st in "$@"; do
+        step "$st" "do_$st" || return 1
+    done
+}
 
 # ① 构建：一次 cargo 调用编全部目标（lib / bin / example / 测试），cargo 能把它们排满所有核
 do_build() {
-    clear_storage
     cargo build --release --all-targets && echo "构建完成"
 }
 
-# ② 单测 + 集成测试：汇总通过 / 失败数，并列出失败的测试二进制
+# ② 单测 + 集成测试：切成几百个进程并行（tools/test-fast.py；偶发的再跑一次，单独列出来）
 do_test() {
-    clear_storage
-    cargo test --release --no-fail-fast
-    local rc=$?
-    awk '/^test result:/ { for (i = 1; i <= NF; i++) { if ($(i+1) ~ /^passed;/) p += $i; if ($(i+1) ~ /^failed;/) f += $i } }
-         END { printf "测试：通过 %d，失败 %d\n", p, f }' "$OUT/test.log"
-    return $rc
+    python3 tools/test-fast.py
 }
 
 # ③ 增量重绘 == 整帧重绘（逐字节）
@@ -144,20 +156,26 @@ do_h5() {
 }
 
 echo "回归开始 $(date '+%H:%M:%S')，负载 $(uptime | sed 's/.*load averages*: //')，交换区 $(sysctl -n vm.swapusage 2>/dev/null | awk '{print $6"/"$3}')" | tee -a "$SUMMARY"
-step build do_build
-if [ "$FAILED" = 0 ]; then
-    step test do_test
-    step damage do_damage
-    step gallery do_gallery
-    step tabclick do_tabclick
-    step snapshots do_snapshots
-    step sdkparity do_sdkparity
-    step interaction do_interaction
-    [ "$H5" = 1 ] && step h5 do_h5
-else
-    echo "构建失败，后面的步骤不跑了：看 $OUT/build.log" | tee -a "$SUMMARY"
+STEPS="build test damage gallery tabclick snapshots sdkparity interaction"
+[ "$H5" = 1 ] && STEPS="$STEPS h5"
+if step build do_build >/dev/null; then
+    step test do_test >/dev/null
+    # 四条线并行（见文件头）
+    lane a damage gallery >/dev/null &
+    lane b tabclick >/dev/null &
+    lane c interaction >/dev/null &
+    if [ "$H5" = 1 ]; then lane d snapshots sdkparity h5 >/dev/null & else lane d snapshots sdkparity >/dev/null & fi
+    wait
 fi
-clear_storage
+for st in $STEPS; do
+    if [ -f "$OUT/$st.res" ]; then
+        cat "$OUT/$st.res" | tee -a "$SUMMARY"
+        grep -qE '^[^ ]+ +[0-9]+s  FAIL' "$OUT/$st.res" && FAILED=$((FAILED + 1))
+    else
+        printf '%-12s %5s   %-4s  %s\n' "$st" "-" "没跑" "前一步失败" | tee -a "$SUMMARY"
+    fi
+done
+rm -rf "$OUT"/data_* target/sdk-parity/mini-storage
 
 # 收尾：只清本脚本与它调用的工具写出来的东西（不跑 clean-target.sh：
 # 那会连别的会话正在用的目录一起删）。日志与汇总留着，很小

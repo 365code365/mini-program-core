@@ -57,3 +57,15 @@
 .song-no.on {
   color: #ff3a5c;
 }
+.pl-fav {
+  font-size: 24rpx;
+  color: #ff3a5c;
+  border: 2rpx solid #ff3a5c;
+  border-radius: 28rpx;
+  padding: 8rpx 26rpx;
+  white-space: nowrap;
+}
+.pl-fav.on {
+  color: #8a909c;
+  border: 2rpx solid #dfe1e6;
+}

@@ -61,7 +61,7 @@ fn make(root: &std::path::Path, no_damage: bool) -> MiniEngine {
 /// 只开一台（局部重画）：swiper 的状态与事件队列是进程级的（`SWIPER_MANAGER`），两台同一个 swiper id 的事件
 /// 谁先 pump 谁取走 —— 断言事件的用例用这个
 pub(super) fn single(root: &std::path::Path) -> (MiniEngine, std::sync::RwLockWriteGuard<'static, ()>) {
-    let g = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
+    let g = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
     let mut e = make(root, false);
     for t in 1..=3 {
         e.pump(t * 16);
@@ -71,7 +71,7 @@ pub(super) fn single(root: &std::path::Path) -> (MiniEngine, std::sync::RwLockWr
 
 impl Pair {
     pub fn new(root: &std::path::Path) -> Self {
-        let g = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
+        let g = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
         let mut p = Pair { a: make(root, false), b: make(root, true), t: 0, kinds: Vec::new(), _g: g };
         for _ in 0..3 {
             p.step("首帧");

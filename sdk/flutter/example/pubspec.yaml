@@ -85,6 +85,7 @@ flutter:
     - assets/demo/pages/host/
     - assets/demo/pages/index/
     - assets/demo/pages/live/
+    - assets/demo/pages/longlist/
     - assets/demo/pages/camera/
     - assets/demo/pages/pusher/
     - assets/demo/pages/map/
@@ -100,6 +101,7 @@ flutter:
     - assets/demo/pages/skyline/
     - assets/demo/pages/storage/
     - assets/demo/pages/swiper/
+    - assets/demo/pages/table/
     - assets/demo/pages/webview/
     - assets/demo/pages/wxml/
     - assets/demo/pages/wxss/

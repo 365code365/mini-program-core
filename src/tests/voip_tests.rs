@@ -5,7 +5,7 @@ use crate::host::{EngineOptions, MiniEngine};
 use serde_json::Value;
 
 fn run(name: &str, host_apis: Vec<String>) -> (MiniEngine, Vec<Value>, std::sync::RwLockWriteGuard<'static, ()>) {
-    let g = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
+    let g = crate::sys::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
     let root = std::env::temp_dir().join("mini-voip-tests").join(name);
     std::fs::remove_dir_all(&root).ok();
     let js = "Page({ data: { log: [] },

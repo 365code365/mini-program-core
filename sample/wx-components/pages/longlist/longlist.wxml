@@ -1,0 +1,19 @@
+<view class="card">
+  <view class="h">长列表改一行（{{rows.length}} 行 wx:for）</view>
+  <text class="tip">点按钮或行尾的 ♥：只改一行的数据，看 setData 到画完用了多久。上一次：{{cost}}</text>
+  <view class="row">
+    <view class="btn" bindtap="likeOne">第 {{hot + 1}} 行 +1</view>
+    <view class="btn gray" bindtap="bump">顶上计数 {{counter}}</view>
+    <view class="btn gray" bindtap="append">追加 50 行</view>
+  </view>
+  <scroll-view scroll-y class="list">
+    <view wx:for="{{rows}}" wx:key="id" class="item {{index === hot ? 'hot' : ''}}">
+      <view class="item-main">
+        <text class="item-title">{{item.title}}</text>
+        <text class="item-sub">{{item.sub}}</text>
+      </view>
+      <view class="like" bindtap="likeRow" data-i="{{index}}" hover-class="like-hover">♥ {{item.likes}}</view>
+    </view>
+  </scroll-view>
+</view>
+<view class="log"><view wx:for="{{log}}" wx:key="*this" class="log-line">{{item}}</view></view>

@@ -4,6 +4,8 @@
     "pages/sticky/sticky",
     "pages/text/text",
     "pages/list/list",
+    "pages/longlist/longlist",
+    "pages/table/table",
     "pages/form/form",
     "pages/picker/picker",
     "pages/scroll/scroll",

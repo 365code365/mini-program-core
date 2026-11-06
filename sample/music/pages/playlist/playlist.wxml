@@ -10,10 +10,11 @@
 </view>
 <view class="bar row">
   <view class="play-all row" bindtap="onPlayAll">
-    <view class="play-dot"><text class="play-dot-text">▶</text></view>
+    <view class="play-dot"><view class="tri tri-lg"><view class="tri-in"></view></view></view>
     <text class="play-all-text">播放全部</text>
     <text class="sub">（{{songs.length}}）</text>
   </view>
+  <view class="pl-fav {{plFav ? 'on' : ''}}" bindtap="onCollect"><text>{{plFav ? '已收藏' : '+ 收藏'}}</text></view>
 </view>
 <view class="song pl-song" wx:for="{{songs}}" wx:key="id" data-index="{{index}}" bindtap="onSong">
   <text class="song-no {{curId === item.id ? 'on' : ''}}">{{curId === item.id ? '♪' : index + 1}}</text>

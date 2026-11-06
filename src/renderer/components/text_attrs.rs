@@ -112,7 +112,7 @@ pub fn resolve_clamp(node: &WxmlNode, ns: &mut NodeStyle, inherited: u16) {
 /// 别的裸文本仍是「单行内容宽的定宽叶子」（layout.rs 的老路径：它们不按容器宽折行，是现状），
 /// 只有用到行数限制的才换成这条，没写 line-clamp 的页面一个像素都不变
 pub fn clamped_bare_leaf(taffy: &mut Tree, text: &str, st: &NodeStyle, sf: f32) -> Option<taffy::NodeId> {
-    let family = crate::text_family::renderer_for_family(st.font_family.as_deref());
+    let family = crate::text::family::renderer_for_family(st.font_family.as_deref());
     let shared = crate::text::shared_fonts();
     let tr = family.as_deref().or(shared.as_deref());
     let font_px = st.font_size * sf;

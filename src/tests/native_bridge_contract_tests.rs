@@ -54,7 +54,7 @@ fn registered_in_rust() -> HashSet<String> {
         include_str!("../js/bridge_ext.rs"),
         include_str!("../js/bridge_bin.rs"),
         // 二进制直通（长连接、文件系统）的原值入口
-        include_str!("../bin_stash.rs"),
+        include_str!("../net/bin_stash.rs"),
         include_str!("../wxfs/extra.rs")
     );
     let mut out = HashSet::new();

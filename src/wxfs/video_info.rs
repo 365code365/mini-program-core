@@ -26,7 +26,7 @@ pub struct VideoInfo {
 
 /// `{orientation,type,duration,size,width,height,fps,bitrate}` 或 `{err}`
 pub fn info_json(src: &str) -> String {
-    let r = crate::assets::resolve(src).ok_or_else(|| format!("file not found: {src}")).and_then(|p| parse_file(&p));
+    let r = crate::app::assets::resolve(src).ok_or_else(|| format!("file not found: {src}")).and_then(|p| parse_file(&p));
     match r {
         Ok(v) => serde_json::json!({
             "orientation": v.orientation,

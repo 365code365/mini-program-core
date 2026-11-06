@@ -101,7 +101,7 @@ impl crate::MiniAppWindow {
         }
         // 新字体登记好了（@font-face / wx.loadFontFace）：整棵树重排（与 SDK 同一个开关）
         // textarea auto-height 的行数变了也一样（components/input/auto_height.rs）
-        if mini_render::text_faces::take_changed() | mini_render::renderer::components::auto_height::take_relayout() {
+        if mini_render::text::faces::changed_since(&mut self.font_gen) | mini_render::renderer::components::auto_height::take_relayout() {
             if let Some(r) = self.renderer.as_mut() { r.invalidate_layout(); }
             self.needs_redraw = true;
             self.fixed_dirty = true;

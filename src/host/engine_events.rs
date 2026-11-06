@@ -16,7 +16,7 @@
 //! | `hostCall` | 调了宿主实现的 `wx.*` | `id` `api` `args` `tempDir`（宿主可直接写的临时目录）`files`（`args` 里的 `wxfile://` → 真实路径，没有就不带；见 `runtime/app_host.rs`） |
 //! | `clipboard` | `wx.setClipboardData`、输入框里 `copy` / `cut`（宿主写系统剪贴板） | `data` |
 //! | `vibrate` | `wx.vibrateShort` / `vibrateLong` | `duration`（`short` / `long`）`style` |
-//! | `app` | 启动后第一帧（只发一次） | `about`：`name` `appId` `description` `entryPage` `pageCount` `engine`（见 `app_about.rs`） |
+//! | `app` | 启动后第一帧（只发一次） | `about`：`name` `appId` `description` `entryPage` `pageCount` `engine`（见 `app/about.rs`） |
 //! | `menuButton` | 点了引擎画的右上角胶囊（选项 `menuButton`，custom 导航栏的页面；见 engine_capsule.rs） | `action`：`menu`（•••，查看关于）/ `close`（⊙，返回宿主） |
 //! | `log` | 逻辑层 `console.*` | `text` |
 //!
@@ -97,7 +97,7 @@ impl MiniEngine {
         self.sync_host_views();
     }
 
-    /// 启动后第一帧：小程序的关于信息（胶囊「•••」由宿主展示，见 `app_about.rs`）
+    /// 启动后第一帧：小程序的关于信息（胶囊「•••」由宿主展示，见 `app/about.rs`）
     fn sync_app_event(&mut self) {
         if self.events.app_sent || self.page_stack.is_empty() {
             return;
@@ -105,7 +105,7 @@ impl MiniEngine {
         self.events.app_sent = true;
         let root = super::page_loader::get_app_path();
         let app_json = serde_json::from_str::<Value>(&super::page_loader::load_app_json()).unwrap_or(Value::Null);
-        let about = crate::app_about::about(&root, &app_json);
+        let about = crate::app::about::about(&root, &app_json);
         self.events.push(json!({ "type": "app", "about": about }));
     }
 
@@ -294,7 +294,7 @@ impl MiniEngine {
 
     /// 输入框里复制 / 剪切：与 `wx.setClipboardData` 同一条 `clipboard` 事件（宿主写系统剪贴板）
     pub(super) fn emit_clipboard(&mut self, text: &str) {
-        crate::clipboard::set(text);
+        crate::sys::clipboard::set(text);
         self.events.push(json!({ "type": "clipboard", "data": text }));
     }
 
