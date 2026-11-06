@@ -115,6 +115,44 @@ impl Canvas {
         let (bx0, bx1, by0, by1) = self.draw_bounds();
         let rows = src.len() / src_width;
         let width = self.width as usize;
+        let (start, end) = (bx0.max(dst_x), bx1.min(dst_x + src_width as i32));
+        let (ya, yb) = (dst_y.max(by0), (dst_y + rows as i32).min(by1));
+        if end <= start || yb <= ya {
+            return;
+        }
+        // 每个 alpha 乘上透明度后的值先查表（与逐像素 `(a * opacity).round()` 同一个算式），
+        // 整屏级的（背景图的成组透明度）按行带分给几个线程（par_rows.rs），每行与单线程逐字节相同
+        let lut: [u8; 256] = std::array::from_fn(|a| (a as f32 * opacity).round() as u8);
+        let (s, e) = (start as usize, end as usize);
+        let src_off = (start - dst_x) as usize;
+        let run = |band: &mut [Color], y_first: usize| {
+            for (k, line) in band.chunks_mut(width).enumerate() {
+                let row = (y_first + k) as i32 - dst_y;
+                let from = row as usize * src_width + src_off;
+                for (px, color) in line[s..e].iter_mut().zip(&src[from..from + (e - s)]) {
+                    let a = lut[color.a as usize];
+                    if a == 0 {
+                        continue;
+                    }
+                    let c = Color::new(color.r, color.g, color.b, a);
+                    *px = if a == 255 { c } else { c.blend(px) };
+                }
+            }
+        };
+        let area = (e - s) * (yb - ya) as usize;
+        super::par_rows::for_bands(&mut self.pixels, width, (ya as usize, yb as usize), area, &run);
+    }
+
+    /// 从前的逐像素单线程写法（测试拿它比分线程那条逐字节相同）
+    #[cfg(test)]
+    pub(crate) fn blend_pixels_opacity_serial(&mut self, dst_x: i32, dst_y: i32, src: &[Color], src_width: usize, opacity: f32) {
+        if src_width == 0 || opacity <= 0.0 {
+            return;
+        }
+        let opacity = opacity.clamp(0.0, 1.0);
+        let (bx0, bx1, by0, by1) = self.draw_bounds();
+        let rows = src.len() / src_width;
+        let width = self.width as usize;
         for row in 0..rows {
             let dy = dst_y + row as i32;
             if dy < by0 || dy >= by1 {
@@ -179,6 +217,31 @@ impl Canvas {
         for (row, line) in src.chunks_exact(src_width).enumerate() {
             let y = dst_y + row as i32;
             if y < by0 || y >= by1 {
+                continue;
+            }
+            let at = y as usize * width + start as usize;
+            self.pixels[at..at + len].copy_from_slice(&line[src_off..src_off + len]);
+        }
+    }
+
+    /// 把一块像素原样写回 (dst_x, dst_y) 起的那几行（**不看裁剪区**，只夹画布边界）。
+    /// 动画底图贴回用（wxml_renderer/backdrop.rs）：留的时候拷的就是整块，贴回也要整块，
+    /// 祖先的裁剪区之外那部分同样是动画节点底下的像素
+    pub fn copy_opaque_rows(&mut self, dst_x: i32, dst_y: i32, src: &[Color], src_width: usize) {
+        if src_width == 0 {
+            return;
+        }
+        let (w, h) = (self.width as i32, self.height as i32);
+        let start = dst_x.max(0);
+        let end = (dst_x + src_width as i32).min(w);
+        if end <= start {
+            return;
+        }
+        let (src_off, len) = ((start - dst_x) as usize, (end - start) as usize);
+        let width = self.width as usize;
+        for (row, line) in src.chunks_exact(src_width).enumerate() {
+            let y = dst_y + row as i32;
+            if y < 0 || y >= h {
                 continue;
             }
             let at = y as usize * width + start as usize;

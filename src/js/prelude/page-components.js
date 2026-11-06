@@ -44,23 +44,42 @@
 
             /// 渲染数据 = 页面 data + `$comp`（实例键 -> 实例 data）+ `$copt`（标签 -> 组件选项）。
             /// `$copt` 只带展开时要用的 `multipleSlots` / `dynamicSlots`（slot 怎么分配）与 `virtualHost`（宿主节点出不出）
-            function __getRenderData() {
-                var out = {};
-                if (__currentPage && __currentPage.data) {
-                    for (var k in __currentPage.data) {
-                        if (__currentPage.data.hasOwnProperty(k)) { out[k] = __currentPage.data[k]; }
+            /// 一个实例的 data 按根字段拼成 JSON，每个根字段的 JSON 按「最后一次 setData 到它的序号」（`__setKeys`）缓存：
+            /// 没被 setData 过的字段直接拿上次的字符串。从前每次 setData 都把整页数据 JSON.stringify 一遍 ——
+            /// 云听音乐歌单页（17 首歌 + 歌单信息）迷你条每涨一个百分点就 setData 一次，一加上这一步 2~12ms。
+            /// 只认 setData 改的（与微信一致：渲染层只收到 setData 的那份数据，直接改 this.data 不会画出来）
+            function __dataJson(inst) {
+                var d = inst.data;
+                if (!d) { return '{}'; }
+                var seen = inst.__setKeys || {};
+                var cache = inst.__jsonCache || (inst.__jsonCache = {});
+                var parts = [];
+                for (var k in d) {
+                    if (!d.hasOwnProperty(k)) { continue; }
+                    var seq = seen[k] || 0, c = cache[k];
+                    var j;
+                    if (c && c.s === seq && c.v === d[k]) {
+                        j = c.j;
+                    } else {
+                        j = JSON.stringify(d[k]);
+                        cache[k] = { s: seq, v: d[k], j: j };
                     }
+                    if (j === undefined) { continue; }
+                    parts.push(JSON.stringify(k) + ':' + j);
                 }
+                return '{' + parts.join(',') + '}';
+            }
+
+            function __getRenderData() {
+                var page = (__currentPage && __currentPage.data) ? __dataJson(__currentPage) : '{}';
                 var map = __compState().map;
-                var comp = {};
+                var comp = [];
                 var opts = {};
-                var any = false;
                 var anyOpt = false;
                 for (var key in map) {
                     if (!map.hasOwnProperty(key) || !map[key]) { continue; }
                     var inst = map[key];
-                    comp[key] = inst.data;
-                    any = true;
+                    comp.push(JSON.stringify(key) + ':' + __dataJson(inst));
                     var entry = __componentDefs[inst.is];
                     var o = entry && entry.def && entry.def.options;
                     var bi = (entry && entry.merged.builtin) || [];
@@ -74,9 +93,12 @@
                         anyOpt = true;
                     }
                 }
-                if (any) { out['$comp'] = comp; }
-                if (anyOpt) { out['$copt'] = opts; }
-                return JSON.stringify(out);
+                // 页面数据里自己带了 $comp / $copt（不该有）时与从前一样被覆盖：拼在后面，JSON.parse 取后一个
+                var extra = '';
+                if (comp.length) { extra += '"$comp":{' + comp.join(',') + '}'; }
+                if (anyOpt) { extra += (extra ? ',' : '') + '"$copt":' + JSON.stringify(opts); }
+                if (!extra) { return page; }
+                return page === '{}' ? '{' + extra + '}' : page.slice(0, -1) + ',' + extra + '}';
             }
 
             /// 把事件派发到「持有该处理函数的对象」。

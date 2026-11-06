@@ -59,9 +59,46 @@ pub fn log_enabled() -> bool {
     *L.get_or_init(|| std::env::var("MINI_IMG_LOG").is_ok())
 }
 
+/// 刚到（或刚确定失败）的那几张的 key：远程是地址，本地大图是 `local:` + src。
+/// 先记 key 再置 [`DIRTY`]，取的时候先清标记再取表：取到空表说明那几张上一次已经一起取走了
+static ARRIVED: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+fn arrived(key: String) {
+    if let Ok(mut a) = ARRIVED.lock() {
+        // 宿主只调 take_dirty（桌面窗体）时没人取：别无限长
+        if a.len() < 256 {
+            a.push(key);
+        }
+    }
+    DIRTY.store(true, Ordering::Relaxed);
+}
+
 /// 取走「有新图到位」的重绘标记
 pub fn take_dirty() -> bool {
-    DIRTY.swap(false, Ordering::Relaxed)
+    let d = DIRTY.swap(false, Ordering::Relaxed);
+    if d {
+        if let Ok(mut a) = ARRIVED.lock() {
+            a.clear();
+        }
+    }
+    d
+}
+
+/// 同 [`take_dirty`]，带上到了哪几张（SDK 据此只重画用到它们的那几块，`host/engine_image_arrival.rs`）。
+/// 没有新图给 None；`Some(空)` 是那几张上一次已经一起取走了（不用再画）。表满过（256 张）给的 key 不全，
+/// 调用方找不到某张图用在哪时照旧整帧，漏的那几张也就一起画到了
+pub fn take_arrived() -> Option<Vec<String>> {
+    if !DIRTY.swap(false, Ordering::Relaxed) {
+        return None;
+    }
+    let mut a = ARRIVED.lock().ok()?;
+    let full = a.len() >= 256;
+    let mut v = std::mem::take(&mut *a);
+    if full {
+        // 表满过：有的 key 没记上，用一个页面上不可能有的 key 逼调用方整帧
+        v.push("\u{0}overflow".into());
+    }
+    Some(v)
 }
 
 /// 是否还有图片在下载
@@ -143,11 +180,11 @@ where
         {
             let mut map = states::<T>().lock().unwrap();
             match v {
-                Some(v) => map.insert(key, RemoteState::Ready(Arc::new(v))),
-                None => map.insert(key, RemoteState::Failed { at: Instant::now(), tries: MAX_TRIES }),
+                Some(v) => map.insert(key.clone(), RemoteState::Ready(Arc::new(v))),
+                None => map.insert(key.clone(), RemoteState::Failed { at: Instant::now(), tries: MAX_TRIES }),
             };
         }
-        DIRTY.store(true, Ordering::Relaxed);
+        arrived(key);
         let mut n = pending().lock().unwrap();
         *n = n.saturating_sub(1);
     });
@@ -196,7 +233,7 @@ where
                 }
             }
         }
-        DIRTY.store(true, Ordering::Relaxed);
+        arrived(url);
         let mut n = pending().lock().unwrap();
         *n = n.saturating_sub(1);
     });

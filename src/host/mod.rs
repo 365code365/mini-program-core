@@ -104,6 +104,8 @@ pub mod engine_pixels;
 mod engine_resize;
 /// 生命周期（前后台 / 内存告警）、动画时钟与引擎时钟
 mod engine_life;
+/// 挂起 / 恢复：打开别的小程序时留在内存里，回来原样继续
+mod engine_park;
 /// SDK 的 GPU 上屏（原生 surface → GpuCompositor）
 #[cfg(feature = "gpu")]
 mod engine_gpu;
@@ -140,6 +142,11 @@ mod engine_keyboard;
 mod engine_input_queue;
 /// 覆盖层只重画点击态 / 光标那一块（支付密码键盘按键）
 mod engine_fixed_partial;
+mod engine_keep_canvas;
+/// 后台下完的图只重画用到它的那几块
+mod engine_image_arrival;
+pub use engine_image_arrival::image_arrival_partial_count;
+pub use engine_fixed_partial::fixed_partial_count;
 /// 动了的 scroll-view 要重画哪（页面 / 覆盖层分开）
 mod engine_damage_area;
 pub mod tabbar;
@@ -147,6 +154,7 @@ pub mod tabbar;
 pub mod tabbar_api;
 /// 点击命中与事件派发（tap / change 的链路）
 pub mod tap;
+mod tap_input;
 /// 输入框聚焦参数与 `focus` / `auto-focus` 属性的聚焦请求
 pub mod input_focus;
 pub mod touch;

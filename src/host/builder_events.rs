@@ -75,7 +75,7 @@ fn push_dispatch(script: &mut String, w: &BuilderWindow, name: &str, index: usiz
     use std::fmt::Write;
     for b in w.binds.iter().filter(|b| b.event_type == name) {
         let node = super::touch::NodeInfo { id: &w.id, dataset: &b.data, offset_left: 0.0, offset_top: 0.0 };
-        let ev = super::touch::event_json(name, &node, &node, (0.0, 0.0), 0, t_ms, json!({ "index": index }));
+        let ev = super::touch::event_json(name, &node, &node, super::touch::EventPoint::ZERO, 0, t_ms, json!({ "index": index }));
         let h = serde_json::to_string(&b.handler).unwrap_or_else(|_| "''".into());
         let o = serde_json::to_string(&b.owner).unwrap_or_else(|_| "''".into());
         if crate::renderer::draw_profile::scroll_log() {

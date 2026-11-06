@@ -203,6 +203,15 @@ pub fn execute_canvas_draw(canvas_id: &str, commands_json: &str) {
     CANVAS_DIRTY.store(true, std::sync::atomic::Ordering::Relaxed);
 }
 
+/// 小程序挂起时带走自己的画布（按 canvas-id 存，进程级）、回来放回（host/engine_park.rs）
+pub(crate) fn park() -> CanvasContextManager {
+    CANVAS_MANAGER.lock().map(|mut m| std::mem::replace(&mut *m, CanvasContextManager::new())).unwrap_or_else(|_| CanvasContextManager::new())
+}
+pub(crate) fn unpark(s: CanvasContextManager) {
+    if let Ok(mut m) = CANVAS_MANAGER.lock() {
+        *m = s;
+    }
+}
 /// 有画布被画过（宿主据此重画页面：canvas 的像素是在页面绘制时拷进去的）
 static CANVAS_DIRTY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 

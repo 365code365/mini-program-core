@@ -16,6 +16,11 @@ final class MiniViewController: UIViewController {
     private let store: MiniStore
     private var mini: MiniProgramView!
     private var link: StoreLink?
+    /// 小程序打开小程序的来路：A → B → C 时是 [A, B]。返回 / 侧滑 / 胶囊「⊙」/ navigateBackMiniProgram / exitMiniProgram
+    /// 先回 B、再回 A，最后才收起这一页回 App（与微信一致）。一个进程同一时刻只有一个小程序实例，回去是按来路的链接
+    /// 重新打开（scene 1038，referrerInfo 带回 extraData）：A 的页面栈与内存里的状态不在了，storage 还在。
+    /// shot 是离开 A 那一刻的画面：回去时不盖 loading、不问服务器，先盖着它，A 的第一页出来再淡掉
+    private var backStack: [(link: StoreLink, shot: UIImage?)] = []
     private let hint: MiniStore.App?
     private let demoRoute: String?
     /// 当前打开着的商店小程序（胶囊菜单的转发 / 收藏要用）；内置示例为 nil
@@ -87,7 +92,11 @@ final class MiniViewController: UIViewController {
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .portrait }
 
     /// 外部链接来了（SceneDelegate 收到 `minirender://`）：就地换小程序
-    func handle(_ l: StoreLink) { openStore(l) }
+    /// 外部链接：一次新的进入，来路作废
+    func handle(_ l: StoreLink) {
+        backStack.removeAll()
+        openStore(l)
+    }
 
     // MARK: - 视图与打开
 
@@ -107,6 +116,8 @@ final class MiniViewController: UIViewController {
         // 实例要留住：apis 里的闭包都是 [weak self]，只取 .apis 的话它当场就释放了，
         // 之后每个要弹框的接口都回「fail host gone」（跳转中心点了没反应就是这个）
         let hosts = DemoHostApis(presenter: self) { [weak self] args in self?.navigateToMiniProgram(args) }
+        hosts.onNavigateBackMiniProgram = { [weak self] extra in self?.backToReferrer(extra) ?? false }
+        hosts.canNavigateBack = { [weak self] in !(self?.backStack.isEmpty ?? true) }
         hostApiImpl = hosts
         v.hostApis = hosts.apis
         // 胶囊「•••」：微信式底部菜单（转发、收藏 / 重新进入、上传诊断日志、关于）
@@ -120,6 +131,8 @@ final class MiniViewController: UIViewController {
             // 第一页出来了才收起 loading（冷启动加载字体那几百毫秒也盖在底下，不露白屏）
             if ev["type"] as? String == "page" { self.pageDepth = (ev["depth"] as? NSNumber)?.intValue ?? self.pageDepth }
             if ev["type"] as? String == "videoFullscreen" { self.videoFullscreen = ev["fullScreen"] as? Bool ?? false }
+            // wx.exitMiniProgram：与栈底返回同一条路
+            if ev["type"] as? String == "exitMiniProgram" { DispatchQueue.main.async { self.close() } }
             if ev["type"] as? String == "page", let c = self.cover {
                 self.cover = nil
                 c.hide()
@@ -148,8 +161,9 @@ final class MiniViewController: UIViewController {
     }
 
     /// 打开商店里的小程序（[l] 的 key 是 AppID 或 id）：盖 loading → 后台问服务器最新版、
-    /// 不是最新就下载解包 → 回主线程 open。已经开着一个时先关掉它，再在新视图上开
-    private func openStore(_ l: StoreLink, hint: MiniStore.App? = nil) {
+    /// 不是最新就下载解包 → 回主线程 open。已经开着一个时先关掉它，再在新视图上开。
+    /// [resume]：回到上一个小程序（[backToReferrer]）—— 用本地那一版不问服务器，盖 [shot] 而不是 loading
+    private func openStore(_ l: StoreLink, hint: MiniStore.App? = nil, resume: Bool = false, shot: UIImage? = nil) {
         generation += 1
         let gen = generation
         link = l
@@ -165,7 +179,10 @@ final class MiniViewController: UIViewController {
         cover?.removeFromSuperview()
         // 深链只带 AppID：装过的话先用本地记录的名字 / 图标画 loading（读一个小 JSON，不等网络）
         let known = hint ?? store.local(l.key)
-        let c = LoadingCover(id: known?.id ?? l.key, name: known?.name ?? "小程序") { [weak self] in self?.close() }
+        let onClose: () -> Void = { [weak self] in self?.close() }
+        let c = resume
+            ? LoadingCover(resumeWith: shot, id: known?.id ?? l.key, name: known?.name ?? "小程序", onClose: onClose)
+            : LoadingCover(id: known?.id ?? l.key, name: known?.name ?? "小程序", onClose: onClose)
         c.frame = view.bounds
         c.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(c)
@@ -173,15 +190,18 @@ final class MiniViewController: UIViewController {
         let store = self.store
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             var stage = ""
+            let onStatus: (String) -> Void = { s in
+                stage = s
+                DispatchQueue.main.async { if gen == self?.generation { c.progress(s) } }
+            }
+            let onProgress: (Int64, Int64) -> Void = { got, total in
+                let mb = total > 0 ? String(format: "%.1f / %.1f MB", Double(got) / 1_048_576, Double(total) / 1_048_576)
+                    : String(format: "%.1f MB", Double(got) / 1_048_576)
+                DispatchQueue.main.async { if gen == self?.generation { c.progress("\(stage)  \(mb)") } }
+            }
             let r = Result {
-                try store.prepare(l.key, status: { s in
-                    stage = s
-                    DispatchQueue.main.async { if gen == self?.generation { c.progress(s) } }
-                }, progress: { got, total in
-                    let mb = total > 0 ? String(format: "%.1f / %.1f MB", Double(got) / 1_048_576, Double(total) / 1_048_576)
-                        : String(format: "%.1f MB", Double(got) / 1_048_576)
-                    DispatchQueue.main.async { if gen == self?.generation { c.progress("\(stage)  \(mb)") } }
-                })
+                resume ? try store.prepareLocal(l.key, status: onStatus, progress: onProgress)
+                    : try store.prepare(l.key, status: onStatus, progress: onProgress)
             }
             DispatchQueue.main.async {
                 guard let self, gen == self.generation else { return }
@@ -314,7 +334,33 @@ final class MiniViewController: UIViewController {
         if let extra = args["extraData"], !(extra is NSNull) { referrer["extraData"] = extra }
         l.scene = 1037
         l.referrer = referrer
-        openStore(l)
+        // 记下来路：B 里返回要回到这一个（A），连同 A 此刻的画面（要在关掉 A 之前截）
+        let from = link
+        let gen = generation
+        let t0 = CACurrentMediaTime()
+        mini.snapshot { [weak self] shot in
+            // 截图的这几毫秒里又换了别的（外部链接）：这次跳转作废
+            guard let self, gen == self.generation else { return }
+            NSLog("[商店] 离开前截帧 %@ %.0fms", shot.map { "\(Int($0.size.width))x\(Int($0.size.height))pt" } ?? "没截到",
+                  (CACurrentMediaTime() - t0) * 1000)
+            if let from { self.backStack.append((from, shot)) }
+            self.openStore(l)
+        }
+    }
+
+    /// 回到打开当前小程序的那个小程序（scene 1038，referrerInfo 带 [extra]）。没有来路返回 false。
+    /// 不走 loading：用本地那一版（不问服务器），先盖离开它时截的画面，它的第一页出来再淡掉。
+    /// A 是重开的：页面栈、滚动位置、内存里的状态不在（重开到 A 被打开时的那一页），storage 还在
+    @discardableResult
+    private func backToReferrer(_ extra: Any?) -> Bool {
+        guard let entry = backStack.popLast() else { return false }
+        var a = entry.link
+        var referrer: [String: Any] = ["appId": currentStoreApp?.appId ?? ""]
+        if let extra { referrer["extraData"] = extra }
+        a.scene = 1038
+        a.referrer = referrer
+        openStore(a, resume: true, shot: entry.shot)
+        return true
     }
 
     private func uploadDiag() {
@@ -322,7 +368,9 @@ final class MiniViewController: UIViewController {
         DiagUpload.ask(self, baseUrl: store.baseUrl, app: currentApp, backend: backend)
     }
 
+    /// 离开当前小程序：有来路回上一个小程序，否则收起这一页（胶囊「⊙」、栈底侧滑、exitMiniProgram 都走这里）
     private func close() {
+        if backToReferrer(nil) { return }
         mini.close()
         if let nav = navigationController, nav.viewControllers.first !== self {
             nav.popViewController(animated: true)

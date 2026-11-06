@@ -34,6 +34,13 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
     private lateinit var binding: FlutterPlugin.FlutterPluginBinding
     private var host: EngineHost? = null
 
+    /**
+     * 挂起着的实例（小程序打开小程序时 A 留在内存里，Dart `MiniProgramController.park`）：id → host。
+     * 不占 [host] 的位置（B 才能建），命令也不转给它们；`unpark` 时放回 [host]
+     */
+    private val parked = LinkedHashMap<Int, EngineHost>()
+    private var nextParkId = 1
+
     /** 插件自带的宿主能力：选图 / 选视频 / 选文件 / 存相册 / 打开文档（要 Activity 收选择器的结果） */
     private lateinit var picker: MediaPicker
 
@@ -53,6 +60,8 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
         channel.setMethodCallHandler(null)
         host?.dispose()
         host = null
+        parked.values.forEach { it.dispose() }
+        parked.clear()
     }
 
     override fun onAttachedToActivity(b: ActivityPluginBinding) {
@@ -74,6 +83,34 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
             "init", "dispose" -> {
                 host?.dispose()
                 host = null
+                // init = Dart 侧重启（热重启）：挂着的那些 Dart 已经不认识了，一起关掉
+                if (call.method == "init") {
+                    parked.values.forEach { it.dispose() }
+                    parked.clear()
+                }
+                result.success(null)
+            }
+            // 挂起当前实例（见 [parked]）：回 id（挂不上回 -1，这时它仍是当前实例）
+            "park" -> {
+                val h = host ?: return result.success(-1)
+                h.park { ok ->
+                    if (!ok || host !== h) return@park result.success(-1)
+                    val id = nextParkId++
+                    parked[id] = h
+                    host = null
+                    result.success(id)
+                }
+            }
+            // 恢复挂起的实例：当前实例（B）应该已经 dispose 过；没有的话这里关掉它
+            "unpark" -> {
+                val h = parked.remove(call.argument<Int>("id") ?: -1) ?: return result.success(false)
+                host?.dispose()
+                host = h
+                h.unpark(call.argument<String>("enter"))
+                result.success(true)
+            }
+            "disposeParked" -> {
+                parked.remove(call.argument<Int>("id") ?: -1)?.dispose()
                 result.success(null)
             }
             "paths" -> {

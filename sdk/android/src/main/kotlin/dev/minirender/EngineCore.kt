@@ -187,7 +187,44 @@ internal class EngineCore(
     }
 
     /** what: 0 进前台 / 1 进后台 / 2 内存告警 */
+    /**
+     * 挂起（引擎 engine_park.rs）：停帧、视频停下、引擎派发 onHide 并带走进程级状态（包根、storage 目录、
+     * 按 id 存的组件状态）。[done]（主线程）回调之后才能在**另一个**视图上 open 别的小程序
+     */
+    fun suspend(done: (Boolean) -> Unit) {
+        val queued = engine.post {
+            running = false
+            suspended = true
+            videoHost?.pauseAll()
+            val ok = handle != 0L && MiniEngine.nativeSuspend(handle)
+            Log.i(TAG, "⏸ 挂起（打开别的小程序）：${if (ok) "ok" else "没挂上"}")
+            main.post { done(ok) }
+        }
+        if (!queued) main.post { done(false) }
+    }
+
+    /**
+     * 恢复挂起的引擎：先等别的引擎销毁完（它们换过进程级状态），还原状态、派发 onShow（[enterJson] 是
+     * `getEnterOptionsSync()` 的参数，返回是 scene 1038），重新上屏
+     */
+    fun resume(enterJson: String?) = engine.post {
+        EngineTeardown.awaitPrevious()
+        suspended = false
+        if (handle == 0L) return@post
+        val ok = MiniEngine.nativeResume(handle, enterJson)
+        Log.i(TAG, "▶ 恢复（从别的小程序回来）：${if (ok) "ok" else "没挂着"}")
+        running = true
+        needsPresent = true
+        requestFrame()
+    }
+
+    /** 挂着（[suspend] 之后、[resume] 之前）：宿主的前后台通知不转给引擎 */
+    @Volatile var suspended = false
+        private set
+
     fun lifecycle(what: Int) = engine.post {
+        // 挂着时 Activity 的前后台与它无关（被别的小程序盖着）：回前台也不开始出帧
+        if (suspended && what != 2) return@post
         if (what == 0) running = true
         // 进后台：停止出帧（继续出帧纯属耗电），视频也停下（与微信一致，回前台不自动接着播）
         if (what == 1) {

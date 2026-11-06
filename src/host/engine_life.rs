@@ -35,6 +35,10 @@ impl MiniEngine {
     /// 启动时还有一条 resumed；从前每条都派发，切一次后台 `App.onHide` 两三次、启动时多一次 `App.onShow`
     /// （微信每次只一次）。宿主各自去重容易漏，引擎这里统一挡住
     pub fn on_show(&mut self) {
+        // 挂起中（engine_park.rs，被别的小程序盖着）：Activity 回前台也不算它回来，等 resume
+        if self.parked.is_some() {
+            return;
+        }
         if !std::mem::replace(&mut self.backgrounded, false) {
             return;
         }

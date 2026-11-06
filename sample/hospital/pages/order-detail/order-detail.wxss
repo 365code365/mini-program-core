@@ -40,3 +40,4 @@
 .bar-btn { flex: 1; height: 84rpx; border-radius: 42rpx; display: flex; align-items: center; justify-content: center; font-size: 28rpx; font-weight: bold; }
 .ghost { border: 2rpx solid #d5dae2; color: #3a4252; box-sizing: border-box; font-weight: normal; margin-right: 20rpx; }
 .empty { padding-top: 240rpx; }
+.buy { margin-left: 12rpx; font-size: 22rpx; color: #12a37f; border: 1rpx solid #9fdcc9; padding: 0 12rpx; border-radius: 16rpx; line-height: 34rpx; }

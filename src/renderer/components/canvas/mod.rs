@@ -147,6 +147,7 @@ pub use image_src::info_json as canvas_image_info;
 pub use image_src::data_uri as canvas_data_uri;
 pub use gradient::{LinearGradient, RadialGradient};
 pub use manager::{ensure_canvas_context, execute_canvas_draw, take_canvas_dirty, CanvasContextManager, CANVAS_MANAGER};
+pub(crate) use manager::{park, unpark};
 pub use extra2d::measure_text as canvas_measure_text;
 
 /// 画布在管理器里的键：旧接口按 `canvas-id`，`type="2d"` 按 `2d#<id>`（逻辑层 Canvas 节点用同一个键）

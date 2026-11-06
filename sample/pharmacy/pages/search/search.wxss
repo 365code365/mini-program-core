@@ -22,3 +22,6 @@
 .it-f { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-top: 8rpx; }
 .it-f .price { font-size: 30rpx; }
 .add { font-size: 22rpx; color: #12a37f; border: 2rpx solid #12a37f; border-radius: 24rpx; padding: 4rpx 18rpx; }
+.ref { display: flex; flex-direction: row; align-items: center; justify-content: space-between; background: #e6f6f1; padding: 14rpx 24rpx; }
+.ref-back { font-size: 26rpx; color: #12a37f; font-weight: bold; flex-shrink: 0; }
+.ref-tip { font-size: 22rpx; color: #55625e; margin-left: 16rpx; text-align: right; }

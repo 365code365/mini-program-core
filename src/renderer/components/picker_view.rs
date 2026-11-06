@@ -71,6 +71,14 @@ fn index_of(pos: f32, count: usize) -> usize {
 type Events = Vec<(String, &'static str, Value)>;
 
 static STATE: Mutex<Option<(HashMap<String, PickerView>, Events)>> = Mutex::new(None);
+/// 小程序挂起时带走的 picker-view 状态（host/engine_park.rs）
+pub(crate) struct Parked(Option<(HashMap<String, PickerView>, Events)>);
+pub(crate) fn park() -> Parked {
+    Parked(STATE.lock().unwrap_or_else(|e| e.into_inner()).take())
+}
+pub(crate) fn unpark(p: Parked) {
+    *STATE.lock().unwrap_or_else(|e| e.into_inner()) = p.0;
+}
 
 fn with<R>(f: impl FnOnce(&mut HashMap<String, PickerView>, &mut Events) -> R) -> R {
     let mut g = STATE.lock().unwrap_or_else(|e| e.into_inner());

@@ -282,7 +282,8 @@ impl WxmlRenderer {
         let stale: Vec<NodeId> = kept
             .iter()
             .filter(|(id, t)| {
-                let w = cache.taffy.parent(**id).and_then(|p| cache.taffy.layout(p).ok()).map(|l| l.content_box_width().max(0.0));
+                // 与记录 `parent_w` 时同一口径：取整之前的内容区宽（reflow.rs `content_box_of`）
+                let w = cache.taffy.parent(**id).map(|p| cache.taffy.unrounded_layout(p).content_box_width().max(0.0));
                 !matches!((w, t.parent_w), (Some(w), Some(pw)) if (w - pw).abs() <= 0.01)
             })
             .map(|(id, _)| *id)

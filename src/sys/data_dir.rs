@@ -84,6 +84,19 @@ pub(crate) static SCOPE_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(
 #[cfg(test)]
 pub(crate) static ROOT_TEST_LOCK: std::sync::RwLock<()> = std::sync::RwLock::new(());
 
+/// 宿主设过的数据目录与命名空间原值（小程序挂起时记下、回来时还原，host/engine_park.rs）
+pub(crate) fn raw_settings() -> (Option<PathBuf>, Option<String>) {
+    (slot().read().ok().and_then(|g| g.clone()), scope_slot().read().ok().and_then(|g| g.clone()))
+}
+pub(crate) fn restore_settings(s: (Option<PathBuf>, Option<String>)) {
+    if let Ok(mut w) = slot().write() {
+        *w = s.0;
+    }
+    if let Ok(mut w) = scope_slot().write() {
+        *w = s.1;
+    }
+}
+
 /// 设了命名空间时返回 `<数据目录>/game/<appId>`（会建出来）
 pub fn app_scope() -> Option<PathBuf> {
     let id = scope_slot().read().ok()?.clone()?;

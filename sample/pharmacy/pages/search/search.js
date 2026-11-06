@@ -6,10 +6,25 @@ const S = require('../../utils/store.js');
 const ALIAS = { '退烧': '发热', '发烧': '发热', '拉肚子': '腹泻', '胃疼': '胃', '胃痛': '胃', '嗓子疼': '咽', '降压': '高血压', '降糖': '糖尿病', '补钙': '钙' };
 
 Page({
-  data: { kw: '', hot: HOT, history: [], results: [], searched: false, sort: 'default' },
+  // referrer：被别的小程序打开（健康挂号的处方「去药房」）时顶上一条来源 + 返回；带着药名来的不弹键盘
+  data: { kw: '', hot: HOT, history: [], results: [], searched: false, sort: 'default', referrer: null, focus: true },
   onLoad(q) {
     this.setData({ history: S.get('search', []) });
+    // 药名在 referrerInfo.extraData（不在 query 里，中文不用编解码）。只在小程序被打开时的第一页认
+    const ref = wx.getEnterOptionsSync().referrerInfo || {};
+    const ex = ref.extraData || {};
+    if (ref.appId && getCurrentPages().length === 1) {
+      this.setData({ referrer: { name: ex.fromName || '上一个小程序', tip: ex.drug ? '处方：' + ex.drug : '' }, focus: !ex.kw });
+      if (ex.kw) return this.run(String(ex.kw), false);
+    }
     if (q.kw) this.run(decodeURIComponent(q.kw), true);
+  },
+  // 回到打开它的小程序（微信：只有被别的小程序打开时才回得去）
+  onBackReferrer() {
+    wx.navigateBackMiniProgram({
+      extraData: { from: 'pharmacy', kw: this.data.kw },
+      fail: () => wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/index/index' }) })
+    });
   },
   onInput(e) {
     const kw = e.detail.value;

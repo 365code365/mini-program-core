@@ -230,6 +230,24 @@ pub const TAGS: &[TagSpec] = &[
         draw: |d| ImageComponent::draw(d.node, d.canvas, d.text, d.x, d.y, d.w, d.h, d.sf),
     },
     TagSpec {
+        // Skyline 的 large-image（3.10.3，官方 component/large-image）：超出 GPU 纹理上限的大图。CPU 光栅没有这个上限，
+        // 按 image 画；mode 只有 widthFix（默认）/ heightFix，bind:load 的 detail {width, height} 与 image 相同。
+        // 同 cover-image，建完把标签改成 image（加载事件、动图帧按 `tag == "image"` 认节点）
+        tags: &["large-image"],
+        profile: "image",
+        leaf: true,
+        stateful: false,
+        clips: false,
+        base_style_only: false,
+        build: |n, c| {
+            let mode = n.attributes.get("mode").map(|m| m.trim()).filter(|m| *m == "heightFix").unwrap_or("widthFix");
+            let mut n = n.clone();
+            n.attributes.insert("mode".into(), mode.into());
+            ImageComponent::build(&n, c).map(|mut r| { r.tag = "image".to_string(); r })
+        },
+        draw: |d| ImageComponent::draw(d.node, d.canvas, d.text, d.x, d.y, d.w, d.h, d.sf),
+    },
+    TagSpec {
         // Skyline 的 grid-view：对齐网格 / 瀑布流（见 components::grid_view）；grid-builder 是它的按 list 展开版（components::builder）
         tags: &["grid-view", "grid-builder"],
         profile: "view",
@@ -430,6 +448,7 @@ mod tests {
         // （page-container / audio / editor 这些是 WXML 内置组件，见 builtin_components，不在这张表里）
         // +4：sticky-header / sticky-section / nested-scroll-header / nested-scroll-body（WP-D）
         // +4：span / list-builder / list-view / grid-builder（WP-A）
-        assert_eq!(registered_tag_count(), 36, "标签数变了就同步一下文档");
+        // +1：large-image（Skyline 3.10.3，按 image 画，2026-11-06）
+        assert_eq!(registered_tag_count(), 37, "标签数变了就同步一下文档");
     }
 }

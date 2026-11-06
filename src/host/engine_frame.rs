@@ -108,6 +108,7 @@ impl MiniEngine {
         // 画布被画过（旧接口的 draw()、type="2d" 的上下文）：像素在页面绘制时拷进去，要重画
         // （scroll-view 里的 canvas 在离屏缓存里，缓存也要作废）
         if crate::renderer::components::take_canvas_dirty() {
+            self.bump_content_epoch();
             self.mark_full();
             if let Some(r) = self.renderer.as_mut() {
                 r.invalidate_offscreen_caches();
@@ -119,23 +120,20 @@ impl MiniEngine {
             for r in [self.renderer.as_mut(), self.tabbar_renderer.as_mut()].into_iter().flatten() {
                 r.invalidate_layout();
             }
+            self.bump_content_epoch();
             self.mark_full();
         }
-        let image_arrived = crate::renderer::components::image_net::take_dirty();
+        let image_arrived = crate::renderer::components::image_net::take_arrived();
         // 网络回包：回调里的 setData 本来就标了数据脏，交给失效分析（只重画变了的节点）。
         // 从前回包与图片一样 `mark_full` —— 边甩边加载的信息流里每个回包一帧整页重画
         if self.app.take_network_dirty() {
             self.page_data_dirty = true;
         }
-        // 网络图片到了：图片的固有尺寸可能改布局（widthFix / heightFix），又不知道画在哪几块，仍整页
-        if image_arrived {
-            self.page_data_dirty = true;
-            self.mark_full();
-            // scroll-view 的离屏缓存也要作废：数据没变它就一直「干净」，贴回去的还是占位图（G-1）
-            for r in [self.renderer.as_mut(), self.tabbar_renderer.as_mut()].into_iter().flatten() {
-                r.invalidate_offscreen_caches();
-            }
+        // 后台下完 / 解完的图：只重画用到它的那几块（engine_image_arrival.rs）
+        if let Some(keys) = image_arrived {
+            self.images_arrived(&keys);
         }
+        self.flush_image_arrivals();
         // 侧滑返回的收尾动画（推出去 / 滑回来），走完判定为返回就退栈
         // 键盘顶起 / 收回：只换合成偏移（engine_keyboard.rs）
         self.tick_keyboard_shift(now);
@@ -305,9 +303,10 @@ impl MiniEngine {
                 }
                 self.after_page_pass(true, scroll);
             }
-            PagePass::Rects { ref rects, anim_complete } => {
+            PagePass::Rects { ref rects, anim_complete, ref others } => {
                 let Self { renderer, canvas, page_stack, page_data, interaction, .. } = self;
                 if let (Some(r), Some(page)) = (renderer.as_mut(), page_stack.last()) {
+                    r.set_backdrop_others(Some(others.clone()));
                     // 一块一趟：每一趟都完整走一遍裁剪窗里的节点树（事件绑定、动画标记照常
                     // 重建），只有落在这块里的像素被清掉重画
                     for &rect in rects {
@@ -320,6 +319,12 @@ impl MiniEngine {
                         canvas.clear_area(&rect, bg);
                         r.set_damage_clip(Some(rect));
                         r.render_with_scroll_and_viewport(canvas, &page.wxml_nodes, page_data, interaction, scroll, vp);
+                        // 动画底图这一趟没用成（backdrop.rs）：这块按平常的办法清掉重画
+                        if r.take_backdrop_retry() {
+                            canvas.clear_area(&rect, bg);
+                            r.set_damage_clip(Some(rect));
+                            r.render_with_scroll_and_viewport(canvas, &page.wxml_nodes, page_data, interaction, scroll, vp);
+                        }
                     }
                 }
                 laps.lap("画");

@@ -45,7 +45,13 @@
       <text class="sec-title">处方与检查</text>
       <text class="b-st {{bill.status === 'unpaid' ? 'b-unpaid' : ''}}">{{bill.status === 'unpaid' ? '待缴费' : '已缴费'}}</text>
     </view>
-    <view class="kv" wx:for="{{bill.items}}" wx:key="name"><text class="k">{{item.cat}} · {{item.name}}</text><text class="v">¥{{item.price}} ×{{item.qty}}</text></view>
+    <view class="kv" wx:for="{{bill.items}}" wx:key="name">
+      <text class="k">{{item.cat}} · {{item.name}}</text>
+      <view class="row">
+        <text class="v">¥{{item.price}} ×{{item.qty}}</text>
+        <text wx:if="{{item.cat === '药品'}}" class="buy" data-name="{{item.name}}" catchtap="onBuyDrug">去药房</text>
+      </view>
+    </view>
     <view class="kv"><text class="k">合计（医保统筹 ¥{{bill.insured}}）</text><text class="v price">自付 ¥{{bill.self}}</text></view>
     <view class="b-ops row">
       <view wx:if="{{bill.status === 'unpaid'}}" class="mini pri" bindtap="onBills"><text>去缴费</text></view>

@@ -25,6 +25,14 @@
     <text class="small">温馨提示</text>
     <text class="muted small">国内航班请提前 2 小时到达机场，起飞前 45 分钟停止办理乘机手续；起飞前 24 小时可在线值机选座。</text>
   </view>
+  <view wx:if="{{paid && dest}}" class="card hotel row" bindtap="goHotel">
+    <view class="h-ic"><text class="h-ic-tx">宿</text></view>
+    <view class="flex1 col">
+      <text class="h-t">到了{{dest}}住哪儿？</text>
+      <text class="muted small">打开「途栖酒店民宿」，按这趟航班的日期找酒店</text>
+    </view>
+    <text class="h-go">订酒店 ›</text>
+  </view>
   <view class="btns row">
     <view class="btn btn-ghost flex1" bindtap="goDetail"><text>查看订单</text></view>
     <view class="btn flex1 b2" bindtap="addCal"><text>添加到日历</text></view>

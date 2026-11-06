@@ -313,6 +313,27 @@ pub extern "C" fn mr_app_set_keyboard_shift(app: *mut MRApp, logical: f32) {
     with_app!(app, (), |a| a.engine.set_keyboard_shift(logical))
 }
 
+/// 挂起（打开别的小程序时留在内存里，host/engine_park.rs）：派发 onHide、带走进程级状态，之后 pump 不做事。
+/// 必须在**另一个**引擎建出来之前调。成功返回 1，已经挂着返回 0
+#[no_mangle]
+pub extern "C" fn mr_app_suspend(app: *mut MRApp) -> c_int {
+    with_app!(app, 0, |a| a.engine.suspend() as c_int)
+}
+
+/// 恢复挂起的引擎：还原进程级状态、派发 onShow。`enter_json`（可为 NULL）是本次进入的参数
+/// `{path, query, scene, referrerInfo}`（从别的小程序返回是 scene 1038）。必须在另一个引擎**销毁之后**调。
+/// 成功返回 1，没挂着返回 0
+#[no_mangle]
+pub extern "C" fn mr_app_resume(app: *mut MRApp, enter_json: *const c_char) -> c_int {
+    let enter = if enter_json.is_null() {
+        None
+    } else {
+        // SAFETY: 调用方保证是以 NUL 结尾的 C 字符串
+        unsafe { std::ffi::CStr::from_ptr(enter_json) }.to_str().ok().and_then(|s| serde_json::from_str(s).ok())
+    };
+    with_app!(app, 0, |a| a.engine.resume(enter.as_ref()) as c_int)
+}
+
 /// 进后台：派发 `App.onHide`。宿主这时应**停止调用 `mr_app_pump`**，否则白耗电。
 #[no_mangle]
 pub extern "C" fn mr_app_on_hide(app: *mut MRApp) {

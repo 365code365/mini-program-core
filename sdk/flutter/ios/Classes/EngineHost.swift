@@ -376,7 +376,8 @@ final class EngineHost: NSObject {
         }
     }
 
-    /// 调试：把当前帧存成 PNG（与屏幕截图对比纹理有没有被拉伸）
+    /// 把当前帧存成图片：`.jpg` / `.jpeg` 存 JPEG（质量 0.9，回到上一个小程序时当占位图，要快），
+    /// 其它存 PNG（调试：与屏幕截图对比纹理有没有被拉伸）
     private func dumpFrame(to path: String) -> Bool {
         guard let h = handle, pixelW > 0, pixelH > 0 else { return false }
         let stride = pixelW * 4
@@ -390,9 +391,12 @@ final class EngineHost: NSObject {
                                   bytesPerRow: stride, space: CGColorSpaceCreateDeviceRGB(),
                                   bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
                                   provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent),
-              let png = UIImage(cgImage: image).pngData()
+              case let ext = (path as NSString).pathExtension.lowercased(),
+              let data = (ext == "jpg" || ext == "jpeg")
+                  ? UIImage(cgImage: image).jpegData(compressionQuality: 0.9)
+                  : UIImage(cgImage: image).pngData()
         else { return false }
-        return (try? png.write(to: URL(fileURLWithPath: path))) != nil
+        return (try? data.write(to: URL(fileURLWithPath: path))) != nil
     }
 
     /// 主线程调：引擎线程上销毁引擎，再注销纹理

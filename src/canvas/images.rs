@@ -4,6 +4,11 @@
 //! 切开，一行逻辑没改；判据是 65 张画廊图与 21 页整帧快照逐字节不变。
 use super::*;
 
+thread_local! {
+    /// 这条线程上的 `draw_image` 不分线程（后台缩图的线程：引擎线程正在用那几个核画这一帧，image_crop.rs）
+    pub(super) static SERIAL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
 impl Canvas {
     /// 绘制图片数据（RGBA 格式）
     /// img_data: RGBA 像素数据
@@ -107,99 +112,141 @@ impl Canvas {
             )
         };
         let lerp = |a: f32, b: f32, t: f32| a + (b - a) * t;
-        let mut box_rows: Vec<u32> = Vec::with_capacity(box_ny as usize);
-
-        for dest_y in ly0..ly1 {
-            let local_y = (dest_y as f32 - y - offset_y) / scale_y;
-            if local_y < 0.0 || local_y >= img_h as f32 {
-                continue;
-            }
-            let src_y = local_y.floor() as u32;
-            let fy = local_y - src_y as f32;
-            if use_box_filter {
-                box_rows.clear();
-                for sy in 0..box_ny {
-                    let sample_y = local_y + (sy as f32 + 0.5) * footprint_y / box_ny as f32;
-                    box_rows.push(sample_y.max(0.0) as u32);
+        // 双线性：每个目标像素 = 先横向插两行（第 sy 行、第 sy+1 行）、再纵向插。横向那两行只取决于源行号与列，
+        // 放大时一串目标行共用同一对源行（播放页拿 300×300 的封面铺满屏，纵向放大 7 倍）：按源行记下来，
+        // 源行号变了才重算。算式与顺序与逐像素现算完全相同（同样的 f32 运算），结果逐字节不变；
+        // 从前每个像素四次取样 + 十二次插值，那张 1656×2303 的背景图一次 35ms
+        let h_row = |sy: u32, out: &mut Vec<[f32; 4]>| {
+            out.clear();
+            out.extend(cols.iter().map(|c| match *c {
+                Some((_, src_x, fx)) => {
+                    let (c0, c1) = (sample(src_x, sy), sample(src_x + 1, sy));
+                    [lerp(c0.0, c1.0, fx), lerp(c0.1, c1.1, fx), lerp(c0.2, c1.2, fx), lerp(c0.3, c1.3, fx)]
                 }
-            }
-            let dy = dest_y as f32 + 0.5 - y;
-            let row = dest_y as usize * width;
-            for (ci, col) in cols.iter().enumerate() {
-                let Some((_, src_x, fx)) = *col else { continue };
-                let dest_x = lx0 + ci as i32;
-                // 圆角抗锯齿覆盖率：像素中心到圆角圆心的距离，落在边缘 1px 带内时按比例淡出，
-                // 消除之前硬裁剪（continue）造成的圆角锯齿。
-                let mut corner_cover = 1.0f32;
-                if has_radius {
-                    let dx = dest_x as f32 + 0.5 - x;
-                    let cover_at = |cx: f32, cy: f32| -> f32 {
-                        let d = ((dx - cx) * (dx - cx) + (dy - cy) * (dy - cy)).sqrt();
-                        (radius + 0.5 - d).clamp(0.0, 1.0)
-                    };
-                    if dx < radius && dy < radius {
-                        corner_cover = cover_at(radius, radius);
-                    } else if dx > w - radius && dy < radius {
-                        corner_cover = cover_at(w - radius, radius);
-                    } else if dx < radius && dy > h - radius {
-                        corner_cover = cover_at(radius, h - radius);
-                    } else if dx > w - radius && dy > h - radius {
-                        corner_cover = cover_at(w - radius, h - radius);
+                None => [0.0; 4],
+            }));
+        };
+        // 一段目标行（`px` 是画布从第 `base` 个像素起的那一截）。大图分几段并行（见下），每段自己记横向插好的两行
+        let run = |rows: std::ops::Range<i32>, px: &mut [Color], base: usize| {
+            let mut box_rows: Vec<u32> = Vec::with_capacity(box_ny as usize);
+            let (mut h_top, mut h_bot): (Vec<[f32; 4]>, Vec<[f32; 4]>) = (Vec::new(), Vec::new());
+            let mut h_at = u32::MAX;
+            for dest_y in rows {
+                let local_y = (dest_y as f32 - y - offset_y) / scale_y;
+                if local_y < 0.0 || local_y >= img_h as f32 {
+                    continue;
+                }
+                let src_y = local_y.floor() as u32;
+                let fy = local_y - src_y as f32;
+                if !use_box_filter && src_y != h_at {
+                    if h_at != u32::MAX && src_y == h_at + 1 {
+                        std::mem::swap(&mut h_top, &mut h_bot);
+                    } else {
+                        h_row(src_y, &mut h_top);
                     }
-                    if corner_cover <= 0.0 {
-                        continue;
+                    h_row(src_y + 1, &mut h_bot);
+                    h_at = src_y;
+                }
+                if use_box_filter {
+                    box_rows.clear();
+                    for sy in 0..box_ny {
+                        let sample_y = local_y + (sy as f32 + 0.5) * footprint_y / box_ny as f32;
+                        box_rows.push(sample_y.max(0.0) as u32);
                     }
                 }
-
-                let (r, g, b, a_f) = if use_box_filter {
-                    // 面积平均：RGB 按 alpha 加权，避免透明像素把黑色混进边缘
-                    let (mut wr, mut wg, mut wb, mut wa, mut weight) =
-                        (0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32);
-                    let bc = &box_cols[ci * box_nx as usize..(ci + 1) * box_nx as usize];
-                    for &sy in &box_rows {
-                        for &sx in bc {
-                            let c = sample(sx, sy);
-                            wr += c.0 * c.3;
-                            wg += c.1 * c.3;
-                            wb += c.2 * c.3;
-                            wa += c.3;
-                            weight += 1.0;
+                let dy = dest_y as f32 + 0.5 - y;
+                let row = dest_y as usize * width;
+                for (ci, col) in cols.iter().enumerate() {
+                    let Some((_, src_x, fx)) = *col else { continue };
+                    let dest_x = lx0 + ci as i32;
+                    // 圆角抗锯齿覆盖率：像素中心到圆角圆心的距离，落在边缘 1px 带内时按比例淡出，
+                    // 消除之前硬裁剪（continue）造成的圆角锯齿。
+                    let mut corner_cover = 1.0f32;
+                    if has_radius {
+                        let dx = dest_x as f32 + 0.5 - x;
+                        let cover_at = |cx: f32, cy: f32| -> f32 {
+                            let d = ((dx - cx) * (dx - cx) + (dy - cy) * (dy - cy)).sqrt();
+                            (radius + 0.5 - d).clamp(0.0, 1.0)
+                        };
+                        if dx < radius && dy < radius {
+                            corner_cover = cover_at(radius, radius);
+                        } else if dx > w - radius && dy < radius {
+                            corner_cover = cover_at(w - radius, radius);
+                        } else if dx < radius && dy > h - radius {
+                            corner_cover = cover_at(radius, h - radius);
+                        } else if dx > w - radius && dy > h - radius {
+                            corner_cover = cover_at(w - radius, h - radius);
+                        }
+                        if corner_cover <= 0.0 {
+                            continue;
                         }
                     }
-                    if wa > 0.0 {
-                        (wr / wa, wg / wa, wb / wa, wa / weight.max(1.0))
+
+                    let (r, g, b, a_f) = if use_box_filter {
+                        // 面积平均：RGB 按 alpha 加权，避免透明像素把黑色混进边缘
+                        let (mut wr, mut wg, mut wb, mut wa, mut weight) =
+                            (0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32);
+                        let bc = &box_cols[ci * box_nx as usize..(ci + 1) * box_nx as usize];
+                        for &sy in &box_rows {
+                            for &sx in bc {
+                                let c = sample(sx, sy);
+                                wr += c.0 * c.3;
+                                wg += c.1 * c.3;
+                                wb += c.2 * c.3;
+                                wa += c.3;
+                                weight += 1.0;
+                            }
+                        }
+                        if wa > 0.0 {
+                            (wr / wa, wg / wa, wb / wa, wa / weight.max(1.0))
+                        } else {
+                            (0.0, 0.0, 0.0, 0.0)
+                        }
                     } else {
-                        (0.0, 0.0, 0.0, 0.0)
+                        let (t, b) = (h_top[ci], h_bot[ci]);
+                        let _ = (src_x, fx);
+                        (lerp(t[0], b[0], fy), lerp(t[1], b[1], fy), lerp(t[2], b[2], fy), lerp(t[3], b[3], fy))
+                    };
+                    // 圆角边缘按覆盖率淡出 alpha，实现抗锯齿
+                    let a = (a_f * corner_cover).round().clamp(0.0, 255.0) as u8;
+                    let color = Color::new(
+                        r.round().clamp(0.0, 255.0) as u8,
+                        g.round().clamp(0.0, 255.0) as u8,
+                        b.round().clamp(0.0, 255.0) as u8,
+                        a,
+                    );
+                    // 与 `set_pixel` 相同的写法（越界 / 裁剪已经由循环范围保证）
+                    let idx = row + dest_x as usize;
+                    let idx = idx - base;
+                    if a == 255 {
+                        px[idx] = color;
+                    } else if a > 0 {
+                        px[idx] = color.blend(&px[idx]);
                     }
-                } else {
-                    let c00 = sample(src_x, src_y);
-                    let c10 = sample(src_x + 1, src_y);
-                    let c01 = sample(src_x, src_y + 1);
-                    let c11 = sample(src_x + 1, src_y + 1);
-                    (
-                        lerp(lerp(c00.0, c10.0, fx), lerp(c01.0, c11.0, fx), fy),
-                        lerp(lerp(c00.1, c10.1, fx), lerp(c01.1, c11.1, fx), fy),
-                        lerp(lerp(c00.2, c10.2, fx), lerp(c01.2, c11.2, fx), fy),
-                        lerp(lerp(c00.3, c10.3, fx), lerp(c01.3, c11.3, fx), fy),
-                    )
-                };
-                // 圆角边缘按覆盖率淡出 alpha，实现抗锯齿
-                let a = (a_f * corner_cover).round().clamp(0.0, 255.0) as u8;
-                let color = Color::new(
-                    r.round().clamp(0.0, 255.0) as u8,
-                    g.round().clamp(0.0, 255.0) as u8,
-                    b.round().clamp(0.0, 255.0) as u8,
-                    a,
-                );
-                // 与 `set_pixel` 相同的写法（越界 / 裁剪已经由循环范围保证）
-                let idx = row + dest_x as usize;
-                if a == 255 {
-                    self.pixels[idx] = color;
-                } else if a > 0 {
-                    self.pixels[idx] = color.blend(&self.pixels[idx]);
                 }
             }
+        };
+        // 整屏级的放大（铺满屏的背景图）分几段并行：每段一截互不相交的行，算式与单线程逐字节相同
+        let area = (ly1 - ly0) as usize * (lx1 - lx0) as usize;
+        let parts = if area >= 400_000 && !SERIAL.get() { std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1).min(4) } else { 1 };
+        if parts <= 1 {
+            run(ly0..ly1, &mut self.pixels, 0);
+            return;
         }
+        let per = ((ly1 - ly0) as usize).div_ceil(parts) as i32;
+        let (_, rest) = self.pixels.split_at_mut(ly0 as usize * width);
+        let mut rest = &mut rest[..(ly1 - ly0) as usize * width];
+        std::thread::scope(|sc| {
+            let mut y0 = ly0;
+            while y0 < ly1 {
+                let y1 = (y0 + per).min(ly1);
+                let (band, tail) = rest.split_at_mut((y1 - y0) as usize * width);
+                rest = tail;
+                let run = &run;
+                sc.spawn(move || run(y0..y1, band, y0 as usize * width));
+                y0 = y1;
+            }
+        });
     }
 
     /// `draw_image_cached` 的缩放结果（`img_data` 已经是降采样过的那张）：同一张图 + 同一目标尺寸 +
@@ -317,9 +364,11 @@ impl Canvas {
         };
         let dst_w = w.ceil() as u32 + 1;
         let dst_h = h.ceil() as u32 + 1;
-        // 目标过大（整屏级）时缓存收益低、占用高，直接走原路径
+        // 目标过大（整屏级）时整张缓存占用太高：溢出画布的背景图只缓存看得见的那块（image_crop.rs），其余直接画
         if (dst_w as u64) * (dst_h as u64) > 4_000_000 {
-            self.draw_image(img_data, img_w, img_h, x, y, w, h, mode, radius);
+            if !self.draw_image_crop_cached(cache_key, img_data, img_w, img_h, x, y, w, h, mode, radius) {
+                self.draw_image(img_data, img_w, img_h, x, y, w, h, mode, radius);
+            }
             return;
         }
         let ix = x.floor();
@@ -342,90 +391,6 @@ impl Canvas {
         }
     }
 
-    /// 图已经是按 `mode` 缩放好的尺寸（与目标差不到一个像素）时 1:1 整行拷进去，返回 true；否则返回 false
-    /// （调用方改走 [`Self::draw_image`]）。
-    ///
-    /// 同层渲染的视频用它：宿主读回画面时就按视频框的设备像素尺寸让 GPU 缩好（`videos` 事件的 `box`），
-    /// 这里只剩拷贝。从前每一帧都走逐像素双线性，960×400 的帧在一加 PLY110 上要 17~20ms，
-    /// 30 帧的视频一秒就有 30 帧超时。偏移取整到整像素；圆角处按与 `draw_image` 同一个覆盖率淡出。
-    #[allow(clippy::too_many_arguments)]
-    pub fn blit_image_exact(
-        &mut self,
-        img_data: &[u8],
-        img_w: u32,
-        img_h: u32,
-        x: f32,
-        y: f32,
-        w: f32,
-        h: f32,
-        mode: &str,
-        radius: f32,
-    ) -> bool {
-        if img_w == 0 || img_h == 0 || img_data.len() < (img_w * img_h * 4) as usize {
-            return false;
-        }
-        let (sx, sy) = Self::image_scale_for_mode(mode, img_w, img_h, w, h);
-        if ((sx - 1.0) * img_w as f32).abs() >= 1.0 || ((sy - 1.0) * img_h as f32).abs() >= 1.0 {
-            return false;
-        }
-        let (x, y) = (x + self.translation.0, y + self.translation.1);
-        let ox = (x + (w - img_w as f32) / 2.0).round() as i32;
-        let oy = (y + (h - img_h as f32) / 2.0).round() as i32;
-        // 只画在框里（aspectFill 的图比框大）、画布裁剪区里
-        let (bx0, bx1, by0, by1) = self.draw_bounds();
-        let (cx0, cx1) = ((x as i32).max(bx0).max(ox), ((x + w) as i32).min(bx1).min(ox + img_w as i32));
-        let (cy0, cy1) = ((y as i32).max(by0).max(oy), ((y + h) as i32).min(by1).min(oy + img_h as i32));
-        if cx1 <= cx0 || cy1 <= cy0 {
-            return true;
-        }
-        let width = self.width as usize;
-        let cover = |px: i32, py: i32| -> f32 {
-            if radius <= 0.0 {
-                return 1.0;
-            }
-            let (dx, dy) = (px as f32 + 0.5 - x, py as f32 + 0.5 - y);
-            let at = |cx: f32, cy: f32| (radius + 0.5 - ((dx - cx) * (dx - cx) + (dy - cy) * (dy - cy)).sqrt()).clamp(0.0, 1.0);
-            if dx < radius && dy < radius {
-                at(radius, radius)
-            } else if dx > w - radius && dy < radius {
-                at(w - radius, radius)
-            } else if dx < radius && dy > h - radius {
-                at(radius, h - radius)
-            } else if dx > w - radius && dy > h - radius {
-                at(w - radius, h - radius)
-            } else {
-                1.0
-            }
-        };
-        let n = (cx1 - cx0) as usize;
-        for py in cy0..cy1 {
-            let src = ((py - oy) as usize * img_w as usize + (cx0 - ox) as usize) * 4;
-            let row = py as usize * width;
-            let in_corner_rows = radius > 0.0 && ((py as f32 + 0.5 - y) < radius || (py as f32 + 0.5 - y) > h - radius);
-            let src_row = &img_data[src..src + n * 4];
-            // 不在圆角行、整行不透明（GL 读回的视频帧 alpha 恒为 255）：覆盖率全是 1，
-            // 下面逐像素那条路径也是原样写入，这里整行字节拷贝（`Color` 就是 RGBA 四个字节），结果逐字节相同
-            if !in_corner_rows && src_row.chunks_exact(4).all(|s| s[3] == 255) {
-                let dst = &mut self.pixels[row + cx0 as usize..row + cx1 as usize];
-                super::color_bytes_mut(dst).copy_from_slice(src_row);
-                continue;
-            }
-            for (i, px) in (cx0..cx1).enumerate() {
-                let s = &img_data[src + i * 4..src + i * 4 + 4];
-                let c = if in_corner_rows { cover(px, py) } else { 1.0 };
-                let a = (s[3] as f32 * c).round().clamp(0.0, 255.0) as u8;
-                let color = Color::new(s[0], s[1], s[2], a);
-                let idx = row + px as usize;
-                if a == 255 {
-                    self.pixels[idx] = color;
-                } else if a > 0 {
-                    self.pixels[idx] = color.blend(&self.pixels[idx]);
-                }
-            }
-        }
-        true
-    }
-
     /// 按 `mode` 求源图到目标区域的缩放比例（等价于 CSS 的 object-fit）
     pub(super) fn image_scale_for_mode(mode: &str, img_w: u32, img_h: u32, w: f32, h: f32) -> (f32, f32) {
         if img_w == 0 || img_h == 0 {
@@ -446,29 +411,5 @@ impl Canvas {
             // scaleToFill：两轴独立拉伸
             _ => (sx, sy),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// 已经缩好的图（同层渲染的视频帧）1:1 整行拷贝，与逐像素双线性画出来逐字节相同（整像素位置、带圆角）
-    #[test]
-    fn 尺寸正好时整行拷贝与逐像素缩放逐字节相同() {
-        let (iw, ih) = (40u32, 30u32);
-        let img: Vec<u8> = (0..iw * ih).flat_map(|i| [(i * 7 % 256) as u8, (i * 13 % 256) as u8, (i % 256) as u8, 255]).collect();
-        for (mode, w, h) in [("aspectFit", 40.0, 50.0), ("aspectFill", 30.0, 30.0), ("scaleToFill", 40.0, 30.0)] {
-            let mut a = Canvas::new(64, 64);
-            let mut b = Canvas::new(64, 64);
-            a.clear(Color::WHITE);
-            b.clear(Color::WHITE);
-            assert!(a.blit_image_exact(&img, iw, ih, 7.0, 5.0, w, h, mode, 6.0), "{mode}");
-            b.draw_image(&img, iw, ih, 7.0, 5.0, w, h, mode, 6.0);
-            assert!(a.pixels() == b.pixels(), "{mode}：整行拷贝与 draw_image 不一致");
-        }
-        // 尺寸对不上（框刚变、帧还是旧尺寸）：不接，交给 draw_image
-        let mut c = Canvas::new(64, 64);
-        assert!(!c.blit_image_exact(&img, iw, ih, 0.0, 0.0, 60.0, 45.0, "aspectFit", 0.0));
     }
 }

@@ -110,6 +110,17 @@ impl MiniEngine {
         self.damage_input_box(b, fixed);
     }
 
+    /// 正在拖的 slider 换了值：只重画它的盒子。找不到它的位置（还没登记、换页了）返回 false，调用方整帧
+    pub(super) fn damage_dragging_slider(&mut self) -> bool {
+        let Some(id) = self.interaction.dragging_slider.as_ref().map(|d| d.id.clone()) else { return false };
+        let Some((b, fixed)) = self.interaction.element_bounds(&id) else { return false };
+        if b.width <= 0.0 || b.height <= 0.0 {
+            return false;
+        }
+        self.damage_input_box(b, fixed);
+        true
+    }
+
     /// 只重画一个输入框的盒子（页面内容坐标的逻辑像素；覆盖层里的就重画覆盖层）。光标翻转、聚焦 / 失焦换框都走这里
     pub(super) fn damage_input_box(&mut self, b: GeoRect, fixed: bool) {
         if b.width <= 0.0 || b.height <= 0.0 {

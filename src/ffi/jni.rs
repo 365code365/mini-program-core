@@ -218,6 +218,25 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativeBack(
     (mr_app_back(h as *mut MRApp) != 0) as jboolean
 }
 
+/// 挂起（打开别的小程序时留在内存里，`mr_app_suspend`）
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeSuspend(_env: JNIEnv, _class: JClass, h: jlong) -> jboolean {
+    (mr_app_suspend(h as *mut MRApp) != 0) as jboolean
+}
+
+/// 恢复挂起的引擎（`mr_app_resume`）；`enter_json` 可为 null
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeResume(
+    mut env: JNIEnv,
+    _class: JClass,
+    h: jlong,
+    enter_json: JString,
+) -> jboolean {
+    let enter = if enter_json.is_null() { None } else { cstring(&mut env, &enter_json) };
+    let ptr = enter.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
+    (mr_app_resume(h as *mut MRApp, ptr) != 0) as jboolean
+}
+
 /// `what`: 0 进前台 / 1 进后台 / 其它 内存告警
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniEngine_nativeLifecycle(

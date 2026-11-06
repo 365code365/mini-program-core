@@ -384,13 +384,13 @@ class MiniProgramController {
   }
 
   Future<void> _call(String method, [Object? args]) async {
-    if (!_created || _disposed) return;
+    if (!_live) return;
     await _channel.invokeMethod<void>(method, args);
   }
 
   /// 尺寸 / 像素比变了（转屏、分屏）
   Future<void> resize(Size logicalSize, double dpr) async {
-    if (!_created || _disposed) return;
+    if (!_live) return;
     final r = await _channel.invokeMapMethod<String, Object?>('resize', {
       'width': logicalSize.width.floor(),
       'height': logicalSize.height.floor(),
@@ -409,19 +409,19 @@ class MiniProgramController {
   /// [timeMs]：事件自己的时间（`PointerEvent.timeStamp` 的毫秒）。给了的话，引擎按它重采样页面拖动
   /// （过 MethodChannel 再转引擎线程，一帧收到几个移动是碰运气，按到达时刻走慢拖会一顿一顿）。
   void pointer(int phase, double x, double y, {double? timeMs}) {
-    if (!_created || _disposed) return;
+    if (!_live) return;
     _channel.invokeMethod<void>('pointer', {'phase': phase, 'x': x, 'y': y, if (timeMs != null) 't': timeMs});
   }
 
   /// 第二根手指（0 按下 / 1 移动 / 2 抬起 / 3 取消）：引擎只给图片预览用（双指捏合缩放），页面仍是单指。
   /// [MiniProgramView] 已自动转发
   void pointer2(int phase, double x, double y) {
-    if (!_created || _disposed) return;
+    if (!_live) return;
     _channel.invokeMethod<void>('pointer2', {'phase': phase, 'x': x, 'y': y});
   }
 
   void wheel(double dy, {bool precise = true}) {
-    if (!_created || _disposed) return;
+    if (!_live) return;
     _channel.invokeMethod<void>('wheel', {'dy': dy, 'precise': precise});
   }
 
@@ -435,7 +435,7 @@ class MiniProgramController {
 
   /// 返回上一页。false = 页面栈只剩一页（宿主该关掉小程序）
   Future<bool> back() async {
-    if (!_created || _disposed) return false;
+    if (!_live) return false;
     return await _channel.invokeMethod<bool>('back') ?? false;
   }
 
@@ -455,7 +455,7 @@ class MiniProgramController {
   /// `contextEvent`（`MapContext.on` / `CameraContext.onCameraFrame` 等对象自己的事件）。
   /// 返回收到它的监听者个数（0 = 小程序没在听，可以停掉对应的传感器）
   Future<int> dispatchEvent(String name, [Map<String, Object?> payload = const {}]) async {
-    if (_disposed || !_created) return 0;
+    if (!_live) return 0;
     final n = await _channel.invokeMethod<int>('dispatchEvent', {'name': name, 'payload': jsonEncode(payload)});
     return n ?? 0;
   }
@@ -478,21 +478,86 @@ class MiniProgramController {
 
   /// 在逻辑层执行一段 JS（调试与集成测试用）
   Future<String> debugEval(String code) async {
-    if (!_created || _disposed) return '';
+    if (!_live) return '';
     return await _channel.invokeMethod<String>('eval', {'code': code}) ?? '';
+  }
+
+  /// 把引擎当前帧存成图片：[path] 以 `.jpg` / `.jpeg` 结尾存 JPEG（质量 90，几十毫秒），否则 PNG。
+  /// 图是引擎像素尺寸（[pixelSize]），在视图里按 1 物理像素对 1 像素摆在左上角。
+  /// 例：换到别的小程序之前截一张，回来重开时先盖着它、第一页出来再撤，不用再盖 loading。
+  /// 要在 [dispose] 之前调；还没出过帧 / 已销毁返回 false
+  Future<bool> captureFrame(String path) async {
+    if (!_live) return false;
+    try {
+      return await _channel.invokeMethod<bool>('dumpFrame', {'path': path}) ?? false;
+    } on PlatformException {
+      return false;
+    }
   }
 
   /// 把引擎当前帧存成 PNG（调试与集成测试用：与屏幕截图逐像素对，确认纹理没被拉伸、颜色没变）
   Future<bool> debugDumpFrame(String path) async {
-    if (!_created || _disposed) return false;
+    if (!_live) return false;
     return await _channel.invokeMethod<bool>('dumpFrame', {'path': path}) ?? false;
+  }
+
+  /// 建好了、没销毁、没挂起：命令才发得出去（挂起时插件的「当前实例」是别的小程序，发过去就打到它身上了）
+  bool get _live => _created && !_disposed && _parkId == null;
+
+  /// 挂起时插件给的 id（[park]）
+  int? _parkId;
+
+  /// 挂着（[park] 之后、[unpark] 之前）
+  bool get isParked => _parkId != null;
+
+  /// 挂起：小程序 A 打开 B 时 A 不销毁、留在内存里（与微信一致）—— 页面栈、滚动位置、拉下来的数据、JS 状态都在，
+  /// B 关掉后 [unpark] 原样回来，不用重开、不用盖 loading。派发 `App.onHide`、停帧、原生组件暂停。
+  ///
+  /// 一个进程同一时刻只能有一个实例在跑：返回 true 之后才能建 B 的控制器（这个控制器的视图可以留在树里，
+  /// 不出帧、不收触摸）。false = 没挂上（还没建好、平台没实现），这时照老办法 dispose 它。目前只有 Android
+  Future<bool> park() async {
+    if (!_live) return false;
+    try {
+      final id = await _channel.invokeMethod<int>('park') ?? -1;
+      if (id < 0) return false;
+      _parkId = id;
+      if (identical(_active, this)) _active = null;
+      return true;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    }
+  }
+
+  /// 恢复 [park] 的实例：要在 B 的控制器 dispose **之后**调（原生侧在引擎线程上等 B 销毁完）。
+  /// 派发 `App.onShow` 与当前页 onShow；[enterOptions] 是 `wx.getEnterOptionsSync()` / `App.onShow(options)` 的参数
+  /// `{path, query, scene, referrerInfo}`（从别的小程序返回：scene 1038），不给就沿用启动参数
+  Future<bool> unpark({Map<String, Object?>? enterOptions}) async {
+    final id = _parkId;
+    if (id == null || _disposed) return false;
+    if (_active != null && !identical(_active, this)) return false;
+    _parkId = null;
+    _active = this;
+    return await _channel.invokeMethod<bool>('unpark', {
+          'id': id,
+          'enter': enterOptions == null ? null : jsonEncode(enterOptions),
+        }) ??
+        false;
   }
 
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
     if (identical(_active, this)) _active = null;
-    if (_created) await _channel.invokeMethod<void>('dispose');
+    // 挂着的只关它自己（插件的当前实例是别的小程序）
+    final parked = _parkId;
+    if (parked != null) {
+      _parkId = null;
+      await _channel.invokeMethod<void>('disposeParked', {'id': parked});
+    } else if (_created) {
+      await _channel.invokeMethod<void>('dispose');
+    }
     await _logs.close();
     await _events.close();
     await _viewTaps.close();

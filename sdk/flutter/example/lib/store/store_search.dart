@@ -157,7 +157,7 @@ class _StoreSearchState extends State<StoreSearchPage> {
     }
   }
 
-  void _open(StoreApp app) => StoreLinks.open(StoreLink(key: app.key, scene: 1005), hint: app);
+  void _open(StoreApp app) => StoreLinks.openFresh(StoreLink(key: app.key, scene: 1005), hint: app);
 
   @override
   Widget build(BuildContext context) {

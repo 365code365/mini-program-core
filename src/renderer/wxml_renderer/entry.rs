@@ -68,6 +68,8 @@ impl WxmlRenderer {
                 canvas.save();
                 canvas.clip_rect(rect);
             }
+            // 动画底图（backdrop.rs）：这块是不是可以贴回上一帧留的那层
+            self.backdrop_begin_pass(canvas);
             // 吸附元素（sticky.rs）：正常流跳过它们，所在滚动容器画完再按吸住的位置画。没有时只是一次判空
             self.sticky_begin(&cache);
             // 渲染所有元素（fixed 元素会在 draw_with_interaction 中被跳过）
@@ -80,6 +82,7 @@ impl WxmlRenderer {
             if damaged.is_some() {
                 canvas.restore();
             }
+            self.backdrop_end_pass();
             self.finish_animated_image_pass();
             // 用完即清：下一帧由宿主重新设置（不清的话整帧重绘会被上一帧的损伤区裁掉）
             self.damage_clip = None;

@@ -65,7 +65,7 @@ fn blur_radius(blur: f32) -> usize {
 }
 
 /// 掩膜四周要留的余量：三遍模糊最多扩散 3r 像素，留够才不会把边缘切掉。
-fn pad_for(blur: f32) -> usize {
+pub(crate) fn pad_for(blur: f32) -> usize {
     blur_radius(blur) * 3 + 2
 }
 

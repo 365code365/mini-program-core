@@ -186,6 +186,12 @@ pub struct WxmlRenderer {
     cache: Option<CachedLayout>,
     /// Scroll-view 离屏缓存管理器
     scroll_cache: ScrollCacheManager,
+    /// 旋转 / 缩放子树的离屏按内容缓存（transform_cache.rs）：转圈动画每帧只贴回
+    transform_cache: transform_cache::TransformCache,
+    /// 动画底图（backdrop.rs）：只因动画重画的那块里，动画节点底下那层留着，下一帧贴回
+    backdrop: backdrop::BackdropState,
+    /// 正在跳过动画节点之前的绘制（底图贴回之前）：`outside_damage` 一律当成在损伤区外
+    backdrop_mute: bool,
     /// 当前视口信息 (scroll_offset, viewport_height) - 用于虚拟列表
     current_viewport: Option<(f32, f32)>,
     /// `@keyframes` 时间轴缓存（按动画名，None 表示样式表里没有该动画）
@@ -259,6 +265,8 @@ pub struct WxmlRenderer {
     /// 最近一次 setData 的失效分析为什么退回了整帧（宿主接在 `整帧·数据` 那行 🩹 后面，`take_full_why`）。
     /// 从前只有 `MINI_LAYOUT_LOG` 的 eprintln —— 手机上 stderr 没人收，「为什么整帧」只能猜
     full_why: std::cell::RefCell<Option<String>>,
+    /// 最近一次失效分析分开的几块（`take_damage_parts`，invalidate.rs）
+    damage_parts: std::cell::RefCell<Vec<GeoRect>>,
     /// 布局之后才改的样式（换行补高、包含块修正、覆盖层重排）改之前的原样：增量重建时先还原，
     /// 留下来的子树才与「重新建」时的样式一致（layout_incremental.rs）。只记缓存那棵树上的
     layout_touched: std::cell::RefCell<HashMap<NodeId, reflow::Touched>>,
@@ -300,6 +308,9 @@ pub use query::QueryHit;
 /// 每张图画的时候的几何（图片预取用）
 mod image_plan;
 pub use image_plan::ImagePlan;
+/// 后台下完的图：只重画用到它的那几块（widthFix / heightFix 要重排）
+mod image_arrival;
+pub use image_arrival::ImageArrival;
 /// `<form>`：form-type 按钮所在的表单与表单里的控件（提交 / 重置）
 mod form;
 pub use form::{FormAction, FormControl, FormField, FormHit};
@@ -324,6 +335,8 @@ pub use swiper_draw::SwiperRegion;
 mod scroll_live;
 // 嵌在容器里的纵向 scroll-view：内容按固定行数分块缓存，滚动只贴块（不逐帧重画可见子节点）
 mod scroll_tiles;
+mod transform_cache;
+mod backdrop;
 /// `position: sticky` 与 sticky-header：吸住、被推走、只重画自己那一块
 mod sticky;
 /// scroll-view 的手感属性（bounces / paging / fast-deceleration / scroll-anchoring / reverse / back-to-top）
@@ -352,6 +365,8 @@ mod layout_snapshot;
 /// `MINI_LAYOUT_VERIFY=1`：增量重建之后再整棵重建一遍逐节点比（测试用）
 mod layout_verify;
 pub use layout_verify::layout_verify_failures;
+pub use backdrop::backdrop_restores;
+pub use transform_cache::transform_cache_hits;
 mod page_style;
 pub use page_style::PageStyle;
 mod pressed;
@@ -381,6 +396,9 @@ impl WxmlRenderer {
             scale_factor,
             cache: None,
             scroll_cache: ScrollCacheManager::new(),
+            transform_cache: Default::default(),
+            backdrop: Default::default(),
+            backdrop_mute: false,
             current_viewport: None,
             timelines: HashMap::new(),
             animations_active: false,
@@ -416,6 +434,7 @@ impl WxmlRenderer {
             swiper_known: HashMap::new(),
             rebuild_laps: None,
             full_why: std::cell::RefCell::new(None),
+            damage_parts: std::cell::RefCell::new(Vec::new()),
         }
     }
 

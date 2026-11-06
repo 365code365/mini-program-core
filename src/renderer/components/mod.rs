@@ -4,7 +4,7 @@
 mod base;
 mod color_parse;
 pub(crate) mod gradient;
-mod shadow;
+pub(crate) mod shadow;
 mod style_parse;
 mod view;
 mod text;
@@ -44,6 +44,8 @@ mod inline_flow;
 /// list-builder / grid-builder / list-view 的布局（padding 属性、定高项）
 pub mod builder;
 mod picker;
+/// 组件的进程级状态表：小程序挂起时带走、恢复时放回（host/engine_park.rs）
+pub(crate) mod park;
 /// `<picker-view>` 内嵌滚轮：每列的位置、跟手 / 吸附、change / pickstart / pickend
 pub mod picker_view;
 /// `<picker-view>` 选中框与蒙层的样式（indicator-style / -class、mask-style / -class）

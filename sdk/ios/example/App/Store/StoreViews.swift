@@ -97,11 +97,37 @@ final class LoadingCover: UIView {
     private var timer: Timer?
     private var tick = 0
     private var onRetry: (() -> Void)?
+    private let col = UIStackView()
+    private let close = UIButton(type: .system)
+    private var shotView: UIImageView?
+
+    /// 回到上一个小程序（navigateBackMiniProgram / 返回）：不画图标、名字、三个点，只盖 [shot]
+    /// （离开它那一刻的画面，铺满整层 = MiniProgramView 的位置；没截到就是白底）—— 返回不该看起来像「又打开了一次」。
+    /// 打不开（[error]）时照样换回带「重试」的样子。与 Android 示例 LoadingCover(resume = true) 一样
+    convenience init(resumeWith shot: UIImage?, id: String, name: String, onClose: @escaping () -> Void) {
+        self.init(id: id, name: name, onClose: onClose)
+        timer?.invalidate()
+        timer = nil
+        col.isHidden = true
+        close.isHidden = true
+        if let shot {
+            // 图的点尺寸 = 引擎像素 / contentScaleFactor = 视图尺寸：贴左上角、不缩放（这一层创建时还是 0×0，用约束铺满）
+            let iv = UIImageView(image: shot)
+            iv.contentMode = .topLeft
+            iv.clipsToBounds = true
+            iv.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(iv)
+            NSLayoutConstraint.activate([
+                iv.topAnchor.constraint(equalTo: topAnchor), iv.bottomAnchor.constraint(equalTo: bottomAnchor),
+                iv.leadingAnchor.constraint(equalTo: leadingAnchor), iv.trailingAnchor.constraint(equalTo: trailingAnchor),
+            ])
+            shotView = iv
+        }
+    }
 
     init(id: String, name: String, onClose: @escaping () -> Void) {
         super.init(frame: .zero)
         backgroundColor = .white
-        let col = UIStackView()
         col.axis = .vertical
         col.alignment = .center
         col.translatesAutoresizingMaskIntoConstraints = false
@@ -143,7 +169,6 @@ final class LoadingCover: UIView {
             col.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 32),
             status.widthAnchor.constraint(lessThanOrEqualTo: widthAnchor, constant: -64),
         ])
-        let close = UIButton(type: .system)
         close.setTitle("✕", for: .normal)
         close.titleLabel?.font = .systemFont(ofSize: 20)
         close.tintColor = UIColor(argb: 0x8A000000)
@@ -179,6 +204,11 @@ final class LoadingCover: UIView {
     }
 
     func error(_ text: String, onRetry: @escaping () -> Void) {
+        // 回来时打不开（本地包被清了又连不上服务器）：换回普通 loading 层的样子，给「重试」与关闭
+        shotView?.removeFromSuperview()
+        shotView = nil
+        col.isHidden = false
+        close.isHidden = false
         timer?.invalidate()
         dotRow.isHidden = true
         status.textColor = UIColor(argb: 0xFFE64340)

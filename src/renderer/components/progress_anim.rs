@@ -34,6 +34,14 @@ struct Anim {
 type Events = Vec<(String, &'static str, Value)>;
 
 static STATE: Mutex<Option<(HashMap<String, Anim>, Events)>> = Mutex::new(None);
+/// 小程序挂起时带走的进度条动画（host/engine_park.rs）
+pub(crate) struct Parked(Option<(HashMap<String, Anim>, Events)>);
+pub(crate) fn park() -> Parked {
+    Parked(STATE.lock().unwrap_or_else(|e| e.into_inner()).take())
+}
+pub(crate) fn unpark(p: Parked) {
+    *STATE.lock().unwrap_or_else(|e| e.into_inner()) = p.0;
+}
 
 fn with<R>(f: impl FnOnce(&mut HashMap<String, Anim>, &mut Events) -> R) -> R {
     let mut g = STATE.lock().unwrap_or_else(|e| e.into_inner());

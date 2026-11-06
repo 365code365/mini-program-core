@@ -361,6 +361,14 @@ impl Timeline {
         let base_reach = base.as_ref().map(one).unwrap_or(0.0);
         self.frames.iter().map(|f| f.transform.as_ref().map(one).unwrap_or(base_reach)).fold(base_reach, f32::max)
     }
+    /// 整段动画里（含 `base`）平移的最大绝对值、缩放的最大倍数（不小于 1）、有没有倾斜。
+    /// 绕盒子中心转的子树最多画到哪：中心为圆心、(中心到子树最远角 × 倍数 + 平移) 为半径（invalidate_grow.rs `anim_extent`）
+    pub fn transform_extrema(&self, base: Option<Transform>) -> (f32, f32, bool) {
+        let ts = self.frames.iter().filter_map(|f| f.transform.as_ref()).chain(base.as_ref());
+        ts.fold((0.0, 1.0, false), |(t, s, k), x| {
+            (t.max(x.translate_x.abs().max(x.translate_y.abs())), s.max(x.scale_x.abs().max(x.scale_y.abs())), k || x.skew_x.abs() > 1e-3 || x.skew_y.abs() > 1e-3)
+        })
+    }
 
     /// 在时间轴位置 `t`（0..1，已缓动）上求值。
     pub fn sample(&self, t: f32) -> AnimatedValues {

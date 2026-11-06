@@ -72,7 +72,7 @@ fn dispatch_named(app: &mut MiniApp, r: &WxmlRenderer, id: &str, binding: &str, 
         }
         seen.push((&b.handler, &b.owner));
         let node = super::touch::NodeInfo { id: &b.id, dataset: &b.data, offset_left: b.bounds.x, offset_top: b.bounds.y };
-        let mut ev: Value = serde_json::from_str(&super::touch::event_json(name, &node, &node, (0.0, 0.0), 0, time_ms, detail.clone()))
+        let mut ev: Value = serde_json::from_str(&super::touch::event_json(name, &node, &node, super::touch::EventPoint::ZERO, 0, time_ms, detail.clone()))
             .unwrap_or(Value::Null);
         if let Some(o) = ev.as_object_mut() {
             // 组件事件没有触点

@@ -190,6 +190,13 @@ final class MiniStore {
         return nil
     }
 
+    /// 回到上一个小程序时用（它几秒前还开着）：直接开本地那一版，不问服务器 ——
+    /// 返回不该再等一次网络（连不上时 [latest] 要等满超时）。本地没有了才退回 [prepare]
+    func prepareLocal(_ key: String, status: (String) -> Void = { _ in }, progress: @escaping (Int64, Int64) -> Void = { _, _ in }) throws -> Prepared {
+        if let have = local(key) { return Prepared(dir: root.appendingPathComponent(have.id), app: have, updated: false, stale: nil) }
+        return try prepare(key, status: status, progress: progress)
+    }
+
     /// 打开前的准备：问服务器最新版 → 本地不是这一版就下载解包 → 返回目录。
     /// [status] 给 loading 页的阶段文字，[progress] 给（已收, 总字节）
     func prepare(_ key: String, status: (String) -> Void = { _ in }, progress: @escaping (Int64, Int64) -> Void = { _, _ in }) throws -> Prepared {

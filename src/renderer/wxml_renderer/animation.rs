@@ -188,6 +188,8 @@ impl WxmlRenderer {
                 let (x, y) = (ox + layout.location.x, oy + layout.location.y);
                 let (w, h) = (layout.size.width, layout.size.height);
                 self.animated_bounds.push(animated_bound(taffy, node, (x, y, w, h), &transform));
+                // 动画底图：这块只因动画重画时，留下 / 贴回它底下那层（backdrop.rs）
+                self.backdrop_at_animated(canvas, node.taffy_node);
             }
         }
 
@@ -224,27 +226,30 @@ impl WxmlRenderer {
         // 从前透明度只落在这个节点自己的背景上、孩子照旧不透明画进离屏、再按 1.0 贴回：
         // page-container 居中弹层离场（scale 0.9 + opacity 0）时白底淡没了，标题、按钮原样留在遮罩上（「关闭留残影」）。
         // 改成子树按不透明画进离屏，贴回时整块乘透明度
+        // 子树内容不随动画变（只转 / 只缩放）：离屏按内容缓存，每帧只贴回（transform_cache.rs）
+        let cached = self.transform_cacheable(node, &resolved, baked.is_some(), interaction);
         let (resolved, group_opacity) = Self::take_group_opacity(resolved);
-        // 离屏只画贴回去时会被采到的那一块（见 compose::offscreen_for）
-        let mut offscreen = crate::renderer::compose::offscreen_for(canvas, (tw, th), (x - pad, y - pad), (x + w / 2.0, y + h / 2.0), &transform);
         // 变换后的子树坐标与屏幕不再一一对应：命中区与事件绑定用一次性容器承接，
         // 不污染真实的交互命中表（旋转/缩放子树内的点击是已知限制）。
-        let mut scratch = InteractionManager::new();
-        let bindings_before = self.event_bindings.len();
-        let was_offscreen = self.drawing_offscreen;
-        self.drawing_offscreen = true;
-        self.dispatch_draw(
-            &mut offscreen,
-            taffy,
-            &resolved,
-            pad - layout.location.x,
-            pad - layout.location.y,
-            &mut scratch,
-            kind,
-        );
-        self.drawing_offscreen = was_offscreen;
-        // 离屏那一趟注册的绑定用的是离屏画布的局部坐标，直接留下会命中错位置，先丢掉
-        self.event_bindings.truncate(bindings_before);
+        let draw_sub = |r: &mut Self, off: &mut Canvas| {
+            let mut scratch = InteractionManager::new();
+            let bindings_before = r.event_bindings.len();
+            let was_offscreen = r.drawing_offscreen;
+            r.drawing_offscreen = true;
+            r.dispatch_draw(off, taffy, &resolved, pad - layout.location.x, pad - layout.location.y, &mut scratch, kind);
+            r.drawing_offscreen = was_offscreen;
+            // 离屏那一趟注册的绑定用的是离屏画布的局部坐标，直接留下会命中错位置，先丢掉
+            r.event_bindings.truncate(bindings_before);
+        };
+        let mut fresh = None;
+        if cached {
+            self.ensure_transform_offscreen(taffy, node, (tw, th), draw_sub);
+        } else {
+            // 离屏只画贴回去时会被采到的那一块（见 compose::offscreen_for）
+            let mut offscreen = crate::renderer::compose::offscreen_for(canvas, (tw, th), (x - pad, y - pad), (x + w / 2.0, y + h / 2.0), &transform);
+            draw_sub(self, &mut offscreen);
+            fresh = Some(offscreen);
+        }
         // 再按**未变换**的真实位置重新注册一遍。
         //
         // 从前到这里就结束了（注释写作「旋转/缩放子树内的点击是已知限制」）——
@@ -272,14 +277,13 @@ impl WxmlRenderer {
             viewport_height / self.scale_factor,
         );
 
-        crate::renderer::compose::blit_transformed(
-            canvas,
-            &offscreen,
-            (x - pad, y - pad),
-            (x + w / 2.0, y + h / 2.0),
-            &transform,
-            group_opacity,
-        );
+        let src = match fresh.as_ref() {
+            Some(c) => Some(c),
+            None => self.transform_cache.canvas(node.taffy_node),
+        };
+        if let Some(src) = src {
+            crate::renderer::compose::blit_transformed(canvas, src, (x - pad, y - pad), (x + w / 2.0, y + h / 2.0), &transform, group_opacity);
+        }
         true
     }
 
@@ -361,8 +365,13 @@ impl WxmlRenderer {
 /// - **平移**：离屏仿射贴回时整块按 (tx, ty) 挪，`transform_padding` 只管缩放 / 旋转撑出去的那圈；
 /// - **溢出框的孩子**：转圈里那个点超出了框，跟着转到框外，那几行每帧留着上一帧的像素。
 ///
-/// 现在取「框 ∪ 子树里各节点的框」：只平移时整块挪 |t|；有缩放 / 旋转 / 倾斜时，任何一点离变换原点
-/// （框心）都不超过它到外包框最远那个角的距离 × 放大倍数，按这个半径取正方形。外面再留 2px（双线性采样）
+/// 现在取「框 ∪ 子树里各节点的框」：只平移时整块挪 |t|；有缩放 / 旋转 / 倾斜时，按子树里离变换原点（框心）
+/// 最远的那一点（× 放大倍数）为半径取正方形。外面再留 2px（双线性采样）。
+///
+/// 「最远的那一点」按**画得出来的形状**算，不按外包框的角：圆角盒子离框心最远的是四个圆角上的点
+/// （角上圆心的距离 + 半径），阴影另按外扩 + 模糊余量 + 偏移算。播放页的唱片是个圆（border-radius 50%），
+/// 从前按外包框的角算半径（√2 × 边长的一半），每帧重画 932×932，现在 702×702（像素少一半）：
+/// 方框角上那一圈转到哪都是透明的，重画了也是原样
 fn animated_bound(taffy: &Tree, node: &RenderNode, (x, y, w, h): (f32, f32, f32, f32), t: &crate::renderer::components::Transform) -> GeoRect {
     fn extent(taffy: &Tree, n: &RenderNode, px: f32, py: f32, b: &mut (f32, f32, f32, f32)) {
         for c in &n.children {
@@ -379,11 +388,32 @@ fn animated_bound(taffy: &Tree, node: &RenderNode, (x, y, w, h): (f32, f32, f32,
         return GeoRect::new(b.0 - shift, b.1 - shift, b.2 - b.0 + shift * 2.0, b.3 - b.1 + shift * 2.0);
     }
     let (cx, cy) = (x + w / 2.0, y + h / 2.0);
-    let far = [(b.0, b.1), (b.2, b.1), (b.0, b.3), (b.2, b.3)]
-        .iter()
-        .map(|(px, py)| ((px - cx).powi(2) + (py - cy).powi(2)).sqrt())
-        .fold(0.0f32, f32::max);
+    let mut far = 0.0f32;
+    ink_far(taffy, node, (x, y, w, h), (cx, cy), &mut far);
     let skew = 1.0 + t.skew_x.to_radians().tan().abs() + t.skew_y.to_radians().tan().abs();
     let r = (far * t.scale_x.abs().max(t.scale_y.abs()).max(1.0) * skew).ceil() + shift;
     GeoRect::new(cx - r, cy - r, r * 2.0, r * 2.0)
+}
+
+/// 子树里离 `c` 最远的墨迹点有多远（`n` 的框是 `(x, y, w, h)`，页面坐标）。圆角盒子 = 内缩矩形 ⊕ 圆，
+/// 最远点在某个角的圆弧上：角上圆心到 `c` 的距离 + 那个角的半径（直角就是角点本身）
+fn ink_far(taffy: &Tree, n: &RenderNode, (x, y, w, h): (f32, f32, f32, f32), c: (f32, f32), far: &mut f32) {
+    fn rounded(c: (f32, f32), (x, y, w, h): (f32, f32, f32, f32), r: [f32; 4]) -> f32 {
+        let centers = [(x + r[0], y + r[0]), (x + w - r[1], y + r[1]), (x + w - r[2], y + h - r[2]), (x + r[3], y + h - r[3])];
+        centers.iter().zip(r).map(|((px, py), r)| ((px - c.0).powi(2) + (py - c.1).powi(2)).sqrt() + r).fold(0.0f32, f32::max)
+    }
+    let radii = crate::renderer::components::get_border_radii_clamped(&n.style, w, h);
+    *far = far.max(rounded(c, (x, y, w, h), radii));
+    if let Some(s) = n.style.box_shadow.as_ref().filter(|s| !s.inset) {
+        // 与 draw_outer_shadow 同一个形状：按 spread 外扩、半径 = border-radius + spread（不超过短边一半），
+        // 模糊在形状外再铺 pad_for(blur) 像素，整块按偏移挪
+        let (sw, sh) = ((w + s.spread * 2.0).max(0.0), (h + s.spread * 2.0).max(0.0));
+        let sr = (n.style.border_radius + s.spread).max(0.0).min(sw.min(sh) / 2.0);
+        let d = rounded(c, (x - s.spread + s.offset_x, y - s.spread + s.offset_y, sw, sh), [sr; 4]);
+        *far = far.max(d + crate::renderer::components::shadow::pad_for(s.blur) as f32);
+    }
+    for ch in &n.children {
+        let Ok(l) = taffy.layout(ch.taffy_node) else { continue };
+        ink_far(taffy, ch, (x + l.location.x, y + l.location.y, l.size.width, l.size.height), c, far);
+    }
 }

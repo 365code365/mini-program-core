@@ -181,7 +181,9 @@ final class MiniWebViews: NSObject, WKScriptMessageHandler, WKNavigationDelegate
         guard let s = slot(of: web) else { return }
         let e = error as NSError
         if e.code == NSURLErrorCancelled { return }
-        emit(s, "error", ["src": s.src, "errMsg": e.localizedDescription, "errCode": e.code])
+        // 官方 web-view binderror：detail = {url, fullUrl}（src 属性上的地址 / 真正加载失败的完整地址）；src、errMsg、errCode 照留
+        let full = (e.userInfo[NSURLErrorFailingURLStringErrorKey] as? String) ?? web.url?.absoluteString ?? s.src
+        emit(s, "error", ["url": s.src.isEmpty ? full : s.src, "fullUrl": full, "src": s.src, "errMsg": e.localizedDescription, "errCode": e.code])
     }
 
     func webView(_ web: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {

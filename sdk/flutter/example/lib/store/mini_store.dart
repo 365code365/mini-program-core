@@ -322,6 +322,18 @@ class MiniStore {
     return null;
   }
 
+  /// 回到上一个小程序时用（它几秒前还开着）：直接开本地那一版，不问服务器 ——
+  /// 返回不该再等一次网络（服务器连不上时 [latest] 要等满 6 秒超时）。本地没有了才退回 [prepare]
+  Future<PreparedApp> prepareLocal(
+    String key, {
+    void Function(String status)? onStatus,
+    void Function(int received, int total)? onProgress,
+  }) async {
+    final have = await local(key);
+    if (have != null) return PreparedApp('${await _rootDir()}/${have.id}', have);
+    return prepare(key, onStatus: onStatus, onProgress: onProgress);
+  }
+
   /// 打开前的准备：问服务器最新版 → 本地不是这一版就下载解包 → 返回目录。
   /// [onStatus] 给 loading 页显示的阶段文字；[onProgress] 给下载进度（已收 / 总字节）
   Future<PreparedApp> prepare(

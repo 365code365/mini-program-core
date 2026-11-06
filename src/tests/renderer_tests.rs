@@ -449,3 +449,20 @@ fn test_multiple_event_bindings() {
     let bindings = renderer.get_event_bindings();
     assert_eq!(bindings.len(), 3);
 }
+
+/// CSS 边框三角形（`width:0; height:0;` + 上下透明边 + 一侧有色的边）：画成三角形，不是实心方块。
+/// 云听音乐商店版播放页的上一首 / 下一首 / 播放键就是这么写的，从前每条边画成整条矩形，三个键都是白方块
+#[test]
+fn css_border_triangle_draws_a_triangle() {
+    let css = ".bg { width: 100px; height: 100px; background-color: #000000; }
+.tri { margin: 20px; width: 0; height: 0; border-top: 20px solid transparent; border-bottom: 20px solid transparent; border-left: 30px solid #ffffff; }";
+    let mut r = create_test_renderer(css);
+    let mut c = create_test_canvas();
+    r.render(&mut c, &parse_wxml(r#"<view class="bg"><view class="tri"></view></view>"#), &json!({}));
+    // 三角形（设备像素 ×2）：左边 (40,40)~(40,120) 一条竖边，尖在 (100,80)
+    let white = |x: u32, y: u32| c.get_pixel(x, y).r > 200;
+    assert!(white(44, 80) && white(70, 80) && white(95, 80), "中线上从左边到尖都是白的");
+    assert!(white(44, 45) && white(44, 115), "左边那条竖边上下两头是白的");
+    assert!(!white(95, 45) && !white(95, 115), "右上 / 右下两个角是黑的（从前整块白方块）");
+    assert!(!white(75, 50), "上斜边外面是黑的");
+}

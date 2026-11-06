@@ -125,6 +125,8 @@ pub struct MiniEngine {
     pub(super) rgba_stale: bool,
     /// 在后台（`on_hide` 之后、`on_show` 之前）：前后台没变的那次 `on_show` / `on_hide` 不派发（engine_life.rs）
     pub(super) backgrounded: bool,
+    /// 挂起时带走的进程级状态（打开别的小程序时留在内存里，engine_park.rs）
+    pub(super) parked: Option<Box<super::engine_park::Parked>>,
     /// 键盘顶起画面（engine_keyboard.rs）
     pub(super) kb: super::engine_keyboard::KeyboardShift,
     /// 等页面先画一帧再送的输入（engine_input_queue.rs）
@@ -160,6 +162,13 @@ pub struct MiniEngine {
     pub(crate) route: super::route_anim::RouteState,
     /// 被盖住的页与切走的 tab 页留着的视图（engine_keep.rs）
     pub(crate) keep: super::page_keep::Keep,
+    /// 最近一次被盖住那一页的画布与覆盖层（engine_keep_canvas.rs）：返回时放回去，不整页重画
+    pub(super) kept_canvas: Option<super::engine_keep_canvas::KeptCanvas>,
+    /// 到了的图在等预取线程缩好再重画（engine_image_arrival.rs）
+    pub(super) arrival_wait: Option<super::engine_image_arrival::ArrivalWait>,
+    pub(super) keep_token: u64,
+    /// 签名看不出来的内容变化（图片下完、canvas 画过、字体换了）的次数：变过了留着的画布就不能用
+    pub(super) content_epoch: u64,
     /// 分栏模式（阔折叠展开 / PC 窗口拉宽，engine_frameset.rs）
     pub(crate) frameset: super::engine_frameset::Frameset,
     /// app.json 的 `window`（原样保留，页面事件里与页面 json 合并后交给宿主画导航栏）
@@ -375,6 +384,7 @@ impl MiniEngine {
             rgba: Vec::new(),
             rgba_stale: false,
             backgrounded: false,
+            parked: None,
             kb: Default::default(),
             input_queue: Default::default(),
             clock_origin: Instant::now(),
@@ -392,6 +402,10 @@ impl MiniEngine {
             nav: Default::default(),
             route: Default::default(),
             keep: Default::default(),
+            kept_canvas: None,
+            arrival_wait: None,
+            keep_token: 0,
+            content_epoch: 0,
             frameset,
             app_window,
             events: HostEvents::default(),

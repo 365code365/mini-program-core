@@ -10,6 +10,7 @@ mod events;
 mod gesture;
 mod open_type;
 mod pages;
+mod park;
 
 /// 三页（p 是 tab 首页、q 普通页、t tab 页）的小程序；`p_wxml` / `p_js` 是首页，`extra` 是额外文件（可覆盖 q 页）
 pub(super) fn fixture(name: &str, p_wxml: &str, p_js: &str, extra: &[(&str, &str)]) -> PathBuf {

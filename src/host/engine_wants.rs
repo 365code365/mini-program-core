@@ -33,6 +33,8 @@ impl MiniEngine {
             // 逻辑层发了、还没办完的：画布指令、没答的 SelectorQuery（type="2d" 画布靠它拿节点）
             || self.app.has_pending_host_work()
             || c::image_net::has_pending()
+            // 到了的图在等预取线程缩好（engine_image_arrival.rs）
+            || self.arrivals_waiting()
             || self.toast.as_ref().map(|t| t.visible).unwrap_or(false)
             // Loading 的圈要一直转（`wx.showLoading` 没有时长，等逻辑层 hideLoading）
             || crate::host::ui_overlay::tip_spinning(&self.toast, &self.loading)
@@ -58,6 +60,6 @@ impl MiniEngine {
 
     /// 有网络请求在飞 / 刚回来、图片在下载（测试的虚拟时钟据此等真实的网络：`use_virtual_clock` 只管定时器，网络是真的）
     pub fn net_pending(&self) -> bool {
-        self.app.has_pending_network() || crate::renderer::components::image_net::has_pending()
+        self.app.has_pending_network() || crate::renderer::components::image_net::has_pending() || self.arrivals_waiting()
     }
 }

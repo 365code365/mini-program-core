@@ -14,3 +14,8 @@
 .home { padding: 24rpx 0 60rpx; text-align: center; }
 .e-ic { font-size: 80rpx; color: #c6ccd8; margin-bottom: 20rpx; }
 .e-btn { width: 260rpx; height: 72rpx; font-size: 28rpx; margin-top: 30rpx; }
+.hotel { align-items: center; }
+.h-ic { width: 72rpx; height: 72rpx; border-radius: 18rpx; background: #1e6fff; display: flex; align-items: center; justify-content: center; margin-right: 20rpx; flex-shrink: 0; }
+.h-ic-tx { color: #ffffff; font-size: 32rpx; font-weight: bold; }
+.h-t { font-size: 28rpx; font-weight: bold; margin-bottom: 6rpx; }
+.h-go { font-size: 26rpx; color: #1e6fff; margin-left: 16rpx; flex-shrink: 0; }

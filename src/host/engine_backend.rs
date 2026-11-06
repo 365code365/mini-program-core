@@ -111,6 +111,10 @@ impl MiniEngine {
 
     /// 跑一帧，返回 `FRAME_*` 的按位或。`pump(t) == (pump_ex(t) & FRAME_NEW != 0)`。
     pub fn pump_ex(&mut self, now_ms: u64) -> u32 {
+        // 挂起中（engine_park.rs）：进程级状态此刻是别的小程序的，跑一帧就会读错包根、写错 storage
+        if self.parked.is_some() {
+            return 0;
+        }
         // 不开 MINI_FPS 时连时钟都不取：pump 是每个 vsync 都要调的热路径
         let begin = self.stats.enabled().then(Instant::now);
         // `MINI_DAMAGE_LOG`：整个 pump 慢的时候另打一行 —— 🩹 行只算重画那一段，换页（留图、建页、onLoad）、

@@ -139,6 +139,12 @@ impl PageCanvas {
         self.gen
     }
 
+    /// 内容没动、换一个代数（同一块画布换下来又放回去：读者上次看到的是别的画布，要整块重传）
+    pub fn bump_gen(&mut self) {
+        self.gen = next_gen();
+        self.log.clear();
+    }
+
     pub fn seq(&self) -> u64 {
         self.seq
     }

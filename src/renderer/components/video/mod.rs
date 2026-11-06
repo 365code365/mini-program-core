@@ -122,6 +122,18 @@ static VIDEO_PLAYERS: OnceLock<Arc<Mutex<HashMap<String, VideoPlayer>>>> = OnceL
 fn get_video_players() -> &'static Arc<Mutex<HashMap<String, VideoPlayer>>> {
     VIDEO_PLAYERS.get_or_init(|| Arc::new(Mutex::new(HashMap::new())))
 }
+/// 小程序挂起时带走自己的播放器（按 id 存，进程级）与同层视频的帧表、回来放回（host/engine_park.rs）
+pub(crate) struct Parked(HashMap<String, VideoPlayer>, host_feed::Parked);
+pub(crate) fn park() -> Parked {
+    let players = get_video_players().lock().map(|mut m| std::mem::take(&mut *m)).unwrap_or_default();
+    Parked(players, host_feed::park())
+}
+pub(crate) fn unpark(p: Parked) {
+    if let Ok(mut m) = get_video_players().lock() {
+        *m = p.0;
+    }
+    host_feed::unpark(p.1);
+}
 
 /// 获取或创建视频播放器
 pub fn get_or_create_player(src: &str, autoplay: bool, loop_play: bool) -> bool {

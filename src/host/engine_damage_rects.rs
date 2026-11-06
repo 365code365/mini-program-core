@@ -61,3 +61,21 @@ pub(super) fn clamp_rect(r: GeoRect, x0: f32, x1: f32, y0: f32, y1: f32) -> Opti
     let (c, d) = (r.y.max(y0), (r.y + r.height).min(y1));
     (b > a && d > c).then(|| GeoRect::new(a, c, b - a, d - c))
 }
+
+/// 别的损伤与动画那几块各自并好之后合起来：动画块与别的块碰上了才并（碰上的那块底下变了，动画底图本来也用不上），
+/// 否则各走一趟。块数超过 [`MAX_PASSES`] 时退回整体并（一块一趟要各走一遍节点树）
+pub(super) fn merge_keeping_anim(others: Vec<GeoRect>, anim: Vec<GeoRect>) -> Vec<GeoRect> {
+    let meets = |a: &GeoRect, b: &GeoRect| a.x < b.right() && b.x < a.right() && a.y < b.bottom() && b.y < a.bottom();
+    let mut out = others;
+    for a in anim {
+        if let Some(i) = out.iter().position(|o| meets(o, &a)) {
+            out[i] = union(Some(out[i]), a).unwrap_or(a);
+        } else {
+            out.push(a);
+        }
+    }
+    if out.len() > MAX_PASSES {
+        return merge_rects(out);
+    }
+    out
+}

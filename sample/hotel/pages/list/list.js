@@ -7,7 +7,40 @@ Page({
     sorts: ['推荐排序', '低价优先', '好评优先', '高价优先'], sort: 0,
     stars: ['不限', '经济型', '舒适型', '高档型', '豪华型', '特色民宿'],
     prices: ['不限', '¥300以下', '¥300-600', '¥600-1000', '¥1000以上'],
-    star: 0, price: 0, keyword: '', list: [], hourly: false, city: '', people: '', kwSeq: 0
+    star: 0, price: 0, keyword: '', list: [], hourly: false, city: '', people: '', kwSeq: 0,
+    // 被别的小程序打开（云翼机票支付完「订酒店」）：顶上一条来源 + 返回
+    referrer: null
+  },
+  onLoad() {
+    // 来源参数在 referrerInfo.extraData（不在 query 里，中文不用编解码）。只在小程序被打开时的第一页认：
+    // 自己从首页进列表时 getCurrentPages() 不止一页
+    const ref = (wx.getEnterOptionsSync().referrerInfo) || {};
+    const ex = ref.extraData || {};
+    if (!ref.appId || getCurrentPages().length > 1) return;
+    const s = store.getSearch();
+    const covered = data.CITIES.some(c => c.name === ex.city);
+    if (covered) s.city = ex.city;
+    // 日期只认今天以后的；离店日没给或不晚于入住日就住一晚
+    if (/^\d{4}-\d{2}-\d{2}$/.test(ex.checkin || '') && ex.checkin >= store.today()) {
+      s.checkin = ex.checkin;
+      s.checkout = ex.checkout > ex.checkin ? ex.checkout : store.addDays(ex.checkin, 1);
+    }
+    s.kind = 0;
+    s.keyword = '';
+    store.saveSearch(s);
+    this.setData({
+      referrer: {
+        name: ex.fromName || '上一个小程序',
+        tip: covered ? '已按航班目的地 ' + ex.city + ' 与日期筛选' : (ex.city ? '暂未覆盖' + ex.city + '，先看看' + s.city + '的' : '')
+      }
+    });
+  },
+  // 回到打开它的小程序（微信：只有被别的小程序打开时才回得去）；带上看到哪个城市，对方在 onShow 的 referrerInfo.extraData 里读
+  onBackReferrer() {
+    wx.navigateBackMiniProgram({
+      extraData: { from: 'hotel', city: this.data.city },
+      fail: () => wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/index/index' }) })
+    });
   },
   onShow() {
     // 每次回到列表都按最新的搜索条件（首页改了城市 / 日期 / 人数）

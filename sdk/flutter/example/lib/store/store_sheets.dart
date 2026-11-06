@@ -93,7 +93,7 @@ Future<void> showAppActions(BuildContext context, StoreApp app, {int scene = 100
               })),
         ],
         const Divider(height: 0.5, thickness: 0.5),
-        _option('打开', () => done(() async => StoreLinks.open(StoreLink(key: app.key, scene: scene), hint: app))),
+        _option('打开', () => done(() async => StoreLinks.openFresh(StoreLink(key: app.key, scene: scene), hint: app))),
         const SizedBox(height: 8),
         _option('取消', () => Navigator.pop(ctx)),
       ]);

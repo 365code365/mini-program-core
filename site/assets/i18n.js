@@ -114,7 +114,7 @@
     'stat.5.k': '自动化测试',
     'stat.5.v': '另有 65 张逐字节可复现的基线',
     'stat.6.k': '官方 wx.* API',
-    'stat.6.v': '官方目录里的名字全在，另有 76 个组件标签',
+    'stat.6.v': '官方目录里的名字全在，另有 77 个组件标签',
 
     /* ── 为什么自绘 ── */
     'why.eyebrow': '为什么自绘',
@@ -475,6 +475,7 @@
     'host.r7': "<code>input</code> / <code>textarea</code> 的软键盘与输入",
     'host.r8': "<code>&lt;video&gt;</code> 走系统播放器、画进页面；全屏时收起系统栏",
     'host.r9': "给 <code>wx.onXxx</code> 监听推事件",
+    'host.r10': "小程序打开小程序（<code>navigateToMiniProgram</code>）时，打开它的那个挂起而不是关掉：返回时原样恢复页面栈、滚动位置与 JS 状态，<code>onShow</code> 收到 scene 1038",
     'host.you.1': "<b>只有你的 App 能做的 API</b>：把名字登记进 <code>hostApis</code>。调用带着参数到主线程，用 <code>reply.success(…)</code> / <code>reply.fail(errMsg)</code> 回（Flutter：返回一个 Map 或抛 <code>MiniHostApiError</code>）。用户取消时 <code>errMsg</code> 以 <code>:fail cancel</code> 结尾，与微信一致。",
     'host.you.2': "<b>没登记的名字</b>在 <code>wx</code> 上照样存在，下一轮事件循环就 fail，<code>errMsg</code> 写明可以用 <code>hostApis</code> 接管；<code>wx.canIUse</code> 报 <code>false</code>。不会卡住，也不会抛异常。",
     'host.you.3': "<b>只有你的 App 收得到的事件</b>：传感器、定位变化、蓝牙发现等 <code>wx.onXxx</code> 监听，要你调 <code>dispatchEvent(name, payload)</code> 才触发。返回值是监听者个数，没人听的传感器可以不开。",

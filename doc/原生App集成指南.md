@@ -390,6 +390,8 @@ int      mr_app_back(MRApp*);            // 0 = 栈空，宿主该关掉小程�
 uint32_t mr_app_page_depth(MRApp*);
 void     mr_app_on_show(MRApp*);
 void     mr_app_on_hide(MRApp*);
+int      mr_app_suspend(MRApp*);                          // 小程序打开小程序：挂起（见「生命周期」）
+int      mr_app_resume(MRApp*, const char* enter_json);   // 恢复，enter_json 可为 NULL
 void     mr_app_trim_memory(MRApp*);
 const char* mr_app_last_error(MRApp*);
 const char* mr_version(void);
@@ -397,6 +399,34 @@ const char* mr_version(void);
 
 **还没有的**：损伤矩形（`mr_app_pump` 目前每次出帧都整条带重画）、输入法组字（只能提交整段文字）。
 原生组件摆放、日志、软键盘、导航栏这些「引擎 → 宿主」的通知走下面的事件队列（不是回调）。
+
+### 小程序打开小程序：挂起，不关（`mr_app_suspend` / `mr_app_resume`）
+
+`wx.navigateToMiniProgram` 打开 B 时，A 应当像微信一样留在内存里：用户返回时 A 停在离开时的那一页、那个滚动位置，
+列表里已经拉下来的数据、输入框里的字、JS 变量都在，不重开、不盖 loading、不闪。一个进程同一时刻只能有一个引擎在跑
+（包根、storage 目录、按组件 id 存的 swiper / picker / canvas / 视频状态是进程级的），所以 A 是**挂起**而不是并行；
+每个引擎还要在自己的线程上（thread_local 的状态靠这个分开）：
+
+```c
+mr_app_suspend(a);                 // 派发 onHide、带走 A 的进程级状态，之后 pump 什么都不做
+MRApp* b = mr_app_create(...);     // 必须在 suspend 之后（另一条线程上）
+...                                // B 跑着；用户返回
+mr_app_destroy(b);                 // 必须在 resume 之前
+mr_app_resume(a, "{\"path\":\"pages/index/index\",\"query\":{},\"scene\":1038,"
+                 "\"referrerInfo\":{\"appId\":\"<B 的 AppID>\",\"extraData\":{}}}");
+```
+
+`resume` 还原状态后派发 App 与当前页的 `onShow`；参数就是 `wx.getEnterOptionsSync()` 与 `App.onShow(options)` 拿到的那份
+（`getLaunchOptionsSync()` 不变），给 NULL 则沿用启动参数。挂起期间宿主的前后台通知（`mr_app_on_show`）不会把它叫醒。
+画布在挂起期间一直在，恢复时只重新合成一帧。判据：`src/tests/wpc/park.rs`。
+
+- **Android**：`miniA.park { ok -> }` 回调 ok 之后再在**另一个** `MiniProgramView` 上 `open` B，A 的视图可以 `GONE`
+  （Surface 没了引擎照样活着）；返回时 `miniB.close()`、`miniA.unpark(enterOptions)`、A 的视图 `VISIBLE`。
+  `unpark` 在引擎线程上先等 B 销毁完。示例见 `sdk/android/example/.../MainActivity.kt`。
+- **Flutter**：`await controllerA.park()` 为 true 后把 B 的页面 `push` 在 A 上面（别 `pushAndRemoveUntil`，A 的页面要留着）；
+  返回时 `pop` B、等 B 的控制器 dispose、`controllerA.unpark(enterOptions: …)`。目前只有 Android 实现，iOS 上 `park()` 返回 false，
+  示例照老办法截一张、关掉、回来重开（`sdk/flutter/example/lib/store/store_links.dart`）。
+- **iOS / macOS 原生**：C 接口已有，`MiniProgramView` 还没包（示例仍是「截一张、关掉、回来重开」）。
 
 ### 渲染后端（只增不改）
 

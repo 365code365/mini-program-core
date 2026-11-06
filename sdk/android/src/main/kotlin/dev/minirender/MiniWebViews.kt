@@ -180,7 +180,10 @@ internal class MiniWebViews(
 
             override fun onReceivedError(view: WebView, req: WebResourceRequest, err: WebResourceError) {
                 if (!req.isForMainFrame) return
-                s.emit("error", JSONObject().put("src", s.src.ifEmpty { req.url.toString() }).put("errMsg", "${err.description}").put("errCode", err.errorCode))
+                // 官方 web-view binderror：detail = {url, fullUrl}（src 属性上的地址 / 真正加载失败的完整地址）；src、errMsg、errCode 照留
+                val full = req.url.toString()
+                s.emit("error", JSONObject().put("url", s.src.ifEmpty { full }).put("fullUrl", full)
+                    .put("src", s.src.ifEmpty { full }).put("errMsg", "${err.description}").put("errCode", err.errorCode))
             }
 
             override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest): Boolean {

@@ -176,6 +176,11 @@ uint32_t mr_app_page_depth(MRApp* app);
 void   mr_app_set_keyboard_shift(MRApp* app, float logical);
 void   mr_app_on_show(MRApp* app);   // 进前台
 void   mr_app_on_hide(MRApp* app);   // 进后台（之后应停止 pump）
+// 挂起 / 恢复：小程序打开小程序时 A 留在内存里（页面栈、滚动、JS 状态都在），B 关掉后原样回来。
+// suspend 要在另一个引擎建出来之前调；resume 要在另一个引擎销毁之后调。enter_json（可 NULL）是本次进入的参数
+// {path, query, scene, referrerInfo}（返回是 scene 1038）。成功返回 1
+int    mr_app_suspend(MRApp* app);
+int    mr_app_resume(MRApp* app, const char* enter_json);
 void   mr_app_trim_memory(MRApp* app); // 系统内存告警时调用
 
 const char* mr_app_last_error(MRApp* app); // 无错误时返回 NULL

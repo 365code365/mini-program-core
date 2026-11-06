@@ -347,6 +347,21 @@ internal class EngineHost(
         }
     }
 
+    /**
+     * 挂起（打开别的小程序时留在内存里，与原生视图 MiniProgramView.park 同一份 EngineCore.suspend）：
+     * 原生组件暂停、停帧、引擎带走进程级状态。[done]（主线程）之后插件才让出「当前实例」的位置
+     */
+    fun park(done: (Boolean) -> Unit) {
+        natives.lifecycle(1)
+        core.suspend(done)
+    }
+
+    /** 恢复 [park] 的引擎（引擎线程上先等别的引擎销毁完）。[enterJson]：本次进入的参数（scene 1038 …） */
+    fun unpark(enterJson: String?) {
+        core.resume(enterJson)
+        natives.lifecycle(0)
+    }
+
     // ───────────────────────── 独立图层（EngineView，主线程调） ─────────────────────────
 
     fun bindView(v: EngineView) {

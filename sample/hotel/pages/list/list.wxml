@@ -1,3 +1,7 @@
+<view wx:if="{{referrer}}" class="ref row" bindtap="onBackReferrer">
+  <text class="ref-back">‹ 返回{{referrer.name}}</text>
+  <text class="ref-tip">{{referrer.tip}}</text>
+</view>
 <view class="top">
   <view class="top-bar row">
     <view class="date-box" bindtap="onDates">

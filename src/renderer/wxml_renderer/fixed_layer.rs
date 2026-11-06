@@ -139,11 +139,15 @@ impl WxmlRenderer {
             }
 
             // 以视口约束尺寸对该 fixed 子树单独重排（绝对定位，不影响主流）
-            if let Ok(mut style) = taffy.style(*id).cloned() {
+            if let Ok(cur_style) = taffy.style(*id) {
+                let mut style = cur_style.clone();
                 style.position = Position::Relative;
                 style.inset = Rect { top: auto(), right: auto(), bottom: auto(), left: auto() };
                 style.size = Size { width: length(target_w), height: length(target_h) };
-                if self.set_style_tracked(taffy, *id, style) {
+                // 上一次重画已经按视口排好（样式一样）：不再 set_style。taffy 的 set_style 不比较、一律标脏，
+                // 覆盖层里有动画时每帧都把这棵子树（连同量字）重排一遍 —— 迷你播放条转着封面，一加上覆盖层一帧 11~14ms
+                let changed = *cur_style != style;
+                if changed && self.set_style_tracked(taffy, *id, style) {
                     self.compute_with_text(
                         taffy,
                         *id,
@@ -158,7 +162,7 @@ impl WxmlRenderer {
             let new_layout = match taffy.layout(*id) { Ok(l) => *l, Err(_) => continue };
             let w = new_layout.size.width;
             let h = new_layout.size.height;
-            if std::env::var("MINI_FIXED_LOG").is_ok() {
+            if fixed_log() {
                 eprintln!(
                     "📌 fixed 子树 目标 {:.0}x{:.0} → 实测 {:.0}x{:.0}（逻辑）\
                      insets l={:?} r={:?} t={:?} b={:?}",
@@ -224,4 +228,10 @@ impl WxmlRenderer {
         }
     }
 
+}
+
+/// `MINI_FIXED_LOG`：覆盖层每重画一次都要判，进程里读一次环境（`std::env::var` 每次拿环境锁）
+fn fixed_log() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("MINI_FIXED_LOG").is_some())
 }

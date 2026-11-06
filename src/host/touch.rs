@@ -199,6 +199,25 @@ impl TouchTracker {
     }
 }
 
+/// 触点在两个坐标系里的位置（逻辑像素）：`page` 相对文档（视口坐标 + 页面滚动）、`client` 相对视口。
+///
+/// 从前两个一样：触摸事件给的是视口坐标（页面滚过之后 pageY 少了 scrollTop），tap 给的是文档坐标
+/// （clientY 多了 scrollTop）。滚动列表里按 pageY 算点到第几行、按 clientY 摆浮层的代码都会错位
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct EventPoint {
+    pub page: (f32, f32),
+    pub client: (f32, f32),
+}
+
+impl EventPoint {
+    /// 视口里的一点，页面滚了 `scroll` 逻辑像素
+    pub fn viewport(x: f32, y: f32, scroll: f32) -> Self {
+        Self { page: (x, y + scroll), client: (x, y) }
+    }
+    /// 没有触点的事件（组件自己发的 `itembuild`、`load` 这类）：两个都是 0
+    pub const ZERO: Self = Self { page: (0.0, 0.0), client: (0.0, 0.0) };
+}
+
 /// 事件对象里的一个节点信息（`target` / `currentTarget`）
 pub struct NodeInfo<'a> {
     pub id: &'a str,
@@ -214,21 +233,23 @@ pub struct NodeInfo<'a> {
 /// - `touches`：当前屏幕上的所有触点；`changedTouches`：本次变化的触点。
 ///   `touchend` 时 `touches` 为空（手指已离开），`changedTouches` 仍是那个点。
 /// - `timeStamp`：页面打开到事件发生的毫秒数。
+/// - 触点坐标（[`EventPoint`]）：`pageX/pageY` 相对文档（含页面滚动），`clientX/clientY` 相对可显示区域
+///   （导航栏下沿起的视口）。页面没滚动时两者相同。
 pub fn event_json(
     event_type: &str,
     target: &NodeInfo,
     current_target: &NodeInfo,
-    point: (f32, f32),
+    point: EventPoint,
     identifier: u32,
     time_stamp_ms: u64,
     detail: serde_json::Value,
 ) -> String {
     let touch = serde_json::json!({
         "identifier": identifier,
-        "pageX": point.0,
-        "pageY": point.1,
-        "clientX": point.0,
-        "clientY": point.1,
+        "pageX": point.page.0,
+        "pageY": point.page.1,
+        "clientX": point.client.0,
+        "clientY": point.client.1,
     });
     // 手指已离开屏幕的事件里 touches 应为空
     let touches: Vec<serde_json::Value> = if matches!(event_type, "touchend" | "touchcancel") {
@@ -268,7 +289,7 @@ pub fn dispatch_to_js(
     renderer: &crate::renderer::WxmlRenderer,
     event_type: &str,
     hit: (f32, f32),
-    point: (f32, f32),
+    point: EventPoint,
     scope: Option<bool>,
     identifier: u32,
     time_ms: u64,
@@ -292,7 +313,7 @@ pub fn dispatch_chain_to_js(
     chain: &[crate::renderer::wxml_renderer::EventBinding],
     innermost: Option<crate::renderer::wxml_renderer::EventBinding>,
     event_type: &str,
-    point: (f32, f32),
+    point: EventPoint,
     identifier: u32,
     time_ms: u64,
     detail: serde_json::Value,
@@ -336,7 +357,9 @@ pub fn dispatch_chain_to_js(
         );
         // canvas 自己的触摸事件：触点另带画布内坐标 x / y（官方 canvas 组件的 CanvasTouch {identifier, x, y}）
         if b.tag == "canvas" && event_type.starts_with("touch") {
-            json = canvas_touch_xy(&json, (point.0 - b.bounds.x, point.1 - b.bounds.y));
+            // 画布的框：正常流是文档坐标、覆盖层里是视口坐标
+            let p = if b.is_fixed { point.client } else { point.page };
+            json = canvas_touch_xy(&json, (p.0 - b.bounds.x, p.1 - b.bounds.y));
         }
         let handler = serde_json::to_string(&b.handler).unwrap_or_else(|_| "''".into());
         // 第三个实参是「声明这条绑定的组件标签」：组件模板里的绑定要送给组件实例，
@@ -368,7 +391,7 @@ mod tests {
     #[test]
     fn canvas_触点带画布内坐标() {
         let n = NodeInfo { id: "c", dataset: &HashMap::new(), offset_left: 20.0, offset_top: 30.0 };
-        let j = canvas_touch_xy(&event_json("touchmove", &n, &n, (25.0, 41.0), 0, 1, serde_json::json!({})), (5.0, 11.0));
+        let j = canvas_touch_xy(&event_json("touchmove", &n, &n, EventPoint::viewport(25.0, 41.0, 0.0), 0, 1, serde_json::json!({})), (5.0, 11.0));
         let v: serde_json::Value = serde_json::from_str(&j).unwrap();
         assert_eq!((v["touches"][0]["x"].as_f64(), v["touches"][0]["y"].as_f64()), (Some(5.0), Some(11.0)));
         assert_eq!(v["changedTouches"][0]["x"], 5.0);
@@ -449,7 +472,7 @@ mod tests {
         let target = NodeInfo { id: "cell7", dataset: &inner, offset_left: 12.0, offset_top: 30.0 };
         let current = NodeInfo { id: "list", dataset: &outer, offset_left: 0.0, offset_top: 0.0 };
 
-        let json = event_json("touchend", &target, &current, (5.0, 6.0), 3, 1234, serde_json::json!({}));
+        let json = event_json("touchend", &target, &current, EventPoint::viewport(5.0, 6.0, 0.0), 3, 1234, serde_json::json!({}));
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
         assert_eq!(v["type"], "touchend");
         assert_eq!(v["timeStamp"], 1234);
@@ -461,7 +484,7 @@ mod tests {
         assert_eq!(v["changedTouches"][0]["identifier"], 3);
         assert_eq!(v["changedTouches"][0]["pageX"], 5.0);
 
-        let start = event_json("touchstart", &target, &current, (5.0, 6.0), 3, 1, serde_json::json!({}));
+        let start = event_json("touchstart", &target, &current, EventPoint::viewport(5.0, 6.0, 0.0), 3, 1, serde_json::json!({}));
         let v2: serde_json::Value = serde_json::from_str(&start).unwrap();
         assert_eq!(v2["touches"].as_array().unwrap().len(), 1);
     }

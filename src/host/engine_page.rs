@@ -120,6 +120,8 @@ impl MiniEngine {
             r.set_animation_time(t);
         }
         self.renderer = Some(r);
+        // 新渲染器的布局代数从头数，可能与上一页的撞上：预取的「页面上有哪些图」要重数（engine_prefetch.rs）
+        self.prefetch = Default::default();
         if let Some(ct) = &self.custom_tabbar {
             let mut tr = WxmlRenderer::new_with_scale(
                 ct.stylesheet.clone(),

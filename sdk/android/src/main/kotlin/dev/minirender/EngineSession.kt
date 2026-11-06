@@ -80,6 +80,12 @@ internal class EngineSession(context: Context, private val ui: Ui) {
     /** what: 0 进前台 / 1 进后台 / 2 内存告警 */
     fun lifecycle(what: Int) = core.lifecycle(what)
 
+    val suspended: Boolean get() = core.suspended
+
+    /** 挂起 / 恢复（EngineCore.suspend / resume） */
+    fun suspend(done: (Boolean) -> Unit) = core.suspend(done)
+    fun resume(enterJson: String?) = core.resume(enterJson)
+
     /** 视图改了尺寸（逻辑像素）：引擎重排，SurfaceView 跟着改缓冲区 */
     fun resize(width: Int, height: Int, dpr: Float) = core.onEngine {
         val h = core.handle
@@ -91,8 +97,11 @@ internal class EngineSession(context: Context, private val ui: Ui) {
         core.requestFrame()
     }
 
-    /** 把引擎当前这一帧存成 PNG（SurfaceView 的内容 `View.draw` 取不到）。[done] 在主线程回调 */
+    /** 把引擎当前这一帧存成 PNG / JPEG（按扩展名，SurfaceView 的内容 `View.draw` 取不到）。[done] 在主线程回调 */
     fun dumpFrame(file: File, done: (Boolean) -> Unit) = core.dumpFrame(file, done)
+
+    /** 引擎当前这一帧取成 Bitmap（不落盘）。[done] 在主线程回调 */
+    fun snapshot(done: (android.graphics.Bitmap?) -> Unit) = core.snapshot(done)
 
     // ───────────────────────── Surface（主线程进来） ─────────────────────────
 

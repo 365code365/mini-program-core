@@ -91,11 +91,20 @@ impl WxmlRenderer {
             let moved = ctx.moved;
             let mut acc: Option<GeoRect> = None;
             let ok = !positional
-                && olds.clone().all(|o| Self::subtree_paint_bounds(old_t, resolve(o, moved), old_o, moved, &mut acc))
-                && news.clone().all(|n| Self::subtree_paint_bounds(new_t, n, new_o, moved, &mut acc));
+                && olds.clone().all(|o| Self::subtree_paint_bounds(old_t, resolve(o, moved), old_o, ctx, &mut acc))
+                && news.clone().all(|n| Self::subtree_paint_bounds(new_t, n, new_o, ctx, &mut acc));
             if !ok {
                 ctx.bail = true;
-                ctx.bail_why = format!("结构变化：孩子 {no} 个 -> {nn} 个");
+                // 带上是哪几个孩子（标签.类名）：整帧原因里一眼看得出是页面上哪一块
+                let desc = |it: &mut dyn Iterator<Item = &RenderNode>| {
+                    it.take(3).map(|c| format!("<{}{}>", c.tag, c.attrs.get("class").map(|k| format!(".{}", k.split_whitespace().next().unwrap_or(""))).unwrap_or_default())).collect::<Vec<_>>().join("")
+                };
+                ctx.bail_why = format!(
+                    "结构变化：孩子 {no} 个 -> {nn} 个（{} -> {}{}）",
+                    desc(&mut olds.clone()),
+                    desc(&mut news.clone()),
+                    if positional { "，有按位置选的规则" } else { "" }
+                );
                 return;
             }
             if let Some(r) = acc {
@@ -127,24 +136,36 @@ impl WxmlRenderer {
     }
 
     /// 一棵子树画出来盖到的范围（每个节点的布局框按阴影外扩，并进 `acc`）。
-    /// 碰到画法≠布局的节点（scroll-view / swiper / 变换 / 动画 / fixed）返回 false：那种算不准，调用方整帧
-    fn subtree_paint_bounds(t: &dyn Layouts, n: &RenderNode, origin: (f32, f32), moved: &HashMap<taffy::NodeId, &RenderNode>, acc: &mut Option<GeoRect>) -> bool {
-        let n = resolve(n, moved);
-        if matches!(n.tag.as_str(), "scroll-view" | "swiper") || n.style.transform.is_some() || n.style.animation.is_some() || n.style.is_fixed {
+    /// 带 transform / CSS 动画的节点按整段变换最多画到的范围算（[`Self::anim_extent`]：播放 / 暂停键里
+    /// 转了 45° 的三角形，从前一碰就整帧）。scroll-view / swiper / fixed、算不出来的变换返回 false：调用方整帧
+    fn subtree_paint_bounds(t: &dyn Layouts, n: &RenderNode, origin: (f32, f32), ctx: &DiffCtx, acc: &mut Option<GeoRect>) -> bool {
+        let n = resolve(n, ctx.moved);
+        if matches!(n.tag.as_str(), "scroll-view" | "swiper") || n.style.is_fixed {
             return false;
+        }
+        let add = |acc: &mut Option<GeoRect>, r: GeoRect| {
+            *acc = Some(match *acc {
+                None => r,
+                Some(a) => {
+                    let (x0, y0) = (a.x.min(r.x), a.y.min(r.y));
+                    let (x1, y1) = ((a.x + a.width).max(r.x + r.width), (a.y + a.height).max(r.y + r.height));
+                    GeoRect::new(x0, y0, x1 - x0, y1 - y0)
+                }
+            });
+        };
+        if n.style.transform.is_some() || n.style.animation.is_some() {
+            return match Self::anim_extent(t, n, origin, ctx) {
+                Some(r) => {
+                    add(acc, r);
+                    true
+                }
+                None => false,
+            };
         }
         let Ok(l) = t.layout(n.taffy_node) else { return false };
         let o = (origin.0 + l.location.x, origin.1 + l.location.y);
-        let r = super::invalidate_grow::inflate(GeoRect::new(o.0, o.1, l.size.width, l.size.height), &n.style);
-        *acc = Some(match *acc {
-            None => r,
-            Some(a) => {
-                let (x0, y0) = (a.x.min(r.x), a.y.min(r.y));
-                let (x1, y1) = ((a.x + a.width).max(r.x + r.width), (a.y + a.height).max(r.y + r.height));
-                GeoRect::new(x0, y0, x1 - x0, y1 - y0)
-            }
-        });
-        n.children.iter().all(|c| Self::subtree_paint_bounds(t, c, o, moved, acc))
+        add(acc, super::invalidate_grow::inflate(GeoRect::new(o.0, o.1, l.size.width, l.size.height), &n.style));
+        n.children.iter().all(|c| Self::subtree_paint_bounds(t, c, o, ctx, acc))
     }
 
     /// 两棵子树画出来会不会不一样（结构、文字、属性、位置尺寸任何一样不同就算）

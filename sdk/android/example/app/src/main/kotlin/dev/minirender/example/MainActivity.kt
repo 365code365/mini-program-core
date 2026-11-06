@@ -51,6 +51,35 @@ class MainActivity : Activity() {
     /** 当前（或正在打开）的商店链接：「重新进入小程序」照它再开一次；内置示例为空 */
     private var currentLink: StoreLink? = null
 
+    /**
+     * 小程序打开小程序的来路：A → B → C 时是 [A, B]。返回 / 侧滑 / 胶囊「⊙」/ `navigateBackMiniProgram` / `exitMiniProgram`
+     * 先回 B、再回 A，最后才退回 App 首页（与微信一致）。一个进程同一时刻只有一个小程序实例，回去是按来路的链接
+     * 重新打开（scene 1038，referrerInfo 带回 extraData）：A 的页面栈与内存里的状态不在了，storage 还在。
+     * 第二项是离开 A 那一刻的画面：回去时不盖 loading、不问服务器，先盖着它，A 的第一页出来再淡掉
+     */
+    private val backStack = ArrayDeque<Back>()
+
+    /**
+     * 来路上的一个小程序。[parked] 不为空：它没关、挂起着留在内存里（[MiniProgramView.park]，视图藏在 root 里），
+     * 回去是 resume —— 页面栈、滚动位置、列表数据、JS 状态原样，没有 loading、没有重排。
+     * 挂不上（引擎还没建好）才退回老办法：关掉，回去时按 [link] 重开、先盖 [shot]
+     */
+    private class Back(val link: StoreLink, val shot: android.graphics.Bitmap?, val parked: Parked?)
+
+    private class Parked(
+        val view: MiniProgramView,
+        val appId: String,
+        val storeApp: MiniStore.App?,
+        val app: JSONObject,
+        val route: String?,
+    )
+
+    /** 来路作废（外部链接进来）：挂着的那些关掉 */
+    private fun clearBack() {
+        for (b in backStack) b.parked?.let { it.view.close(); root.removeView(it.view) }
+        backStack.clear()
+    }
+
     /** 当前打开着的商店小程序（胶囊菜单的转发 / 收藏要用）；内置示例为空 */
     internal var currentStoreApp: MiniStore.App? = null
 
@@ -86,7 +115,9 @@ class MainActivity : Activity() {
             diagnostics = setOf("damage_log", "fps")
         }
         // 登录、支付、定位、扫码……要 App 自己接的 wx.*（选图 / 选文件 SDK 自带，不用登记）
-        hostApis.putAll(DemoHostApis(this@MainActivity, ::navigateToMiniProgram).all)
+        hostApis.putAll(DemoHostApis(this@MainActivity, ::navigateToMiniProgram, { backToReferrer(it) }, { backStack.isNotEmpty() }).all)
+        // 胶囊「⊙」：有来路回上一个小程序，没有就关掉这一页
+        onClose = { if (!backToReferrer(null)) finish() }
         // <map> / <web-view> / <live-player> 用 SDK 自带的（MiniMapView 瓦片地图同层渲染、系统 WebView、系统播放器），不用登记
         // 胶囊「•••」：微信式底部菜单（转发、收藏 / 重新进入、上传诊断日志、关于），见 MenuSheet.kt
         onAbout = { a -> showCapsuleMenu(a) }
@@ -96,15 +127,18 @@ class MainActivity : Activity() {
             when (ev.optString("type")) {
                 // 第一页出来了才收起 loading（冷启动加载字体那几百毫秒也盖在底下，不露白屏）
                 "page" -> cover?.let { cover = null; it.hide() }
+                // wx.exitMiniProgram：与栈底返回同一条路
+                "exitMiniProgram" -> main.post { if (!backToReferrer(null)) finish() }
             }
         }
     }
 
     /**
      * 打开商店里的小程序（[link] 的 key 是 AppID 或 id）：盖 loading → 后台问服务器最新版、
-     * 不是最新就下载解包 → 回主线程 open。已经开着一个时先关掉它（同步销毁引擎），再在新视图上开
+     * 不是最新就下载解包 → 回主线程 open。已经开着一个时先关掉它（同步销毁引擎），再在新视图上开。
+     * [resume]：回到上一个小程序（[backToReferrer]）—— 用本地那一版不问服务器，盖 [shot] 而不是 loading
      */
-    private fun openStore(link: StoreLink, hint: MiniStore.App? = null) {
+    private fun openStore(link: StoreLink, hint: MiniStore.App? = null, resume: Boolean = false, shot: android.graphics.Bitmap? = null) {
         val gen = ++generation
         currentLink = link
         if (opened) {
@@ -121,23 +155,27 @@ class MainActivity : Activity() {
         val store = MiniStore(this, intent.getStringExtra(EXTRA_STORE_URL) ?: MiniStore.DEFAULT_URL)
         // 深链只带 AppID：装过的话先用本地记录的名字 / 图标画 loading（读一个小 JSON，不等网络）
         val known = hint ?: store.local(link.key)
-        val c = StoreViews.LoadingCover(this, known?.id ?: link.key, known?.name ?: "小程序") { finish() }
+        val c = StoreViews.LoadingCover(this, known?.id ?: link.key, known?.name ?: "小程序", resume, shot) { finish() }
         root.addView(c)
         cover = c
         thread(name = "store-prepare") {
             try {
                 var stage = ""
-                val p = store.prepare(link.key, status = { s ->
+                val onStatus: (String) -> Unit = { s ->
                     stage = s
                     runOnUiThread { if (gen == generation) c.progress(s) }
-                }, progress = { got, total ->
+                }
+                val onProgress: (Long, Long) -> Unit = { got, total ->
                     val mb = if (total > 0) "%.1f / %.1f MB".format(got / 1048576.0, total / 1048576.0)
                     else "%.1f MB".format(got / 1048576.0)
                     runOnUiThread { if (gen == generation) c.progress("$stage  $mb") }
-                })
+                }
+                val p = if (resume) store.prepareLocal(link.key, onStatus, onProgress) else store.prepare(link.key, onStatus, onProgress)
                 runOnUiThread {
                     if (isDestroyed || gen != generation) return@runOnUiThread
-                    val why = p.stale?.let { "连不上服务器，用本地版（${it.message}）" } ?: if (p.updated) "已更新" else "已是最新"
+                    val why = p.stale?.let { "连不上服务器，用本地版（${it.message}）" }
+                        ?: if (resume && !p.updated) "回到上一个小程序，用本地版（不问服务器，盖${if (shot == null) "白底" else "离开时的截图"}）"
+                        else if (p.updated) "已更新" else "已是最新"
                     Log.i(TAG, "[商店] 打开 ${p.app.id} ${p.app.appId} v${p.app.version} $why → ${p.dir} 起始页 ${link.route ?: "首页"}")
                     // 小游戏不走 MiniProgramView：交给 GameActivity（整屏主画布、按 game.json 锁方向），这一页让出去
                     if (p.app.isGame) {
@@ -196,7 +234,70 @@ class MainActivity : Activity() {
         ) ?: return
         val referrer = JSONObject().put("appId", currentAppId)
         args.opt("extraData")?.takeIf { it != JSONObject.NULL }?.let { referrer.put("extraData", it) }
-        openStore(parsed.copy(scene = 1037, referrer = referrer))
+        // 记下来路：B 里返回要回到这一个（A）。A 不关，挂起留在内存里（与微信一致），B 开在一个新视图上
+        val from = currentLink
+        val gen = generation
+        val a = mini
+        val t0 = android.os.SystemClock.uptimeMillis()
+        a.park { ok ->
+            // 挂起的这几毫秒里又换了别的（外部链接）：这次跳转作废
+            if (isDestroyed || gen != generation) {
+                if (ok) a.unpark()
+                return@park
+            }
+            Log.i(TAG, "[商店] 挂起 ${currentStoreApp?.id ?: "?"} ${if (ok) "ok" else "没挂上，改为关掉"} ${android.os.SystemClock.uptimeMillis() - t0}ms")
+            if (!ok) {
+                // 挂不上（引擎还没建好）：老办法，截一张、关掉，回来时重开
+                a.snapshot { shot ->
+                    if (isDestroyed || gen != generation) return@snapshot
+                    from?.let { backStack.addLast(Back(it, shot, null)) }
+                    openStore(parsed.copy(scene = 1037, referrer = referrer))
+                }
+                return@park
+            }
+            from?.let { backStack.addLast(Back(it, null, Parked(a, currentAppId, currentStoreApp, currentApp, currentRoute))) }
+            // A 的视图藏起来（Surface 没了引擎照样活着），B 用一个新视图；openStore 看 opened = false 不会去关 A
+            a.visibility = android.view.View.GONE
+            mini = newMiniView()
+            root.addView(mini, 0)
+            opened = false
+            openStore(parsed.copy(scene = 1037, referrer = referrer))
+        }
+    }
+
+    /**
+     * 回到打开当前小程序的那个小程序（scene 1038，referrerInfo 带 [extra]）。没有来路返回 false，调用方照常退回 App。
+     * 不走 loading：用本地那一版（不问服务器），先盖离开它时截的画面，它的第一页出来再淡掉。
+     * A 是重开的：页面栈、滚动位置、内存里的状态不在（重开到 A 被打开时的那一页），storage 还在
+     */
+    private fun backToReferrer(extra: Any?): Boolean {
+        val back = backStack.removeLastOrNull() ?: return false
+        val referrer = JSONObject().put("appId", currentAppId)
+        extra?.let { referrer.put("extraData", it) }
+        val p = back.parked ?: run {
+            openStore(back.link.copy(scene = 1038, referrer = referrer), resume = true, shot = back.shot)
+            return true
+        }
+        // A 挂着：关掉 B、A 原样回来。顺序要紧 —— 先 resume（引擎线程上等 B 销毁完、还原状态、派发 onShow），
+        // 再显示 A：SurfaceHolder.Callback2 让窗口等 A 的 Surface 交出第一帧再一起上屏，中间没有空白帧
+        val t0 = android.os.SystemClock.uptimeMillis()
+        generation++ // B 还在下载 / 准备的话，那边回来时作废
+        cover?.let { root.removeView(it) }
+        cover = null
+        val b = mini
+        b.close()
+        root.removeView(b)
+        mini = p.view
+        opened = true
+        currentLink = back.link
+        currentAppId = p.appId
+        currentStoreApp = p.storeApp
+        currentApp = p.app
+        currentRoute = p.route
+        mini.unpark(JSONObject().put("path", p.route ?: "").put("query", JSONObject()).put("scene", 1038).put("referrerInfo", referrer))
+        mini.visibility = android.view.View.VISIBLE
+        Log.i(TAG, "[商店] 回到 ${p.storeApp?.id ?: "?"}（挂起的，原样恢复）${android.os.SystemClock.uptimeMillis() - t0}ms")
+        return true
     }
 
     private fun summarize(e: JSONObject): String {
@@ -252,14 +353,15 @@ class MainActivity : Activity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        // 开着的时候又来一条外部链接（LinkActivity 用 CLEAR_TOP | SINGLE_TOP 送到这里）：就地换小程序
-        intent.getStringExtra(EXTRA_LINK)?.let { return openStore(StoreLink.fromJson(it)) }
+        // 开着的时候又来一条外部链接（LinkActivity 用 CLEAR_TOP | SINGLE_TOP 送到这里）：就地换小程序，来路作废
+        intent.getStringExtra(EXTRA_LINK)?.let { clearBack(); return openStore(StoreLink.fromJson(it)) }
         intent.getStringExtra("route")?.let { mini.navigate("/$it") }
     }
 
     @Deprecated("Activity.onBackPressed：minSdk 24 上没有 OnBackInvokedCallback，两条都要能走")
     override fun onBackPressed() {
-        if (!mini.goBack()) super.onBackPressed()   // 页面栈空了才退出
+        // 页面栈空了：是被别的小程序打开的就回那个小程序，否则退出
+        if (!mini.goBack() && !backToReferrer(null)) super.onBackPressed()
     }
 
     companion object {

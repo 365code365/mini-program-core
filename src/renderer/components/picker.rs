@@ -79,6 +79,15 @@ impl PickerStateManager {
 pub static PICKER_MANAGER: Lazy<Mutex<PickerStateManager>> = Lazy::new(|| {
     Mutex::new(PickerStateManager::new())
 });
+/// 小程序挂起时带走自己的 picker 状态、回来放回（host/engine_park.rs，理由同 swiper::park）
+pub(crate) fn park() -> PickerStateManager {
+    PICKER_MANAGER.lock().map(|mut m| std::mem::replace(&mut *m, PickerStateManager::new())).unwrap_or_else(|_| PickerStateManager::new())
+}
+pub(crate) fn unpark(s: PickerStateManager) {
+    if let Ok(mut m) = PICKER_MANAGER.lock() {
+        *m = s;
+    }
+}
 
 /// Picker 组件
 pub struct PickerComponent;

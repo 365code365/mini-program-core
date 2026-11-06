@@ -60,6 +60,9 @@ object MiniEngine {
     external fun nativeBack(handle: Long): Boolean
     /** what: 0 进前台 / 1 进后台 / 2 内存告警 */
     external fun nativeLifecycle(handle: Long, what: Int)
+    /** 挂起 / 恢复（打开别的小程序时留在内存里）；enterJson 可为 null */
+    external fun nativeSuspend(handle: Long): Boolean
+    external fun nativeResume(handle: Long, enterJson: String?): Boolean
 
     // ───────────── 渲染后端 ─────────────
     /** 后端偏好 / 实际后端（`MR_BACKEND_*`）。偏好默认 cpu */

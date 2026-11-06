@@ -69,6 +69,10 @@ impl WxmlRenderer {
     /// 布局盒之外，判据必须比盒子宽松（`tools/damage-check.sh` 逐像素校验这一点）。
     pub(super) fn outside_damage(&self, x: f32, y: f32, w: f32, h: f32) -> bool {
         const MARGIN: f32 = VIEWPORT_CULL_MARGIN_PX;
+        // 动画底图贴回之前（backdrop.rs）：这些像素马上要被底图盖掉，一个都不用画
+        if self.backdrop_mute {
+            return true;
+        }
         // 离屏合成时坐标是离屏画布的局部坐标，与损伤区不在同一坐标系
         if self.drawing_offscreen {
             return false;
@@ -126,39 +130,44 @@ impl WxmlRenderer {
         }
         let tw = (w + pad * 2.0).ceil() as u32;
         let th = (h + pad * 2.0).ceil() as u32;
-        if tw == 0 || th == 0 || tw > 4096 || th > 4096 {
+        // 动画底图贴回之前（backdrop.rs）：画了也要被盖掉，不开离屏，只走一遍子树（登记命中区）
+        if self.backdrop_mute || tw == 0 || th == 0 || tw > 4096 || th > 4096 {
             // 大到不值得离屏：退回逐颜色乘 alpha，同时别再进组合成（否则递归）
             let was = self.bypass_opacity_group;
             self.bypass_opacity_group = true;
+            self.backdrop.opacity_depth += 1;
             draw(self, canvas, 0.0, 0.0);
+            self.backdrop.opacity_depth -= 1;
             self.bypass_opacity_group = was;
             return;
         }
-        let mut off = Canvas::new(tw, th);
-        off.clear(Color::new(0, 0, 0, 0));
-        // 离屏只画贴回去时落在目标裁剪区里的那一块（目标裁剪区换算到离屏坐标）。贴回去本来就只贴
-        // 裁剪区里的像素（`blend_pixels_opacity` 按 draw_bounds 裁），裁剪区里的像素与整块画逐字节相同
-        // （局部重画靠的就是这一条）。从前离屏整块画：补条带只要一百多行，首页头图里那段
-        // `opacity: 0.9` 的两行字照样整块光栅化，一加上一条带 10~16ms
+        // 离屏只开贴回去时落在目标裁剪区里的那一块（目标裁剪区换算到离屏坐标），按整像素平移着画：
+        // 贴回去本来就只贴裁剪区里的像素，整像素平移光栅结果不变，与整块画逐字节相同（局部重画靠的就是这一条）。
+        // 从前开整块：播放页铺满屏的背景图（`opacity: .55`，1948×2710）每补一条 65 行的进度条，
+        // 都要分配并清零 21MB 的离屏 —— 一加上这一条就 13ms（真机 damage_log，2026-11-06）
         let (ox, oy) = ((x - pad) as i32, (y - pad) as i32);
         let (bx0, bx1, by0, by1) = canvas.draw_bounds();
         let (cx0, cy0) = ((bx0 - ox).clamp(0, tw as i32), (by0 - oy).clamp(0, th as i32));
         let (cx1, cy1) = ((bx1 - ox).clamp(cx0, tw as i32), (by1 - oy).clamp(cy0, th as i32));
-        if (cx0, cy0, cx1, cy1) != (0, 0, tw as i32, th as i32) {
-            off.clip_rect(GeoRect::new(cx0 as f32, cy0 as f32, (cx1 - cx0) as f32, (cy1 - cy0) as f32));
-        }
+        // 整块在裁剪区外时开 1×1：子树照样走一遍（登记命中区、事件绑定），贴回去那一个像素也在裁剪区外、不写
+        let (sw, sh) = (((cx1 - cx0) as u32).max(1), ((cy1 - cy0) as u32).max(1));
+        let mut off = Canvas::new(sw, sh);
+        off.clear(Color::new(0, 0, 0, 0));
         let was_off = self.drawing_offscreen;
         let was_flat = self.flattening_opacity;
         let was_shift = self.binding_shift;
         let sf = self.scale_factor.max(0.001);
+        let (dx, dy) = (cx0 as f32, cy0 as f32);
         self.drawing_offscreen = true;
         self.flattening_opacity = true;
-        self.binding_shift = (was_shift.0 + (x - pad) / sf, was_shift.1 + (y - pad) / sf);
-        draw(self, &mut off, pad - x, pad - y);
+        self.binding_shift = (was_shift.0 + (x - pad + dx) / sf, was_shift.1 + (y - pad + dy) / sf);
+        self.backdrop.opacity_depth += 1;
+        draw(self, &mut off, pad - x - dx, pad - y - dy);
+        self.backdrop.opacity_depth -= 1;
         self.drawing_offscreen = was_off;
         self.flattening_opacity = was_flat;
         self.binding_shift = was_shift;
-        canvas.blend_pixels_opacity((x - pad) as i32, (y - pad) as i32, off.pixels(), tw as usize, opacity);
+        canvas.blend_pixels_opacity(ox + cx0, oy + cy0, off.pixels(), sw as usize, opacity);
     }
 
     /// 像素盒换成逻辑坐标，并加上离屏绘制的页面偏移（平时偏移是 0）

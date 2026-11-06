@@ -89,11 +89,12 @@ pub fn clear_scaled_image_caches() {
     for c in [scaled_image_cache().lock().map(|mut g| g.clear()).ok(), image_mip_cache().lock().map(|mut g| g.clear()).ok()] {
         let _ = c;
     }
+    image_crop::clear_crops();
 }
 
 /// 缩放缓存占用（字节：缩放结果, mip）
 pub fn scaled_image_cache_bytes() -> (usize, usize) {
-    let a = scaled_image_cache().lock().map(|g| g.bytes()).unwrap_or(0);
+    let a = scaled_image_cache().lock().map(|g| g.bytes()).unwrap_or(0) + image_crop::crop_bytes();
     let b = image_mip_cache().lock().map(|g| g.bytes()).unwrap_or(0);
     (a, b)
 }
@@ -103,10 +104,16 @@ pub fn scaled_image_cache_bytes() -> (usize, usize) {
 pub mod fill_rule;
 /// 图片绘制与缩放缓存
 mod images;
+/// 已经缩好的图 1:1 整行拷贝
+mod image_exact;
+/// 溢出画布的整屏大图：缩放结果只缓存看得见的那块
+mod image_crop;
 /// 路径光栅化
 mod paths;
 /// 像素级读写与混合
 mod pixels;
+/// 整屏级的逐行合成分给几个线程
+mod par_rows;
 /// 轴对齐矩形的抗锯齿填充（fill_path 的等价特化）
 mod rect_aa;
 /// 基本图形

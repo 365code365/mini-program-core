@@ -150,9 +150,15 @@ class ExampleHostApis {
           Future<void>.delayed(const Duration(milliseconds: 50), () => StoreLinks.openFromMiniProgram(a));
           return {};
         },
-        // 只有被别的小程序打开时才回得去（与微信一致）；例子里小程序是从 Flutter 列表打开的
-        'navigateBackMiniProgram': (a) async =>
-            throw const MiniHostApiError('navigateBackMiniProgram:fail 当前小程序不是由其它小程序打开的'),
+        // 只有被别的小程序打开时才回得去（与微信一致）：回去时 referrerInfo.extraData 带上这里给的 extraData。
+        // 同 navigateToMiniProgram：先回 success，再换回去
+        'navigateBackMiniProgram': (a) async {
+          if (!StoreLinks.canGoBack) {
+            throw const MiniHostApiError('navigateBackMiniProgram:fail 当前小程序不是由其它小程序打开的');
+          }
+          Future<void>.delayed(const Duration(milliseconds: 50), () => StoreLinks.backToReferrer(extraData: a['extraData']));
+          return {};
+        },
         'getShareInfo': (a) async => {'encryptedData': 'ZGVtbw==', 'iv': 'ZGVtbw==', 'cloudID': 'demo_cloud_id'},
       };
 

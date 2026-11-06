@@ -249,9 +249,13 @@ class MiniAppPage extends StatefulWidget {
   /// navigateToMiniProgram）时，新的要等旧的 dispose 完再建（[waitAllClosed]）
   static final live = ValueNotifier<int>(0);
 
+  /// 还没销毁的小程序页的控制器。挂起着的（[MiniProgramController.isParked]，被别的小程序盖着、留在内存里）
+  /// 不占「单实例」的位置
+  static final alive = <MiniProgramController>{};
+
   static Future<void> waitAllClosed() async {
-    while (live.value > 0) {
-      await Future<void>.delayed(const Duration(milliseconds: 30));
+    while (alive.any((c) => !c.isParked)) {
+      await Future<void>.delayed(const Duration(milliseconds: 16));
     }
   }
 
@@ -297,6 +301,9 @@ class _MiniPageState extends State<MiniAppPage> {
   void initState() {
     super.initState();
     MiniAppPage.live.value++;
+    MiniAppPage.alive.add(_c);
+    // wx.navigateToMiniProgram 换走这一个时先把它挂起（留在内存里），回来时原样恢复（store_links.dart）
+    StoreLinks.current = _c;
     _c.logs.listen((l) => debugPrint('[小程序] $l'));
     // 例子里把引擎事件打进日志（logcat 里 grep「[事件]」），排查与自动化验收都靠它
     _c.events.listen((e) {
@@ -305,6 +312,8 @@ class _MiniPageState extends State<MiniAppPage> {
       final scrolling = e['type'] == 'nativeViews' && (e['velocity'] as num? ?? 0) != 0;
       if (e['type'] != 'log' && !scrolling) debugPrint('[事件] ${e['type']} ${_brief(e)}');
       // 剪贴板（clipboard）与触感（vibrate）插件自己处理，这里只打日志
+      // wx.exitMiniProgram：与栈底返回同一条路
+      if (e['type'] == 'exitMiniProgram') _exit();
     });
     _c.activeBackend.addListener(() => debugPrint('[后端] 偏好 ${_backend.name} → ${_c.activeBackend.value}'));
     if (widget.dumpTo != null) _scheduleDump(widget.dumpTo!);
@@ -316,6 +325,18 @@ class _MiniPageState extends State<MiniAppPage> {
       }
 
       _c.page.addListener(onPage);
+    }
+  }
+
+  /// 离开这个小程序：有来路回上一个小程序，没有就退出这一页（小程序是 App 的根页面时退出 App）
+  void _exit() {
+    if (StoreLinks.backToReferrer()) return;
+    if (!mounted) return;
+    final nav = Navigator.of(context);
+    if (nav.canPop()) {
+      nav.pop();
+    } else {
+      SystemNavigator.pop();
     }
   }
 
@@ -459,7 +480,11 @@ class _MiniPageState extends State<MiniAppPage> {
 
   @override
   void dispose() {
+    // 换小程序时新页的 initState 先于旧页的 dispose：已经换成新页的就别清
+    if (identical(StoreLinks.current, _c)) StoreLinks.current = null;
+    StoreLinks.forgetParked(_c);
     _c.dispose();
+    MiniAppPage.alive.remove(_c);
     MiniAppPage.live.value--;
     super.dispose();
   }
@@ -469,6 +494,8 @@ class _MiniPageState extends State<MiniAppPage> {
     return MiniProgramScaffold(
       controller: _c,
       onMenu: _showMenu,
+      // 页面栈底的返回 / 侧滑 / 胶囊「⊙」：是被别的小程序打开的就回那个小程序（StoreLinks 记着来路），否则回 App
+      onExit: _exit,
       nativeViewBuilder: (context, view, c) {
         switch (view.tag) {
           // 只有 iOS（或 sameLayerVideo: false）走到这里：video_player 出画面（系统硬解），

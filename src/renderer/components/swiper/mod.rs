@@ -28,6 +28,16 @@ use taffy::prelude::*;
 
 /// 全局 Swiper 状态管理器
 pub static SWIPER_MANAGER: Lazy<Mutex<SwiperStateManager>> = Lazy::new(|| Mutex::new(SwiperStateManager::new()));
+/// 小程序挂起时把自己的 swiper 状态带走、回来再放回（host/engine_park.rs）：表是进程级的、按 id 存，
+/// 不带走的话后开的小程序里同 id 的 swiper 会接着它的页码与动画
+pub(crate) fn park() -> SwiperStateManager {
+    SWIPER_MANAGER.lock().map(|mut m| std::mem::replace(&mut *m, SwiperStateManager::new())).unwrap_or_else(|_| SwiperStateManager::new())
+}
+pub(crate) fn unpark(s: SwiperStateManager) {
+    if let Ok(mut m) = SWIPER_MANAGER.lock() {
+        *m = s;
+    }
+}
 
 fn with<R>(default: R, f: impl FnOnce(&mut SwiperStateManager) -> R) -> R {
     SWIPER_MANAGER.lock().map(|mut m| f(&mut m)).unwrap_or(default)

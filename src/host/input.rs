@@ -104,14 +104,14 @@ pub fn dispatch_touch_sequence(
             };
             let sent = match (renderer, renderer.and_then(|r| r.captured_touch(identifier, name))) {
                 (_, Some((chain, target))) => {
-                    super::touch::dispatch_chain_to_js(app, &chain, target, name, (x, y), identifier, time_ms, detail)
+                    super::touch::dispatch_chain_to_js(app, &chain, target, name, super::touch::EventPoint::viewport(x, y, scroll_pos), identifier, time_ms, detail)
                 }
                 (Some(r), None) => super::touch::dispatch_to_js(
                     app,
                     r,
                     name,
                     (x, hit_y),
-                    (x, y),
+                    super::touch::EventPoint::viewport(x, y, scroll_pos),
                     scope,
                     identifier,
                     time_ms,

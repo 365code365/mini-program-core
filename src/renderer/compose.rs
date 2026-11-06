@@ -236,7 +236,7 @@ fn blit_thread_count() -> usize {
 }
 
 /// 这一块贴回用几个线程：小块只用调用线程
-fn blit_threads(pixels: usize) -> usize {
+pub(crate) fn blit_threads(pixels: usize) -> usize {
     if pixels < PARALLEL_MIN_PIXELS {
         1
     } else {

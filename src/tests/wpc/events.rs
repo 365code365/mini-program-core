@@ -119,3 +119,48 @@ fn audio_binderror_的_errmsg_是数字码() {
     let l = log(&e);
     assert!(l.contains(&"number 2".to_string()) && l.iter().all(|s| s.starts_with("number ")), "官方 detail = {{errMsg: MediaError.code}}，数字：{l:?}");
 }
+
+/// 触点坐标：`pageY` 相对文档（含页面滚动）、`clientY` 相对视口（官方 Touch 对象）。页面滚过 300 之后
+/// 在视口 (100, 100) 按下松手：touchstart / tap 都是 pageY 400、clientY 100；tap 的 detail 是文档坐标。
+/// 从前触摸事件两个都给视口坐标、tap 两个都给文档坐标
+#[test]
+fn 触点的_page_与_client_坐标_页面滚过之后差一个_scrollTop() {
+    let root = fixture(
+        "touch-page-client",
+        r#"<view style="height: 2000px;">
+  <view class="hit" style="position: absolute; top: 0; left: 0; width: 375px; height: 2000px;" bindtouchstart="onStart" bindtap="onTap"></view>
+</view>"#,
+        "Page({ onStart(e) { getApp().log.push('start ' + e.touches[0].pageY + ' ' + e.touches[0].clientY); },
+  onTap(e) { getApp().log.push('tap ' + e.changedTouches[0].pageY + ' ' + e.changedTouches[0].clientY + ' ' + e.detail.y); } });",
+        &[],
+    );
+    let mut e = engine(&root, EngineOptions::default());
+    e.scroll_to(300.0);
+    pump_until(&mut e, 200, |_| false);
+    clear_log(&e);
+    e.pointer_down(100.0, 100.0);
+    e.pump(0);
+    e.pointer_up(100.0, 100.0);
+    pump_until(&mut e, 200, |e| log(e).iter().any(|l| l.starts_with("tap")));
+    let l = log(&e);
+    assert!(l.contains(&"start 400 100".to_string()), "touchstart 的 pageY / clientY：{l:?}");
+    assert!(l.contains(&"tap 400 100 400".to_string()), "tap 的 pageY / clientY / detail.y：{l:?}");
+}
+
+/// Skyline 的 `<large-image>`：默认 widthFix（宽 80 的 8×8 图高也是 80），`bind:load` 的 detail 是原图尺寸
+#[test]
+fn large_image_默认_width_fix_load_带原图尺寸() {
+    let root = fixture(
+        "large-image",
+        r#"<large-image id="li" src="/red.png" style="width: 80px;" bindload="ok"></large-image>"#,
+        &format!("{LOG_FN} Page({{ ok(e){{ L('load ' + e.detail.width + 'x' + e.detail.height); }} }});"),
+        &[],
+    );
+    std::fs::write(root.join("red.png"), base64::engine::general_purpose::STANDARD.decode(RED_PNG).unwrap()).unwrap();
+    let mut e = engine(&root, EngineOptions::default());
+    assert!(pump_until(&mut e, 2000, |e| !log(e).is_empty()), "{:?}", log(&e));
+    assert_eq!(log(&e), vec!["load 8x8".to_string()]);
+    js(&e, "globalThis.__q = null; wx.createSelectorQuery().select('#li').boundingClientRect(r => { globalThis.__q = r; }).exec();");
+    pump_until(&mut e, 200, |e| js(e, "!!globalThis.__q") == "true");
+    assert_eq!(js(&e, "__q.width + 'x' + __q.height"), "80x80", "widthFix：高按原图比例");
+}

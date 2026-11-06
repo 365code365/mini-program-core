@@ -30,7 +30,10 @@ impl MiniEngine {
         // 先取最新的（这一页 setData 了还没重画、或分栏刚换上来时 page_data 还不是它的）
         self.refresh_page_data();
         v.data = Some(self.page_data.clone());
+        // 画布与覆盖层也留着：返回时放回去，不整页重画（engine_keep_canvas.rs）
+        self.stash_page_canvas(&mut v);
         self.keep.saved.push(v);
+        self.prefetch = Default::default();
     }
 
     /// navigateTo 没成：把刚留的放回去（页面又露出来了，补一次 onShow）
@@ -48,6 +51,7 @@ impl MiniEngine {
 
     /// 回到某一页之后放回它的视图；没有留（或渲染器没留）就按新页处理
     pub(super) fn put_back_view(&mut self, view: Option<SavedView>) {
+        let token = view.as_ref().map(|v| v.canvas_token).unwrap_or(0);
         match view {
             Some(v) => v.restore(&mut self.scroll, &mut self.renderer, &mut self.interaction),
             None => {
@@ -63,7 +67,13 @@ impl MiniEngine {
         // 放回来的渲染器的布局代数与离开那页的可能撞上（各数各的）：同层组件按代数判「没变」就不重报了，
         // 宿主还以为页面上是离开那页的那几个（小窗 pop 进去的那一帧就漏报过，engine_pip.rs）
         crate::renderer::components::host_view::mark_stale();
+        // 图片预取的那份「页面上有哪些图」按代数判旧，同样会撞上：换了页就重数（engine_prefetch.rs）
+        self.prefetch = Default::default();
         self.page_data_dirty = true;
+        // 画布也留着的话放回去：盖着时数据变了的那几块由失效分析重画，其余原样（engine_keep_canvas.rs）
+        if self.restore_page_canvas(token) {
+            return;
+        }
         self.mark_full();
         self.dmg.fixed_dirty = true;
         self.drawn_band = None;

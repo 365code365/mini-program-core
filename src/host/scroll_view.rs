@@ -4,8 +4,8 @@
 //! - `bindscroll`（位置变了）：`detail = {scrollLeft, scrollTop, scrollHeight, scrollWidth, deltaX, deltaY, isDrag}`；
 //! - `bindscrolltoupper` / `bindscrolltolower`：**进入**阈值区的那一帧发一次（`detail.direction`
 //!   为 top / bottom / left / right），离开后再进入才再发 —— 列表加载更多后内容变长，自然重新可触发；
-//! - Skyline 的 `bindscrollstart` / `bindscrollend`（`{isDrag}`），`enhanced` 时的
-//!   `binddragstart` / `binddragging` / `binddragend`；
+//! - Skyline 的 `bindscrollstart` / `bindscrollend`（`{isDrag}`）与 `binddragstart` / `binddragging` / `binddragend`
+//!   （Skyline 没有 `enhanced` 这个开关、拖动事件列在通用属性里：写了就发。从前只在写了 `enhanced` 时发）；
 //! - 自定义下拉刷新：`refresherpulling`（`{dy}`）→ 过阈值 `refresherwillrefresh` → 松手
 //!   `refresherrefresh`（指示器停在阈值处）或 `refresherabort`（没过阈值）→ 页面把
 //!   `refresher-triggered` 设成 false 后 `refresherrestore`。
@@ -67,7 +67,7 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
             continue;
         }
         // 拖动开始 / 滚动开始
-        if dragging && !st.dragging && info.enhanced {
+        if dragging && !st.dragging {
             out.push(("dragstart", json!({ "scrollTop": stp, "scrollLeft": sl })));
         }
         let x_moved = xs.is_some() && (sl - st.reported_x).abs() > 0.01;
@@ -102,13 +102,13 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
             }
             st.last_scroll_ms = time_ms;
             out.push(("scroll", detail));
-            if dragging && info.enhanced {
+            if dragging {
                 out.push(("dragging", json!({ "scrollTop": stp, "scrollLeft": sl })));
             }
             st.reported_pos = pos;
             st.reported_x = sl;
         }
-        if !dragging && st.dragging && info.enhanced {
+        if !dragging && st.dragging {
             // 松手速度（逻辑 px/s，正 = scrollTop / scrollLeft 变大的方向；官方没写单位，待验）
             let (vx, vy) = match xs {
                 Some(x) => (x.release_v, release_v),

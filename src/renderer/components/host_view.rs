@@ -36,6 +36,16 @@ fn feeds() -> &'static Mutex<HashMap<String, Feed>> {
     static F: OnceLock<Mutex<HashMap<String, Feed>>> = OnceLock::new();
     F.get_or_init(|| Mutex::new(HashMap::new()))
 }
+/// 挂起的小程序带走的原生组件帧表（host/engine_park.rs）
+pub(crate) struct Parked(HashMap<String, Feed>);
+pub(crate) fn park() -> Parked {
+    Parked(feeds().lock().map(|mut m| std::mem::take(&mut *m)).unwrap_or_default())
+}
+pub(crate) fn unpark(p: Parked) {
+    if let Ok(mut m) = feeds().lock() {
+        *m = p.0;
+    }
+}
 
 thread_local! {
     /// 这个引擎（线程）里走同层渲染的标签（不含 video）。thread_local 的理由同 `host_feed::ON`：

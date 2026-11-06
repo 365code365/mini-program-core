@@ -37,7 +37,7 @@ pub fn flush(sheet: &mut Option<PickerSheetState>, app: &mut MiniApp, renderer: 
                 &r.dispatch_chain(x, y, event_type, Some(fixed)),
                 None,
                 event_type,
-                (x, y),
+                crate::host::touch::EventPoint { page: (x, y), client: (x, y) },
                 0,
                 time_ms,
                 detail.clone(),

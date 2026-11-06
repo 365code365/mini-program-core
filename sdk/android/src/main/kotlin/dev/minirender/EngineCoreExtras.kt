@@ -32,18 +32,39 @@ internal fun <T> EngineCore.call(fallback: T, block: (Long) -> T): T {
     return box.get()
 }
 
-/** 把引擎当前这一帧存成 PNG（SurfaceView 的内容 `View.draw` 取不到）。[done] 在主线程回调 */
+/** 引擎线程上调：当前这一帧取成 Bitmap（引擎像素尺寸）；还没出过帧 / 已销毁返回 null */
+private fun EngineCore.frameBitmap(): Bitmap? {
+    if (handle == 0L || pixelW <= 0 || pixelH <= 0) return null
+    val bmp = Bitmap.createBitmap(pixelW, pixelH, Bitmap.Config.ARGB_8888)
+    if (MiniEngine.nativePixelsToBitmap(handle, bmp) > 0) return bmp
+    bmp.recycle()
+    return null
+}
+
+/**
+ * 把引擎当前这一帧存成图片（SurfaceView 的内容 `View.draw` 取不到）。扩展名 `.jpg` / `.jpeg` 存 JPEG（质量 90），
+ * 其它存 PNG（逐像素对比用）。JPEG 是给「回到上一个小程序时先盖上它离开时的画面」这种要快的地方：
+ * 1080×2400 的 PNG 压一次要几百毫秒，而这段时间引擎线程被占着，下一个引擎要等它销毁完才能建。[done] 在主线程回调
+ */
 internal fun EngineCore.dumpFrame(file: File, done: (Boolean) -> Unit) = engine.post {
     var ok = false
-    if (handle != 0L && pixelW > 0 && pixelH > 0) {
-        val bmp = Bitmap.createBitmap(pixelW, pixelH, Bitmap.Config.ARGB_8888)
-        if (MiniEngine.nativePixelsToBitmap(handle, bmp) > 0) {
-            ok = runCatching { FileOutputStream(file).use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) } }
-                .getOrDefault(false)
-        }
+    frameBitmap()?.let { bmp ->
+        val jpeg = file.name.endsWith(".jpg", true) || file.name.endsWith(".jpeg", true)
+        val fmt = if (jpeg) Bitmap.CompressFormat.JPEG else Bitmap.CompressFormat.PNG
+        ok = runCatching { FileOutputStream(file).use { bmp.compress(fmt, if (jpeg) 90 else 100, it) } }.getOrDefault(false)
         bmp.recycle()
     }
     main.post { done(ok) }
+}
+
+/** 引擎当前这一帧（不落盘，宿主拿去当占位图用）。[done] 在主线程回调，没帧时给 null */
+internal fun EngineCore.snapshot(done: (Bitmap?) -> Unit) {
+    val queued = engine.post {
+        val bmp = frameBitmap()
+        main.post { done(bmp) }
+    }
+    // 引擎线程已经退了（关过的视图）：post 不会执行，照样要回调，调用方多半等着它才往下走
+    if (!queued) main.post { done(null) }
 }
 
 /** `debug.mini.fps`：每秒一行「上屏」耗时（`ANativeWindow_lock` 等空闲缓冲 + 写像素），引擎的 📊 行不含它 */

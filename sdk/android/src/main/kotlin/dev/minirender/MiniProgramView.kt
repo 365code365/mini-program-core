@@ -251,6 +251,8 @@ class MiniProgramView @JvmOverloads constructor(
      * 宿主不用再调；调了也没关系：前后台状态没变的那次不转
      */
     fun onHostResume() {
+        // 挂着（被别的小程序盖着）：Activity 回前台不算它回来，等 resume
+        if (session.suspended) return
         if (!background) return
         background = false
         webViews.resume()
@@ -260,6 +262,7 @@ class MiniProgramView @JvmOverloads constructor(
 
     /** 进后台：派发 `App.onHide` 并**停止出帧**（继续出帧纯属耗电） */
     fun onHostPause() {
+        if (session.suspended) return
         if (background) return
         background = true
         webViews.pause()
@@ -269,6 +272,31 @@ class MiniProgramView @JvmOverloads constructor(
 
     /** 对应 Activity/Application 的 `onTrimMemory` */
     fun onHostTrimMemory() = session.lifecycle(2)
+
+    /**
+     * 挂起：小程序 A 打开 B 时，A 不关、留在内存里（与微信一致）—— 页面栈、滚动位置、拉下来的数据、JS 状态都在，
+     * B 关掉后 [unpark] 原样回来，不用重开、不用盖 loading。派发 `App.onHide`、停帧、视频停下、网页暂停。
+     *
+     * 一个进程同一时刻只能有一个引擎在跑（包根、storage 目录、按 id 存的组件状态是进程级的）：[done]（主线程）
+     * 回调之后才能在**另一个**视图上 open B；A 的视图可以藏起来（`visibility = GONE`，Surface 没了引擎照样活着）。
+     * 返回 false = 没挂上（引擎还没建好 / 已经关了），这时该照老办法关掉它
+     */
+    fun park(done: (Boolean) -> Unit) {
+        webViews.pause()
+        sameLayer.pause()
+        session.suspend(done)
+    }
+
+    /**
+     * 恢复 [park] 的引擎：要在 B **关掉之后**调（引擎线程上会等 B 销毁完）。派发 `App.onShow` 与当前页 onShow，
+     * [enterOptions] 是 `wx.getEnterOptionsSync()` / `App.onShow(options)` 拿到的参数 `{path, query, scene, referrerInfo}`
+     * （从别的小程序返回：scene 1038，referrerInfo 带 extraData）；不给就沿用启动参数。视图显示出来（Surface 回来）就上屏
+     */
+    fun unpark(enterOptions: JSONObject? = null) {
+        session.resume(enterOptions?.toString())
+        webViews.resume()
+        sameLayer.resume()
+    }
 
     /**
      * 销毁引擎：返回时引擎线程已经放手 Surface；实例在引擎线程上异步销毁（不卡主线程，退出时回 App 的动画不顿）。
@@ -298,10 +326,19 @@ class MiniProgramView @JvmOverloads constructor(
 
     /**
      * 把引擎当前这一帧存成 PNG（引擎像素尺寸，RGBA 原样）。画面在 SurfaceView 上，`View.draw` 截不到，
-     * 截帧对比 / 自动化验收用这个。[done] 在主线程回调
+     * 截帧对比 / 自动化验收用这个。文件名以 `.jpg` / `.jpeg` 结尾时存 JPEG（快，不逐像素）。[done] 在主线程回调
      */
     fun dumpFrame(file: File, done: (Boolean) -> Unit) {
         session.dumpFrame(file, done)
+    }
+
+    /**
+     * 引擎当前这一帧（引擎像素尺寸，在视图里 1:1 摆在左上角），与 iOS / macOS SDK 的 `snapshot` 对应。
+     * 例：换到别的小程序之前截一张，回来重开时先盖着它，第一页出来再撤（不用再盖 loading）。
+     * [done] 在主线程回调；还没出过帧 / 已经关了给 null。要在 [close] 之前调
+     */
+    fun snapshot(done: (android.graphics.Bitmap?) -> Unit) {
+        session.snapshot(done)
     }
 
     /** 软键盘提交的文字（宿主可以自己接 InputConnection，简单场景直接调这个） */

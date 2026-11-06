@@ -198,6 +198,77 @@ impl WxmlRenderer {
         }
     }
 
+    /// 带 transform / CSS 动画的子树（不是 scroll-view / swiper）在整段动画里最多画到的范围（画布物理像素）：
+    /// 以框心为圆心、子树里最远那一点（含阴影）为半径的圆，乘缩放、加平移。没有动画也没有 transform 的
+    /// 一边（`class="disc"` → `"disc spin"` 开始转之前那一帧）就是子树框加阴影。算不出来给 None（调用方整帧）
+    pub(super) fn anim_extent(t: &dyn super::layout_snapshot::Layouts, n: &RenderNode, (x, y): (f32, f32), ctx: &DiffCtx) -> Option<GeoRect> {
+        if matches!(n.tag.as_str(), "scroll-view" | "swiper") {
+            return None;
+        }
+        let l = t.layout(n.taffy_node).ok()?;
+        let (nx, ny) = (x + l.location.x, y + l.location.y);
+        let (top, w, h) = Self::subtree_box(t, n, nx, ny)?;
+        // subtree_box 只给了顶边与宽高：左边按同一趟走法再取一次（孩子可能伸到框左边外）
+        let left = {
+            fn walk(t: &dyn super::layout_snapshot::Layouts, n: &RenderNode, px: f32, py: f32, m: &mut f32) {
+                for c in &n.children {
+                    if let Ok(l) = t.layout(c.taffy_node) {
+                        *m = m.min(px + l.location.x);
+                        walk(t, c, px + l.location.x, py + l.location.y, m);
+                    }
+                }
+            }
+            let mut m = nx;
+            walk(t, n, nx, ny, &mut m);
+            m
+        };
+        // 子树里谁的阴影都跟着画出去（唱片封面自己的阴影）：取整棵子树里最远的那圈
+        fn deepest(n: &RenderNode) -> f32 {
+            n.children.iter().map(deepest).fold(overhang(&n.style), f32::max)
+        }
+        let oh = deepest(n);
+        let moving = n.style.animation.is_some() || n.style.transform.is_some() || n.attrs.contains_key("animation");
+        if !moving {
+            let d = oh;
+            return Some(GeoRect::new(left - d, top - d, w + d * 2.0, h + d * 2.0));
+        }
+        // 平移 / 缩放 / 旋转都绕节点自己的框心（animation.rs 贴回时的 center；transform-origin 不支持）：
+        // 转起来扫过的是以框心为圆心、子树里最远那一点为半径的圆，缩放再乘倍数、平移再加位移。
+        // 每个节点画出来的形状按圆角矩形算最远点（圆角越大越近：圆形唱片就是半径，不是框的对角线），
+        // 再加它自己的阴影那圈。从前是「整段动画的外扩 + 对角线的一半」两次都算了旋转：播放页唱片
+        // 开 / 停一次 2433×2901，超过视口的 0.34 整帧（一加 84ms）
+        let l = t.layout(n.taffy_node).ok()?;
+        let (cx, cy) = (nx + l.size.width / 2.0, ny + l.size.height / 2.0);
+        fn reach(t: &dyn super::layout_snapshot::Layouts, n: &RenderNode, (px, py): (f32, f32), c: (f32, f32)) -> Option<f32> {
+            let l = t.layout(n.taffy_node).ok()?;
+            let (x, y, w, h) = (px + l.location.x, py + l.location.y, l.size.width, l.size.height);
+            let rho = crate::renderer::components::get_border_radii_clamped(&n.style, w, h).into_iter().fold(f32::INFINITY, f32::min).max(0.0);
+            let own = ((w / 2.0 - rho).max(0.0)).hypot((h / 2.0 - rho).max(0.0)) + rho;
+            let mut r = (x + w / 2.0 - c.0).hypot(y + h / 2.0 - c.1) + own + overhang(&n.style);
+            for ch in &n.children {
+                r = r.max(reach(t, ch, (x, y), c)?);
+            }
+            Some(r)
+        }
+        let r = reach(t, n, (x, y), (cx, cy))?;
+        let (tmax, smax, skew) = match (&n.style.animation, &n.style.transform) {
+            (None, Some(tf)) => (tf.translate_x.abs().max(tf.translate_y.abs()), tf.scale_x.abs().max(tf.scale_y.abs()).max(1.0), tf.skew_x.abs() > 1e-3 || tf.skew_y.abs() > 1e-3),
+            (Some(spec), base) if !n.attrs.contains_key("animation") => {
+                let rule = ctx.sheet.keyframes_named(&spec.name)?;
+                crate::renderer::anim::Timeline::from_rule(rule, ctx.units.0, ctx.units.1).transform_extrema(*base)
+            }
+            _ => return None,
+        };
+        if skew {
+            // 倾斜把点推出这个圆：照旧按外扩 + 对角线的一半（宽松）
+            let d = Self::tail_reach(n, w, h, ctx)? + (w * w + h * h).sqrt() / 2.0 + oh;
+            return Some(GeoRect::new(left - d, top - d, w + d * 2.0, h + d * 2.0));
+        }
+        // 阴影画在节点框外，跟着一起转 / 缩放：按倍数放大；再留 2px 给抗锯齿的边
+        let rad = r * smax + tmax + 2.0;
+        Some(GeoRect::new(cx - rad, cy - rad, rad * 2.0, rad * 2.0))
+    }
+
     /// 内容变高这一趟比对的结论：切线往下整宽、到新内容底
     pub(super) fn grow_plan(&self, old_h: f32, new_h: f32, ctx: &DiffCtx, log: bool) -> FramePlan {
         let sf = self.scale_factor;

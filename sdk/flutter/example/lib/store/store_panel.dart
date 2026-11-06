@@ -168,7 +168,7 @@ class _PanelCell extends StatelessWidget {
         excludeSemantics: true,
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
-          onTap: () => StoreLinks.open(StoreLink(key: app.key, scene: scene), hint: app),
+          onTap: () => StoreLinks.openFresh(StoreLink(key: app.key, scene: scene), hint: app),
           onLongPress: () => showAppActions(context, app, scene: scene),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),

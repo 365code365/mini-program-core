@@ -215,12 +215,16 @@ impl crate::MiniAppWindow {
             self.needs_redraw = true;
             self.page_data_dirty = true;
         }
-        if mini_render::renderer::components::image_net::take_dirty() {
+        if let Some(keys) = mini_render::renderer::components::image_net::take_arrived().filter(|k| !k.is_empty()) {
             self.needs_redraw = true;
             self.fixed_dirty = true;
             self.force_full_redraw = true;
             // scroll-view 的离屏缓存也要作废：数据没变它就一直「干净」，贴回去的还是占位图（G-1）
             if let Some(r) = self.renderer.as_mut() { r.invalidate_offscreen_caches(); }
+            // 远程 widthFix / heightFix 图下完才知道比例：数据没变、布局缓存照旧命中，不作废就一直按默认框画
+            if let Some(r) = self.renderer.as_mut() {
+                if r.image_arrival_damage(&keys, None) == mini_render::renderer::wxml_renderer::ImageArrival::Relayout { r.invalidate_layout(); }
+            }
         }
         // 长按由帧驱动（同 RedrawRequested）：无头链路也要能测到 longpress
         if self.touch.is_active() {

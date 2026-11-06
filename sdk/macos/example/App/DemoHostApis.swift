@@ -8,6 +8,10 @@ import MiniRender
 final class DemoHostApis {
     private weak var window: NSWindow?
     private let onNavigateToMiniProgram: ([String: Any]) -> Void
+    /// `navigateBackMiniProgram`：回到打开当前小程序的那个（参数是要带回去的 extraData）；没有来路返回 false
+    var onNavigateBackMiniProgram: (Any?) -> Bool = { _ in false }
+    /// 有没有可回去的上一个小程序（决定 navigateBackMiniProgram 回 success 还是 fail）
+    var canNavigateBack: () -> Bool = { false }
     private var granted: Set<String> = ["scope.writePhotosAlbum", "scope.camera"]
 
     private static let scopes: [String: String] = [
@@ -99,7 +103,15 @@ final class DemoHostApis {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { self?.onNavigateToMiniProgram(c.args) }
                 return [:]
             },
-            "navigateBackMiniProgram": { _, r in r.fail("navigateBackMiniProgram:fail 当前小程序不是由其它小程序打开的") },
+            // 只有被别的小程序打开时才回得去：先回 success，再换回去（scene 1038 + referrerInfo.extraData）
+            "navigateBackMiniProgram": { [weak self] c, r in
+                guard let self, self.canNavigateBack() else {
+                    return r.fail("navigateBackMiniProgram:fail 当前小程序不是由其它小程序打开的")
+                }
+                r.success([:])
+                let extra = c.args["extraData"].flatMap { $0 is NSNull ? nil : $0 }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { _ = self.onNavigateBackMiniProgram(extra) }
+            },
             "getShareInfo": { _, r in r.success(Self.cipher) },
         ]
     }

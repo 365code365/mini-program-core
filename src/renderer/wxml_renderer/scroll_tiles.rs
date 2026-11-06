@@ -29,33 +29,7 @@ impl WxmlRenderer {
         {
             return false;
         }
-        fn ok(n: &RenderNode) -> bool {
-            const LIVE_TAGS: &[&str] = &[
-                "scroll-view", "swiper", "picker-view", "video", "map", "canvas", "input", "textarea", "editor",
-                "checkbox", "radio", "switch", "slider", "progress", "movable-area", "movable-view", "live-player",
-                "live-pusher", "camera", "web-view", "voip-room", "rich-text",
-            ];
-            if LIVE_TAGS.contains(&n.tag.as_str()) {
-                return false;
-            }
-            // 动图在第一次画（解码）之前认不出来（`subtree_has_animated_image` 只认解码过的）：按扩展名先挡住。
-            // 不挡的话第一趟画进块里，帧位置记成块坐标，之后换帧画到别处（gallery 35_gif_frame3 / 4 踩过）
-            if n.tag == "image" {
-                let src = n.attrs.get("src").map(|s| s.to_ascii_lowercase()).unwrap_or_default();
-                if [".gif", ".webp", ".apng"].iter().any(|ext| src.split(['?', '#']).next().unwrap_or("").ends_with(ext)) {
-                    return false;
-                }
-            }
-            let s = &n.style;
-            if s.animation.is_some() || s.transform.is_some() || s.transition.is_some() || s.is_fixed {
-                return false;
-            }
-            if s.pressed_style.as_ref().is_some_and(|p| p.transform.is_some()) {
-                return false;
-            }
-            n.children.iter().all(ok)
-        }
-        node.children.iter().all(ok) && !Self::subtree_has_animated_image(node)
+        node.children.iter().all(static_node) && !Self::subtree_has_animated_image(node)
     }
 
     /// scroll-view 里有元素正画成点击态（含 `hover-stay-time` 里的）：这一帧逐帧画。
@@ -191,7 +165,7 @@ impl WxmlRenderer {
 
     /// scroll-view 子树画出来取决于的东西的签名：标签、文字、属性（与顺序无关）、节点身份、相对布局。
     /// 整棵重建（关了增量布局、第一次布局）时节点全是新的，签名必变，块重画 —— 宁可多画不能画错
-    fn subtree_sig(taffy: &Tree, node: &RenderNode) -> u64 {
+    pub(super) fn subtree_sig(taffy: &Tree, node: &RenderNode) -> u64 {
         use std::hash::{Hash, Hasher};
         fn walk(taffy: &Tree, n: &RenderNode, h: &mut std::collections::hash_map::DefaultHasher) {
             n.tag.hash(h);
@@ -259,4 +233,33 @@ impl WxmlRenderer {
         self.binding_shift = saved.1;
         tile
     }
+}
+
+/// 这个节点（连子树）画出来的像素只取决于节点本身：没有动画 / 过渡 / transform、没有有状态的表单组件与原生组件、
+/// 没有动图。分块缓存（这里）与 transform 子树的离屏缓存（transform_cache.rs）都靠它判「画一次能一直用」
+pub(super) fn static_node(n: &RenderNode) -> bool {
+    const LIVE_TAGS: &[&str] = &[
+        "scroll-view", "swiper", "picker-view", "video", "map", "canvas", "input", "textarea", "editor",
+        "checkbox", "radio", "switch", "slider", "progress", "movable-area", "movable-view", "live-player",
+        "live-pusher", "camera", "web-view", "voip-room", "rich-text",
+    ];
+    if LIVE_TAGS.contains(&n.tag.as_str()) {
+        return false;
+    }
+    // 动图在第一次画（解码）之前认不出来（`subtree_has_animated_image` 只认解码过的）：按扩展名先挡住。
+    // 不挡的话第一趟画进块里，帧位置记成块坐标，之后换帧画到别处（gallery 35_gif_frame3 / 4 踩过）
+    if n.tag == "image" {
+        let src = n.attrs.get("src").map(|s| s.to_ascii_lowercase()).unwrap_or_default();
+        if [".gif", ".webp", ".apng"].iter().any(|ext| src.split(['?', '#']).next().unwrap_or("").ends_with(ext)) {
+            return false;
+        }
+    }
+    let s = &n.style;
+    if s.animation.is_some() || s.transform.is_some() || s.transition.is_some() || s.is_fixed {
+        return false;
+    }
+    if s.pressed_style.as_ref().is_some_and(|p| p.transform.is_some()) {
+        return false;
+    }
+    n.children.iter().all(static_node)
 }

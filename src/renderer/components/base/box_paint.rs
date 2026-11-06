@@ -117,6 +117,49 @@ pub fn draw_side_borders(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32,
     let alpha = |c: Color| if style.opacity < 1.0 {
         Color::new(c.r, c.g, c.b, (c.a as f32 * style.opacity) as u8)
     } else { c };
+    let (t, r, b, l) = (style.border_top_width, style.border_right_width, style.border_bottom_width, style.border_left_width);
+    let colors = [
+        style.border_top_color.unwrap_or(fallback),
+        style.border_right_color.unwrap_or(fallback),
+        style.border_bottom_color.unwrap_or(fallback),
+        style.border_left_color.unwrap_or(fallback),
+    ];
+    let widths = [t, r, b, l];
+    // 相邻两边都有宽度、颜色又不同（最常见的是 CSS 三角形：`width:0; height:0; border-top/bottom: 18rpx solid transparent;
+    // border-right: 28rpx solid #fff`）：浏览器按对角线斜接，每条边画成梯形 —— 两边透明、一边有色就是一个三角形。
+    // 从前每条边画成整条矩形，三角形画成一个实心方块（云听音乐商店版播放页的上一首 / 下一首 / 播放键）。
+    // 只有这种情况才换梯形：同色相邻边、只有一条边（列表分割线）照旧整条矩形，像素不变
+    let mitered = (0..4).any(|i| {
+        let j = (i + 1) % 4;
+        widths[i] > 0.0 && widths[j] > 0.0 && colors[i] != colors[j]
+    });
+    if mitered {
+        // 外框四角与内框四角（内框 = 外框各边往里缩该边宽度；两边加起来比盒子还宽时内角落在中间那条线上）
+        let ix0 = x + l.min(w);
+        let ix1 = (x + w - r).max(ix0);
+        let iy0 = y + t.min(h);
+        let iy1 = (y + h - b).max(iy0);
+        let quads = [
+            [(x, y), (x + w, y), (ix1, iy0), (ix0, iy0)],
+            [(x + w, y), (x + w, y + h), (ix1, iy1), (ix1, iy0)],
+            [(x + w, y + h), (x, y + h), (ix0, iy1), (ix1, iy1)],
+            [(x, y + h), (x, y), (ix0, iy0), (ix0, iy1)],
+        ];
+        for (i, q) in quads.iter().enumerate() {
+            let c = alpha(colors[i]);
+            if widths[i] <= 0.0 || c.a == 0 {
+                continue;
+            }
+            let mut path = Path::new();
+            path.move_to(q[0].0, q[0].1);
+            for p in &q[1..] {
+                path.line_to(p.0, p.1);
+            }
+            path.close();
+            canvas.draw_path(&path, &Paint::new().with_color(c).with_style(PaintStyle::Fill).with_anti_alias(true));
+        }
+        return;
+    }
     let mut fill = |rx: f32, ry: f32, rw: f32, rh: f32, c: Color| {
         if rw <= 0.0 || rh <= 0.0 { return; }
         let paint = Paint::new().with_color(alpha(c)).with_style(PaintStyle::Fill);

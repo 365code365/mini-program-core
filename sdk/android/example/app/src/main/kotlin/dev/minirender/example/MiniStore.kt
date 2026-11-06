@@ -150,6 +150,13 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
         .firstOrNull { (it.id == key || it.appId == key) && File(root, "${it.id}/${it.manifest}").isFile }
 
     /**
+     * 回到上一个小程序时用（它几秒前还开着）：直接开本地那一版，不问服务器 ——
+     * 返回不该再等一次网络（连不上时 [latest] 要等满 6 秒超时）。本地没有了才退回 [prepare]
+     */
+    fun prepareLocal(key: String, status: (String) -> Unit = {}, progress: (Long, Long) -> Unit = { _, _ -> }): Prepared =
+        local(key)?.let { Prepared(File(root, it.id), it, false, null) } ?: prepare(key, status, progress)
+
+    /**
      * 打开前的准备：问服务器最新版 → 本地不是这一版就下载解包 → 返回目录。
      * [status] 给 loading 页的阶段文字，[progress] 给（已收, 总字节）
      */

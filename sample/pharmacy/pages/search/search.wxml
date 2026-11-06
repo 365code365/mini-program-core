@@ -1,7 +1,11 @@
+<view wx:if="{{referrer}}" class="ref" bindtap="onBackReferrer">
+  <text class="ref-back">‹ 返回{{referrer.name}}</text>
+  <text class="ref-tip">{{referrer.tip}}</text>
+</view>
 <view class="bar">
   <view class="box">
     <text class="ic">⌕</text>
-    <input class="ipt" placeholder="药名、品牌或症状" value="{{kw}}" focus confirm-type="search" bindinput="onInput" bindconfirm="onConfirm"/>
+    <input class="ipt" placeholder="药名、品牌或症状" value="{{kw}}" focus="{{focus}}" confirm-type="search" bindinput="onInput" bindconfirm="onConfirm"/>
     <text wx:if="{{kw}}" class="x" bindtap="clear">×</text>
   </view>
 </view>

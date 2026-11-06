@@ -38,7 +38,7 @@ pub struct ScrollViewInfo {
     pub is_fixed: bool,
     pub upper_threshold: f32,
     pub lower_threshold: f32,
-    /// `enhanced`：`dragstart` / `dragging` / `dragend` 只在它开着时发
+    /// `enhanced`（WebView 的开关）。拖动事件已不看它（Skyline 没有这个开关）；滚动条仍只在它开着时画（scroll_behavior.rs）
     pub enhanced: bool,
     /// `enable-back-to-top`：点状态栏（iOS）/ 双击标题栏（安卓）时滚回顶部，只对纵向生效
     pub back_to_top: bool,

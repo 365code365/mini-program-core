@@ -115,7 +115,7 @@ impl WxmlRenderer {
                 // 裸文本（`<view>一段字</view>`）：建树时按一行的字宽定宽（layout.rs），比父级内容区还宽时
                 // 也要收到父级宽、按行数补高 —— 从前只收拾 `<text>`，长的裸文本一整行冲出屏幕（微信里到容器边就折行）。
                 // 放得下的（绝大多数）在量行数之前就返回，不多做一次度量
-                let fits = parent_inner.is_some_and(|(w, _)| taffy.layout(node.taffy_node).map(|l| l.size.width <= w + 0.5).unwrap_or(true));
+                let fits = parent_inner.is_some_and(|(w, _)| taffy.unrounded_layout(node.taffy_node).size.width <= w + 0.5);
                 if !fits {
                     self.fix_text_box(taffy, node, parent_inner, changed);
                 }
@@ -128,8 +128,15 @@ impl WxmlRenderer {
     }
 
     /// 节点的内容区尺寸（减掉 border + padding），物理像素
+    ///
+    /// 用**取整之前**的几何（`unrounded_layout`），下面几处比较的另一侧也一样。
+    /// 取整后的内容区 = 取整后的盒宽减去各自取整过的四条 border / padding，误差能叠到 2px：
+    /// 像素比是小数的机型（一加 PLY110 427dp×2.975）上，`.btn{padding:0 28rpx;border:2rpx}`
+    /// 里裸文本「导航」排出来正好 89px，父级取整后的内容区却只剩 87px —— 被当成「比父级还宽」收到 87，
+    /// 绘制按 87 判成多行、走顶对齐，字贴在按钮上沿（车管家门店页的「导航」「去预约」）。
+    /// 取整前两边都是 89，本来就放得下。
     fn content_box_of(taffy: &Tree, node: &RenderNode) -> Option<(f32, f32)> {
-        let l = taffy.layout(node.taffy_node).ok()?;
+        let l = taffy.unrounded_layout(node.taffy_node);
         // taffy 0.12 的 `content_box_*` 已经把 padding/border 减掉了
         let w = l.content_box_width();
         let h = l.content_box_height();
@@ -163,7 +170,8 @@ impl WxmlRenderer {
         let tr = family.as_deref().unwrap_or(default_tr);
         let sf = self.scale_factor;
 
-        let Ok(layout) = taffy.layout(node.taffy_node) else { return };
+        // 取整之前的盒宽，与 `parent_inner` 同一口径（见 `content_box_of`）
+        let layout = taffy.unrounded_layout(node.taffy_node);
         let mut box_w = layout.size.width;
         let box_h = layout.size.height;
         let pl = node.style.padding_left * sf;
@@ -262,7 +270,7 @@ impl WxmlRenderer {
         changed: &mut bool,
     ) {
         let Some((_, avail_h)) = parent_inner else { return };
-        let Ok(layout) = taffy.layout(node.taffy_node) else { return };
+        let layout = taffy.unrounded_layout(node.taffy_node);
         if avail_h <= 1.0 || layout.size.height <= avail_h + 0.5 {
             return;
         }

@@ -175,8 +175,8 @@
         <div><dt data-i18n="stat.2.k">Repeated frames, 90 Hz phone</dt><dd><span data-count="1.5">1.5</span><small>%</small></dd><p data-i18n="stat.2.v">list scrolling with setData, down from 11.2%</p></div>
         <div><dt data-i18n="stat.3.k">GPU vs CPU</dt><dd><span data-count="34">34</span><small>/34</small></dd><p data-i18n="stat.3.v">scenes byte-identical, fallback included</p></div>
         <div><dt data-i18n="stat.4.k">Difference vs Chrome</dt><dd><span data-count="4.57">4.57</span><small>%</small></dd><p data-i18n="stat.4.v">15 pages of the same source, per pixel</p></div>
-        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1708">1708</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
-        <div><dt data-i18n="stat.6.k">Official wx.* APIs</dt><dd><span data-count="503">503</span><small>/503</small></dd><p data-i18n="stat.6.v">every name in the index, plus 76 component tags</p></div>
+        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1725">1725</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
+        <div><dt data-i18n="stat.6.k">Official wx.* APIs</dt><dd><span data-count="503">503</span><small>/503</small></dd><p data-i18n="stat.6.v">every name in the index, plus 77 component tags</p></div>
       </dl>
     </div>
   </section>
@@ -558,7 +558,7 @@ XComponent({ type: <span class="s">'surface'</span>,
 
   <!-- ─────────────────────────  Skyline 对齐  ───────────────────────── -->
   <!-- 口径：官方 API 目录（503 个 wx.*）与组件目录，见 .agents/tasks/wx-gap-2026-10-23/gap.md 与测试说明 T31。
-       标签数 76 = 渲染器登记 34（registry.rs 的 36 减去内部用的 #text 与匿名容器；含 span、list-builder / list-view / grid-builder、
+       标签数 77 = 渲染器登记 35（registry.rs 的 37 减去内部用的 #text 与匿名容器；含 span、large-image、list-builder / list-view / grid-builder、
        sticky-header / sticky-section、nested-scroll-header / body）+ 按官方行为走兜底的 navigator / label / form 3 + cover-view / movable-area 2
        + 内置组件 29（builtin_components：12 个 + 8 个手势组件 + 9 个开放能力组件）+ 原生组件 8（map / web-view / live-player / camera / live-pusher / voip-room 由移动端 SDK 承载，channel-live / channel-video 画占位）；改了组件表要同步这里与 stat.6 / sky.c2 / scope.yes.1 -->
   <section class="band sky-band" id="skyline">
@@ -580,7 +580,7 @@ XComponent({ type: <span class="s">'surface'</span>,
         <div class="sky-main">
           <dl class="sky-cov">
             <div><dt data-i18n="sky.c1.k">Official wx.* names</dt><dd>503<small>/503</small></dd><p data-i18n="sky.c1.v">516 keys at runtime; host-only ones fail until the host claims them</p></div>
-            <div><dt data-i18n="sky.c2.k">Component tags</dt><dd>76</dd><p data-i18n="sky.c2.v">incl. 29 built-in components and 8 native components, 6 of them hosted by the mobile SDKs</p></div>
+            <div><dt data-i18n="sky.c2.k">Component tags</dt><dd>77</dd><p data-i18n="sky.c2.v">incl. 29 built-in components and 8 native components, 6 of them hosted by the mobile SDKs</p></div>
             <div><dt data-i18n="sky.c3.k">Map vs page while scrolling</dt><dd>0<small>px</small></dd><p data-i18n="sky.c3.v">the SDKs' own tile map, same-layer rendered; measured on a phone</p></div>
           </dl>
 
@@ -1307,6 +1307,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
               <tr><th scope="row" data-i18n="host.r7">Soft keyboard and text input for <code>input</code> / <code>textarea</code></th><td>✓</td><td>✓</td><td>—</td></tr>
               <tr><th scope="row" data-i18n="host.r8"><code>&lt;video&gt;</code> on the system player, painted into the page; fullscreen hides the system bars</th><td>✓ <small><code>sameLayerVideo</code></small></td><td>✓ <small><code>sameLayerVideo</code></small></td><td>—</td></tr>
               <tr><th scope="row" data-i18n="host.r9">Pushing events into <code>wx.onXxx</code> listeners</th><td>✓ <small><code>dispatchEvent</code></small></td><td>✓ <small><code>dispatchEvent</code></small></td><td>—</td></tr>
+              <tr><th scope="row" data-i18n="host.r10">A mini program that opens another (<code>navigateToMiniProgram</code>) is suspended, not closed: going back resumes it with its page stack, scroll position and JS state, and <code>onShow</code> gets scene 1038</th><td>✓ <small><code>park</code> / <code>unpark</code></small></td><td>✓ <small>Android</small></td><td>—</td></tr>
             </tbody>
           </table></div>
           <p class="note" data-i18n="host.sdk.note">Each switch in a cell can be turned off before <code>open</code> if your app wants to handle that part itself; the event still reaches <code>onEvent</code> / <code>events</code>.</p>
@@ -1530,7 +1531,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card">
           <h3 data-i18n="stack.reg.h">Regression suite<small>all green on every change</small></h3>
           <table class="kv"><tbody>
-            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>1708</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>1725</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r2k">Scene gallery</th><td data-i18n="stack.reg.r2v">65 images, byte-reproducible</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r3k">Partial-repaint check</th><td data-i18n="stack.reg.r3v">5 desktop scenes + 12 SDK cases, frame by frame</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r4k">SDK vs desktop</th><td data-i18n="stack.reg.r4v">sample 15/15, news 6/6 pixel-identical</td></tr>

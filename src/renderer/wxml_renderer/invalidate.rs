@@ -48,6 +48,8 @@ pub(super) struct DiffCtx<'a> {
     pub moved: &'a HashMap<NodeId, &'a RenderNode>,
     /// 失效矩形的并集（物理像素，画布坐标）
     pub union: Option<GeoRect>,
+    /// 收进来的每一块（并集之前）：隔得远的几块（顶上的唱片、底下的播放键）分开重画，见 [`merge_parts`]
+    pub parts: Vec<GeoRect>,
     /// 变化是否落在 `position: fixed` 覆盖层里（宿主据此决定是否重画覆盖层）
     pub fixed_changed: bool,
     /// 遇到无法安全局部重绘的情况，退回整帧
@@ -70,6 +72,9 @@ impl DiffCtx<'_> {
     pub(super) fn add(&mut self, r: GeoRect) {
         if r.width <= 0.0 || r.height <= 0.0 {
             return;
+        }
+        if self.parts.len() < 64 {
+            self.parts.push(r);
         }
         self.union = Some(match self.union {
             None => r,
@@ -94,6 +99,7 @@ impl WxmlRenderer {
         new_content_height: f32,
     ) -> FramePlan {
         let log = std::env::var("MINI_LAYOUT_LOG").is_ok();
+        self.damage_parts.borrow_mut().clear();
         // 内容变矮：宿主要换一块更矮的画布，整帧最稳。
         // 内容变高（列表 onReachBottom 追加几条）走「从最高的变化往下整宽重画」（invalidate_grow.rs）
         let grow = new_content_height > old.content_height + 0.5;
@@ -103,6 +109,7 @@ impl WxmlRenderer {
         let mut ctx = DiffCtx {
             moved: old.moved,
             union: None,
+            parts: Vec::new(),
             fixed_changed: false,
             bail: false,
             bail_why: String::new(),
@@ -130,11 +137,16 @@ impl WxmlRenderer {
         };
         let sf = self.scale_factor;
         let viewport_area = (self.screen_width * sf) * (self.screen_height * sf);
-        if rect.width * rect.height > viewport_area * DAMAGE_AREA_LIMIT {
+        // 面积按分开的几块算：播放 / 暂停一下，顶上唱片那块与底下播放键那块并起来是大半屏，分开是两小块
+        // （宿主按块各画一趟，engine_damage.rs）。块数收不进 MAX_PARTS 的照旧按并集
+        let parts = if ctx.parts.len() > 1 && ctx.parts.len() < 64 { merge_parts(ctx.parts) } else { vec![rect] };
+        let area: f32 = parts.iter().map(|r| r.width * r.height).sum();
+        if area > viewport_area * DAMAGE_AREA_LIMIT {
             return self.full_because(|| {
-                format!("失效范围 {:.0}x{:.0}@({:.0},{:.0}) 超过视口的 {DAMAGE_AREA_LIMIT}", rect.width, rect.height, rect.x, rect.y)
+                format!("失效范围 {:.0}x{:.0}@({:.0},{:.0})（{} 块）超过视口的 {DAMAGE_AREA_LIMIT}", rect.width, rect.height, rect.x, rect.y, parts.len())
             });
         }
+        *self.damage_parts.borrow_mut() = parts;
         FramePlan::Damage { rect, fixed_changed: ctx.fixed_changed }
     }
 
@@ -237,6 +249,15 @@ impl WxmlRenderer {
                 ctx.add(super::invalidate_grow::inflate(old_rect, &old.style));
                 ctx.add(super::invalidate_grow::inflate(new_rect, &new.style));
                 return;
+            } else if let Some((a, b)) = (opaque_subtree && !matches!(new.tag.as_str(), "scroll-view" | "swiper"))
+                .then(|| Some((Self::anim_extent(old_t, old, (oox, ooy), ctx)?, Self::anim_extent(new_t, new, (nox, noy), ctx)?)))
+                .flatten()
+            {
+                // 带 CSS 动画 / transform 的子树变了（播放页唱片 `class="disc"` ↔ `"disc spin"` 开始 / 停下转，暂停 / 播放一次一帧）：
+                // 新旧两边整段动画最多画到的范围都重画。从前一律整帧，一加上 52ms
+                ctx.add(a);
+                ctx.add(b);
+                return;
             } else if opaque_subtree {
                 ctx.bail = true;
                 ctx.bail_why = format!(
@@ -294,7 +315,76 @@ impl WxmlRenderer {
         }
         // 孩子怎么配对（fixed 的单独配、内容变高时配不上的两段各走一遍）见 invalidate_pair.rs
         let old_fixed = in_fixed || old.style.is_fixed;
+        // 滚不动的 scroll-view（内容还没撑满盒子）里面结构变了：里面画的都裁在盒子里，比不出来就重画整个盒子。
+        // 播放页歌词「加载中…」一行换成整首歌词（请求回来那一下），从前整帧（一加 40~50ms）
+        let boxed = matches!(new.tag.as_str(), "scroll-view" | "swiper")
+            && !in_fixed
+            && !ctx.grow
+            && !moved
+            && super::scroll_views::clips(&new.attrs)
+            && super::scroll_views::clips(&old.attrs)
+            && (new.tag != "swiper" || crate::renderer::components::SwiperComponent::clips(new));
+        let union_before = ctx.union;
         Self::diff_children(old_t, new_t, &old.children, &new.children, (ox, oy), (nx, ny), in_fixed, old_fixed, ctx);
+        if boxed && ctx.bail && !ctx.fixed_changed {
+            ctx.bail = false;
+            ctx.bail_why.clear();
+            ctx.union = union_before;
+            ctx.add(super::invalidate_grow::inflate(new_rect, &new.style));
+        }
+    }
+}
+
+/// 失效分析最多分几块交给宿主（与宿主一帧最多分几趟画同一个量级，host/engine_damage_rects.rs `MAX_PASSES`）
+const MAX_PARTS: usize = 3;
+
+fn meets(a: &GeoRect, b: &GeoRect) -> bool {
+    a.x <= b.x + b.width && b.x <= a.x + a.width && a.y <= b.y + b.height && b.y <= a.y + a.height
+}
+
+fn join(a: GeoRect, b: GeoRect) -> GeoRect {
+    let (x0, y0) = (a.x.min(b.x), a.y.min(b.y));
+    let (x1, y1) = ((a.x + a.width).max(b.x + b.width), (a.y + a.height).max(b.y + b.height));
+    GeoRect::new(x0, y0, x1 - x0, y1 - y0)
+}
+
+/// 碰上的并起来；还多于 [`MAX_PARTS`] 块就把「并起来多出面积最小」的两块一直并下去
+fn merge_parts(mut v: Vec<GeoRect>) -> Vec<GeoRect> {
+    loop {
+        let hit = (0..v.len()).find_map(|i| (i + 1..v.len()).find(|&j| meets(&v[i], &v[j])).map(|j| (i, j)));
+        let Some((i, j)) = hit else { break };
+        v[i] = join(v[i], v[j]);
+        v.swap_remove(j);
+    }
+    if v.len() > MAX_PARTS {
+        let area = |r: &GeoRect| r.width * r.height;
+        let mut best = (0, 1, f32::INFINITY);
+        for i in 0..v.len() {
+            for j in i + 1..v.len() {
+                let w = area(&join(v[i], v[j])) - area(&v[i]) - area(&v[j]);
+                if w < best.2 {
+                    best = (i, j, w);
+                }
+            }
+        }
+        v[best.0] = join(v[best.0], v[best.1]);
+        v.swap_remove(best.1);
+        // 并出来的可能又碰上了别的
+        return merge_parts(v);
+    }
+    v
+}
+
+impl WxmlRenderer {
+    /// 上一次失效分析那个 `FramePlan::Damage { rect }` 分开的几块。并起来与 `rect` 对不上（这一次不是失效分析给的、
+    /// 或者 rect 被吸附元素扩过，sticky.rs）就只给 `rect` 一块
+    pub fn take_damage_parts(&self, rect: GeoRect) -> Vec<GeoRect> {
+        let parts = std::mem::take(&mut *self.damage_parts.borrow_mut());
+        let u = parts.iter().copied().reduce(join);
+        let same = u.is_some_and(|u| {
+            (u.x - rect.x).abs() < 0.01 && (u.y - rect.y).abs() < 0.01 && (u.width - rect.width).abs() < 0.01 && (u.height - rect.height).abs() < 0.01
+        });
+        if same { parts } else { vec![rect] }
     }
 }
 
@@ -305,22 +395,27 @@ impl WxmlRenderer {
     /// 把缓存里那张还画着占位图的旧内容贴回去，滑一下（缓存被别的原因作废）才出图（G-1）
     pub fn invalidate_offscreen_caches(&mut self) {
         self.scroll_cache.mark_all_dirty();
+        self.transform_cache.clear();
+        self.drop_backdrop();
     }
 
     /// 离屏缓存整个丢掉（不只是标脏）：页面被盖住 / tab 页切走时宿主留着这个渲染器，
     /// scroll-view 的整段内容位图（宽 × 内容高 × 4 字节）在那段时间里只是白占内存，回来时重画
     pub fn drop_offscreen_caches(&mut self) {
         self.scroll_cache.clear();
+        self.transform_cache.clear();
+        self.drop_backdrop();
     }
 
     /// scroll-view 离屏缓存的像素缓冲（内存分项用）
     pub fn offscreen_buffers(&self) -> Vec<&[crate::Color]> {
-        self.scroll_cache.pixel_buffers().collect()
+        self.scroll_cache.pixel_buffers().chain(self.transform_cache.buffers()).chain(self.backdrop_buffer()).collect()
     }
 
     /// 布局缓存作废，下一帧整棵树重建重排。字体换了（`@font-face` / `wx.loadFontFace` 下完）时用：
     /// 数据没变，失效分析会以为什么都不用动，可文字宽度已经变了
     pub fn invalidate_layout(&mut self) {
         self.cache = None;
+        self.drop_backdrop();
     }
 }

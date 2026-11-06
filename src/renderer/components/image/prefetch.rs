@@ -88,6 +88,12 @@ fn push(job: Job) {
     cv.notify_one();
 }
 
+/// 这张图还有没有排着 / 正在做的（任何一个框）。宿主等它缩好再重画用到它的那几块（host/engine_image_arrival.rs）
+pub fn busy(src: &str) -> bool {
+    let prefix = format!("{src}|");
+    queue().0.lock().map(|q| q.keys.iter().any(|k| k.starts_with(&prefix))).unwrap_or(false)
+}
+
 /// 这张图要不要排（给调用方先筛一遍：解好了、降采样也好了的就别进锁排队）
 pub fn wanted(src: &str) -> bool {
     !src.is_empty() && !decoded(src)

@@ -9,6 +9,15 @@
 use super::engine::MiniEngine;
 use crate::{Color, Rect as GeoRect};
 
+thread_local! {
+    static PARTIALS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+
+/// 本线程覆盖层只重画一块的次数（测试的空转守卫：确认真的走了局部，不是两边都整层）
+pub fn fixed_partial_count() -> u64 {
+    PARTIALS.with(|c| c.get())
+}
+
 impl MiniEngine {
     /// 重画 fixed 覆盖层，并记下它的动画标记、事件绑定与遮挡区域（跳过它的帧要补回来）
     pub(super) fn render_fixed_layer(&mut self, vp: f32) {
@@ -38,7 +47,10 @@ impl MiniEngine {
         if let (Some(r), Some(page)) = (renderer.as_mut(), page_stack.last()) {
             // 在两趟之间清零，才能分辨「动画在页面里」还是「在覆盖层里」
             r.set_animations_active(false);
+            // 页面那一趟的包围盒已经取走（after_page_pass）；剩下的是上一次覆盖层留的，丢掉，这一趟记的才是覆盖层的
+            let _ = r.take_animated_bounds();
             r.render_fixed_elements(fixed_canvas, &page.wxml_nodes, page_data, interaction, vp);
+            dmg.fixed_anim_bounds = r.take_animated_bounds();
             dmg.fixed_layer_animates = r.has_active_animations();
             r.set_animations_active(dmg.page_animates || dmg.fixed_layer_animates);
             dmg.cached_fixed_bindings = r.fixed_event_bindings();
@@ -63,6 +75,7 @@ impl MiniEngine {
     }
 
     pub(super) fn render_fixed_partial(&mut self, vp: f32, rect: GeoRect) {
+        PARTIALS.with(|c| c.set(c.get() + 1));
         let Self { renderer, fixed_canvas, page_stack, page_data, interaction, dmg, .. } = self;
         let (cw, ch) = (fixed_canvas.read().width(), fixed_canvas.read().height());
         let rect = crate::gfx::geometry::snap_out(rect, cw, ch);
@@ -78,7 +91,10 @@ impl MiniEngine {
         if let (Some(r), Some(page)) = (renderer.as_mut(), page_stack.last()) {
             r.set_damage_clip(Some(rect));
             r.set_animations_active(false);
+            let _ = r.take_animated_bounds();
             r.render_fixed_elements(canvas, &page.wxml_nodes, page_data, interaction, vp);
+            // 节点树整棵走过（裁剪只管画）：动画节点的包围盒是全的，照样换掉旧记录
+            dmg.fixed_anim_bounds = r.take_animated_bounds();
             dmg.fixed_layer_animates = r.has_active_animations();
             r.set_animations_active(dmg.page_animates || dmg.fixed_layer_animates);
             r.set_damage_clip(None);
@@ -103,5 +119,28 @@ impl MiniEngine {
                 self.dmg.drawn_area_positions.insert(id.clone(), c.get_position());
             }
         }
+    }
+
+    /// 覆盖层只因自己的动画要重画时，定这一帧只重画哪几块（`plan_redraw` 调）。`with_other`：这一帧覆盖层里
+    /// 还有点击态 / scroll-view 那几块（`fixed_partial` 已经是它们）——并在一起。覆盖层有别的变化（数据、结构）照旧整层
+    pub(super) fn plan_fixed_anim_partial(&mut self, with_other: bool) {
+        if !self.dmg.fixed_layer_animates || self.needs_redraw || self.dmg.fixed_anim_bounds.is_empty() {
+            return;
+        }
+        if self.dmg.fixed_dirty && !(with_other && self.dmg.fixed_partial.is_some()) {
+            return;
+        }
+        let mut u = if with_other { self.dmg.fixed_partial } else { None };
+        for r in &self.dmg.fixed_anim_bounds {
+            u = Some(match u {
+                None => *r,
+                Some(p) => {
+                    let (x0, y0) = (p.x.min(r.x), p.y.min(r.y));
+                    let (x1, y1) = (p.right().max(r.right()), p.bottom().max(r.bottom()));
+                    GeoRect::new(x0, y0, x1 - x0, y1 - y0)
+                }
+            });
+        }
+        self.dmg.fixed_partial = u;
     }
 }

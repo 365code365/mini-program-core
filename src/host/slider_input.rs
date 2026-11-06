@@ -31,7 +31,7 @@ fn dispatch(
     if std::env::var("MINI_SLIDER_LOG").is_ok() {
         eprintln!("🎚 {event} {id} value={value}");
     }
-    super::touch::dispatch_to_js(app, r, event, p, p, Some(spec.is_fixed), identifier, time_ms, detail)
+    super::touch::dispatch_to_js(app, r, event, p, super::touch::EventPoint { page: p, client: p }, Some(spec.is_fixed), identifier, time_ms, detail)
 }
 
 /// 手势推进后值变了（[`super::input::GestureEffect::slider_changed`]）：发 `changing`

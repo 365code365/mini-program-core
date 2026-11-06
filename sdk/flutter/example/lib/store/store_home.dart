@@ -96,7 +96,7 @@ class _StoreSectionState extends State<StoreSection> {
   }
 
   // 场景值 1001：发现栏小程序主入口（微信「小程序」列表点进去就是它）
-  void _open(StoreApp app) => StoreLinks.open(StoreLink(key: app.key, scene: 1001), hint: app);
+  void _open(StoreApp app) => StoreLinks.openFresh(StoreLink(key: app.key, scene: 1001), hint: app);
 
   void _search({String category = ''}) =>
       Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => StoreSearchPage(category: category)));

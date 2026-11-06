@@ -164,12 +164,16 @@ impl ApplicationHandler for crate::MiniAppWindow {
                 }
                 // 远程图片下载完了：重绘一次让它出现（异步加载的必要配套 ——
                 // 不置脏的话图片只会在下一次别的原因触发重绘时才显示）
-                if mini_render::renderer::components::image_net::take_dirty() {
+                if let Some(keys) = mini_render::renderer::components::image_net::take_arrived().filter(|k| !k.is_empty()) {
                     self.needs_redraw = true;
                     self.fixed_dirty = true;
                     self.force_full_redraw = true;
                     // scroll-view 的离屏缓存也要作废：数据没变它就一直「干净」，贴回去的还是占位图（G-1）
                     if let Some(r) = self.renderer.as_mut() { r.invalidate_offscreen_caches(); }
+                    // 远程 widthFix / heightFix 图下完才知道比例：数据没变、布局缓存照旧命中，不作废就一直按默认框画
+                    if let Some(r) = self.renderer.as_mut() {
+                        if r.image_arrival_damage(&keys, None) == mini_render::renderer::wxml_renderer::ImageArrival::Relayout { r.invalidate_layout(); }
+                    }
                 }
                 // 长按要由帧驱动：手指按住不动时没有任何输入事件进来，
                 // 只在 move/up 里判时间的话那一下永远等不到

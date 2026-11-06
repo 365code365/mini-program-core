@@ -2,6 +2,7 @@ package dev.minirender.example
 
 import android.animation.ValueAnimator
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -9,6 +10,7 @@ import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 
@@ -44,9 +46,26 @@ object StoreViews {
 
     /**
      * 点开小程序时盖在上面的一层：图标 + 名字 + 三个依次变深的点 + 下载进度。
-     * [hide] 淡出后把自己从父视图拿掉、停掉动画（留着的话每帧都在 UI 线程上重绘）
+     * [hide] 淡出后把自己从父视图拿掉、停掉动画（留着的话每帧都在 UI 线程上重绘）。
+     *
+     * [resume] = 从别的小程序回来（navigateBackMiniProgram / 返回）：不画图标、名字、三个点，只盖 [shot]
+     * （离开它那一刻的画面，引擎像素 1:1 摆在左上角，与 MiniProgramView 的画面同一个位置；没截到就是白底）——
+     * 返回不该看起来像「又打开了一次」。打不开（[error]）时照样换回带「重试」的样子
      */
-    class LoadingCover(ctx: Context, id: String, name: String, onClose: () -> Unit) : FrameLayout(ctx) {
+    class LoadingCover(
+        ctx: Context,
+        id: String,
+        name: String,
+        private val resume: Boolean = false,
+        shot: Bitmap? = null,
+        onClose: () -> Unit,
+    ) : FrameLayout(ctx) {
+        private val shotView = if (resume && shot != null) ImageView(ctx).apply {
+            // MATRIX + 单位矩阵：不缩放、贴左上角（引擎画面也是 1:1 摆在视图左上角）
+            scaleType = ImageView.ScaleType.MATRIX
+            setImageBitmap(shot)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        } else null
         // 包一层 WRAP_CONTENT：竖排 LinearLayout 默认给子视图满宽，图标就贴到左边去了
         private val iconSlot = FrameLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
@@ -91,32 +110,40 @@ object StoreViews {
             }
         }
 
+        private val col = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            addView(iconSlot)
+            addView(title)
+            addView(dotRow)
+            addView(status)
+            addView(retry)
+        }
+        private val close = TextView(ctx).apply {
+            text = "✕"
+            textSize = 20f
+            setTextColor(0x8A000000.toInt())
+            contentDescription = "关闭"
+            setPadding(dp(ctx, 16f), dp(ctx, 12f), dp(ctx, 16f), dp(ctx, 12f))
+            setOnClickListener { onClose() }
+        }
+
         init {
             setBackgroundColor(Color.WHITE)
             isClickable = true   // 盖着的时候吃掉触摸，别漏到底下还没起来的小程序
-            val col = LinearLayout(ctx).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER_HORIZONTAL
-                addView(iconSlot)
-                addView(title)
-                addView(dotRow)
-                addView(status)
-                addView(retry)
-            }
             addView(col, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER).apply {
                 bottomMargin = dp(ctx, 120f)
             })
-            addView(TextView(ctx).apply {
-                text = "✕"
-                textSize = 20f
-                setTextColor(0x8A000000.toInt())
-                contentDescription = "关闭"
-                setPadding(dp(ctx, 16f), dp(ctx, 12f), dp(ctx, 16f), dp(ctx, 12f))
-                setOnClickListener { onClose() }
-            }, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.END).apply {
+            addView(close, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.END).apply {
                 topMargin = dp(ctx, 36f)
             })
-            anim.start()
+            if (resume) {
+                col.visibility = GONE
+                close.visibility = GONE
+                shotView?.let { addView(it, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)) }
+            } else {
+                anim.start()
+            }
         }
 
         fun progress(text: String) {
@@ -131,6 +158,13 @@ object StoreViews {
         }
 
         fun error(text: String, onRetry: () -> Unit) {
+            if (resume) {
+                // 回来时打不开（本地包被清了又连不上服务器）：换回普通 loading 层的样子，给「重试」与关闭
+                shotView?.let { removeView(it) }
+                col.visibility = VISIBLE
+                close.visibility = VISIBLE
+                anim.start()
+            }
             anim.pause()
             dotRow.visibility = GONE
             status.setTextColor(0xFFE64340.toInt())

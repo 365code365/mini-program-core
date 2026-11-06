@@ -127,6 +127,18 @@ fn d2_dragend_的_velocity_是带方向的数字() {
     assert_eq!(p.log(), vec!["number:true"], "往上甩（scrollTop 变大）velocity.y 为正");
 }
 
+/// Skyline 没有 `enhanced`：拖动事件写了就发（官方把 dragstart / dragging / dragend 列在通用属性里）
+#[test]
+fn d2_没写_enhanced_也发_dragstart_dragging_dragend() {
+    let mut p = list(
+        "drag-no-enhanced",
+        r#"binddragstart="onS" binddragging="onG" binddragend="onE""#,
+        "onS() { getApp().log.push('start'); }, onG() { if (getApp().log.indexOf('dragging') < 0) getApp().log.push('dragging'); }, onE(e) { getApp().log.push('end:' + typeof e.detail.velocity.y); }",
+    );
+    p.drag(100.0, 280.0, 120.0, 4, 2);
+    assert_eq!(p.log(), vec!["start", "dragging", "end:number"]);
+}
+
 #[test]
 fn d2_show_scrollbar_滚动时出现_停下渐隐只重画那一条() {
     let mut p = list("scrollbar", "enhanced", "");

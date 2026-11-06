@@ -3,6 +3,7 @@
 // loading 页的流程与微信一致：先盖一层「图标 + 名字 + 三个跳动的点」，后面同时下载、解包、建引擎；
 // 引擎的第一条 page 事件到了才把这层淡出 —— 冷启动加载字体那几百毫秒也在 loading 底下，不露白屏。
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:mini_render/mini_render.dart' show MiniGameView;
@@ -63,9 +64,18 @@ class StoreAppIcon extends StatelessWidget {
   }
 }
 
+/// 回到上一个小程序（[StoreLinks.backToReferrer]）：不盖 loading，盖离开它时截的画面（[cover]，已解码进缓存；
+/// 截不到为 null）。[file] 是截图文件，这一页销毁时删掉
+class MiniResume {
+  const MiniResume({this.cover, this.file});
+
+  final ImageProvider? cover;
+  final String? file;
+}
+
 /// 点开一个小程序：loading 层盖着，后面「检查更新 → 下载 → 解包 → 建引擎」；第一页出来了再淡出
 class MiniStoreLaunchPage extends StatefulWidget {
-  const MiniStoreLaunchPage({super.key, required this.store, required this.link, this.hint});
+  const MiniStoreLaunchPage({super.key, required this.store, required this.link, this.hint, this.resume});
 
   final MiniStore store;
   final StoreLink link;
@@ -73,15 +83,19 @@ class MiniStoreLaunchPage extends StatefulWidget {
   /// 列表里点的：先拿列表里的名字 / 图标画 loading，最新版信息到了再换
   final StoreApp? hint;
 
-  /// 从下往上推出来（与微信点开小程序一致）
-  static Route<void> route({required MiniStore store, required StoreLink link, StoreApp? hint}) => PageRouteBuilder<void>(
-        transitionDuration: const Duration(milliseconds: 250),
+  /// 不为 null：是从别的小程序回来的（不问服务器、不盖 loading、不做推入动画）
+  final MiniResume? resume;
+
+  /// 从下往上推出来（与微信点开小程序一致）；回到上一个小程序时没有动画（画面本来就该在那儿）
+  static Route<void> route({required MiniStore store, required StoreLink link, StoreApp? hint, MiniResume? resume}) =>
+      PageRouteBuilder<void>(
+        transitionDuration: resume != null ? Duration.zero : const Duration(milliseconds: 250),
         // 关闭（胶囊 ⊙ / 返回键退到最后一页）**不做退出动画**：小程序画面是一块 SurfaceView 平台视图
         // （hybrid composition），路由动画每帧都要挪它，Flutter 这一层只能跟着平台线程同步出帧 ——
         // 一加 PLY110 上量到退出那 250ms 里 45 帧/秒（每帧 22ms）、最后一帧 55ms，看着就是「点了关闭一卡」。
         // 直接收掉：一帧回到列表，引擎的销毁在引擎线程上异步做（EngineCore.dispose）
         reverseTransitionDuration: Duration.zero,
-        pageBuilder: (_, _, _) => MiniStoreLaunchPage(store: store, link: link, hint: hint),
+        pageBuilder: (_, _, _) => MiniStoreLaunchPage(store: store, link: link, hint: hint, resume: resume),
         transitionsBuilder: (_, a, _, child) => SlideTransition(
           position: Tween(begin: const Offset(0, 1), end: Offset.zero)
               .animate(CurvedAnimation(parent: a, curve: Curves.easeOutCubic)),
@@ -109,6 +123,16 @@ class _LaunchState extends State<MiniStoreLaunchPage> {
     _install();
   }
 
+  @override
+  void dispose() {
+    // 回来时盖的截图只用这一次：从图片缓存里拿掉（一张整屏图十来 MB）、删文件
+    final r = widget.resume;
+    r?.cover?.evict();
+    final f = r?.file;
+    if (f != null) File(f).delete().ignore();
+    super.dispose();
+  }
+
   Future<void> _install() async {
     setState(() {
       _error = null;
@@ -122,7 +146,7 @@ class _LaunchState extends State<MiniStoreLaunchPage> {
       if (known != null && mounted) setState(() => _app = known);
     }
     try {
-      final p = await widget.store.prepare(
+      final p = await (widget.resume != null ? widget.store.prepareLocal : widget.store.prepare)(
         widget.link.key,
         onStatus: (s) => mounted ? setState(() => _status = s) : null,
         onProgress: (got, total) {
@@ -131,7 +155,11 @@ class _LaunchState extends State<MiniStoreLaunchPage> {
           setState(() => _progress = total > 0 ? '${mb(got)} / ${mb(total)} MB' : '${mb(got)} MB');
         },
       );
-      final why = p.stale == null ? (p.updated ? '已更新' : '已是最新') : '连不上服务器，用本地版（${p.stale}）';
+      final why = p.stale != null
+          ? '连不上服务器，用本地版（${p.stale}）'
+          : widget.resume != null && !p.updated
+              ? '回到上一个小程序，用本地版（不问服务器，盖${widget.resume!.cover == null ? '白底' : '离开时的截图'}）'
+              : (p.updated ? '已更新' : '已是最新');
       debugPrint('[商店] 打开 ${p.app.id} ${p.app.appId} v${p.app.version} $why → ${p.dir} 起始页 ${widget.link.route ?? '首页'}');
       StoreLinks.currentAppId = p.app.appId;
       widget.store.touch(p.app);
@@ -179,7 +207,10 @@ class _LaunchState extends State<MiniStoreLaunchPage> {
             opacity: _ready ? 0 : 1,
             duration: const Duration(milliseconds: 200),
             onEnd: () => _ready && mounted ? setState(() => _coverGone = true) : null,
-            child: _LoadingCover(
+            // 回到上一个小程序：盖它离开时的画面（打不开时照样换成带「重试」的 loading 层）
+            child: widget.resume != null && _error == null
+                ? _ResumeCover(widget.resume!.cover)
+                : _LoadingCover(
               id: app?.id ?? widget.link.key,
               name: app?.name ?? '小程序',
               iconUrl: app == null ? '' : widget.store.iconUrlOf(app),
@@ -191,6 +222,28 @@ class _LaunchState extends State<MiniStoreLaunchPage> {
           ),
         ),
     ]);
+  }
+}
+
+/// 回到上一个小程序时盖的那层：离开它时的画面，按 1 物理像素对 1 像素摆在左上角（与引擎画面同一个位置），
+/// 没有截图就是白底。没有图标、名字、三个点 —— 返回不该看起来像「又打开了一次」
+class _ResumeCover extends StatelessWidget {
+  const _ResumeCover(this.image);
+
+  final ImageProvider? image;
+
+  @override
+  Widget build(BuildContext context) {
+    final img = image;
+    return ColoredBox(
+      color: Colors.white,
+      child: img == null
+          ? const SizedBox.expand()
+          : Align(
+              alignment: Alignment.topLeft,
+              child: Image(image: img, filterQuality: FilterQuality.none, gaplessPlayback: true),
+            ),
+    );
   }
 }
 

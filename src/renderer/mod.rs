@@ -5,7 +5,7 @@ pub mod components;
 /// CSS 动画（@keyframes）运行时
 pub mod anim;
 /// transform 离屏仿射合成
-mod blit_pool;
+pub(crate) mod blit_pool;
 pub mod compose;
 /// 绘制耗时按组件类型归因（`MINI_DRAW_LOG=1`）
 pub mod draw_profile;

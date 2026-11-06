@@ -86,6 +86,21 @@ pub fn handle_mouse_pressed(
     false
 }
 
+thread_local! {
+    /// 这次点击时页面滚了多少（[`handle_content_click`] 一进来就记下）：事件对象里的 pageY / clientY 由它互换
+    static CLICK_SCROLL: std::cell::Cell<f32> = const { std::cell::Cell::new(0.0) };
+}
+
+/// 点击链路的命中坐标 → 事件对象里的触点（覆盖层里命中坐标是视口坐标，正常流是文档坐标）
+fn tap_point(x: f32, hit_y: f32, scope: Option<bool>) -> super::touch::EventPoint {
+    let scroll = CLICK_SCROLL.with(|c| c.get());
+    if scope == Some(true) {
+        super::touch::EventPoint::viewport(x, hit_y, scroll)
+    } else {
+        super::touch::EventPoint { page: (x, hit_y), client: (x, hit_y - scroll) }
+    }
+}
+
 /// 处理内容区域点击
 #[allow(clippy::too_many_arguments)]
 pub fn handle_content_click(
@@ -102,6 +117,7 @@ pub fn handle_content_click(
     tap_ctx: (u32, u64),
 ) -> Option<InteractionResult> {
     let actual_y = y + scroll_pos;
+    CLICK_SCROLL.with(|c| c.set(scroll_pos));
     // 上一次点击没派掉的「换焦点失焦」（label 转发那条路）不跨到这一次
     crate::ui::interaction::edit_note::take_switch();
     let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - tabbar_height()) as f32 } else { LOGICAL_HEIGHT as f32 };
@@ -311,7 +327,7 @@ pub(super) fn dispatch_component_events(
             .or_else(|| chain.iter().rev().find(|b| owners.contains(&b.tag.as_str())))
             .cloned();
         if let Some(b) = own {
-            super::touch::dispatch_chain_to_js(app, std::slice::from_ref(&b), Some(b.clone()), "change", (x, hit_y), identifier, time_ms, detail);
+            super::touch::dispatch_chain_to_js(app, std::slice::from_ref(&b), Some(b.clone()), "change", tap_point(x, hit_y, scope), identifier, time_ms, detail);
         }
     };
     match result {
@@ -391,110 +407,11 @@ fn dispatch_tap_chain(
     // 这里再按普通节点派一次 `{x, y}` 就是同一下点了两次（祖先上的照常冒泡）
     chain.retain(|b| !crate::renderer::components::host_view::is_same_layer(&b.tag));
     let innermost = renderer.innermost_binding_at(x, hit_y, scope);
-    let hit = super::touch::dispatch_chain_to_js(app, &chain, innermost, "tap", (x, hit_y), identifier, time_ms, detail);
+    let hit = super::touch::dispatch_chain_to_js(app, &chain, innermost, "tap", tap_point(x, hit_y, scope), identifier, time_ms, detail);
     if hit {
         println!("👆 tap");
     }
 }
 
-/// `bindinput` 的处理函数返回了一个字符串：用它替换输入框的内容（官方 component/input：
-/// 「处理函数可以直接 return 一个字符串，将替换输入框的内容」）。在派发完 `input` 之后立刻取
-pub fn take_input_replacement(app: &MiniApp) -> Option<String> {
-    // textarea：「bind:input 处理函数的返回值并不会反映到 textarea 上」（官方 textarea.html）
-    if crate::ui::interaction::edit_note::last_edit_multiline() {
-        return None;
-    }
-    let raw = app
-        .eval("typeof __lastHandlerResult === 'string' ? JSON.stringify(__lastHandlerResult) : ''")
-        .ok()?;
-    if raw.is_empty() {
-        return None;
-    }
-    serde_json::from_str::<String>(&raw).ok()
-}
-
-pub fn dispatch_input_event(
-    app: &mut MiniApp,
-    renderer: Option<&WxmlRenderer>,
-    component_id: &str,
-    event_type: &str,
-    value: &str,
-) -> bool {
-    // 微信的 detail：input 是 `{value, cursor, keyCode}`，focus 是 `{value, height}`，
-    // textarea 的 blur 是 `{value, cursor}`、input 的 blur 与 confirm 是 `{value}`。
-    // 光标 / keyCode / 失焦时内容变没变由产生结果的那一侧记下（ui/interaction/edit_note.rs）
-    use crate::ui::interaction::edit_note;
-    let mut detail = serde_json::json!({ "value": value });
-    match event_type {
-        "input" => {
-            let note = edit_note::take_edit(component_id, value);
-            detail["cursor"] = serde_json::json!(note.as_ref().map(|n| n.cursor).unwrap_or_else(|| value.chars().count()));
-            detail["keyCode"] = serde_json::json!(note.map(|n| n.key_code).unwrap_or(0));
-        }
-        "focus" => {
-            // 软键盘高度：桌面宿主没有软键盘，微信在无键盘时也给 0（SDK 用宿主报来的高度，engine_input.rs）
-            detail["height"] = serde_json::json!(0);
-        }
-        "blur" => {
-            if let Some(n) = edit_note::take_blur(component_id) {
-                if n.multiline {
-                    detail["cursor"] = serde_json::json!(n.cursor);
-                } else if n.changed {
-                    // input 的 bindchange：「键盘非聚焦状态内容改变时触发」，失焦时内容与聚焦时不同才发。
-                    // 顺序按 DOM（change 先于 blur），微信真机顺序待验
-                    dispatch_input_detail(app, renderer, component_id, "change", serde_json::json!({ "value": value }));
-                }
-            }
-        }
-        _ => {}
-    }
-    dispatch_input_detail(app, renderer, component_id, event_type, detail)
-}
-
-/// 按输入框的组件 id 派发它身上的 `bind<event_type>`，detail 由调用方给
-/// （`keyboardheightchange` 的 `{height, duration}` 走这里，见 engine_keyboard.rs）
-pub fn dispatch_input_detail(
-    app: &mut MiniApp,
-    renderer: Option<&WxmlRenderer>,
-    component_id: &str,
-    event_type: &str,
-    detail: serde_json::Value,
-) -> bool {
-    let Some(renderer) = renderer else { return false };
-    let binding = match renderer.binding_for(component_id, event_type) {
-        Some(b) => b,
-        // 兜底：滚动后重算出来的 `component_id` 可能与聚焦那一刻不同（id 含坐标）。
-        // 此时若全页只有唯一一条该类绑定，仍按它派发；有多条则宁可不发，避免串台。
-        // 只认输入框自己的绑定：`change` 这类名字别的组件也有（picker 的 bindchange），没写 bindchange 的输入框
-        // 失焦时退到「全页唯一一条 change」就派给了 picker（train 的乘车人页：手机号写进了票种下标）
-        None => {
-            let mut it = renderer
-                .get_event_bindings()
-                .iter()
-                .filter(|b| b.event_type == event_type && matches!(b.tag.as_str(), "input" | "textarea"));
-            match (it.next(), it.next()) {
-                (Some(only), None) => only,
-                _ => return false,
-            }
-        }
-    };
-
-    let node = serde_json::json!({
-        "id": binding.id,
-        "dataset": binding.data,
-        "offsetLeft": binding.bounds.x,
-        "offsetTop": binding.bounds.y,
-    });
-    let event = serde_json::json!({
-        "type": event_type,
-        "target": node,
-        "currentTarget": node,
-        "detail": detail,
-        "touches": [],
-        "changedTouches": [],
-    });
-    let handler = serde_json::to_string(&binding.handler).unwrap_or_else(|_| "''".into());
-    let owner = serde_json::to_string(&binding.owner).unwrap_or_else(|_| "''".into());
-    app.eval(&format!("__dispatchEvent({handler}, {event}, {owner})")).ok();
-    true
-}
+// 输入框的 input / focus / blur / confirm 派发在 tap_input.rs（原来在这个文件里，500 行上限拆出去）；路径照旧 `host::tap::…`
+pub use super::tap_input::{dispatch_input_detail, dispatch_input_event, take_input_replacement};

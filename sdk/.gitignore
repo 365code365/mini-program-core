@@ -8,3 +8,4 @@ ios/.build/
 macos/MiniRender.xcframework/
 macos/.build/
 ios/Angle/
+macos/build/

@@ -132,6 +132,9 @@ pub(crate) struct DamageState {
     pub(crate) press_fixed_rect: Option<GeoRect>,
     /// 这一帧覆盖层只重画这一块（`plan_redraw` 定，`render_fixed_layer` 用掉）
     pub(crate) fixed_partial: Option<GeoRect>,
+    /// 覆盖层上一次重画时动画节点的包围盒（覆盖层画布的设备像素）：覆盖层只因自己的动画重画时
+    /// 只重画这几块（engine_fixed_partial.rs）。迷你播放条转着封面，从前每帧整层重画（一加上 11~14ms）
+    pub(crate) fixed_anim_bounds: Vec<GeoRect>,
     /// 这一帧第一个要整页重画的源码位置（`MINI_DAMAGE_LOG`，见 `engine_press.rs::mark_full`）
     pub(crate) full_why: Option<&'static std::panic::Location<'static>>,
     /// 这一帧 GPU 上屏的账（只在 `log` 时填，接在 🩹 行尾）
@@ -144,8 +147,9 @@ pub(crate) enum PagePass {
     /// 视口 ± 余量整条带
     Band,
     /// 只清并重画这几块（物理像素，画布坐标），一块一趟。`anim_complete`：这一帧走到了
-    /// 全部动画节点，收集到的动画包围盒可以替换旧记录
-    Rects { rects: Vec<GeoRect>, anim_complete: bool },
+    /// 全部动画节点，收集到的动画包围盒可以替换旧记录。`others`：这一帧动画以外的损伤（补条带、数据 / 点击态、
+    /// 动图换帧、吸顶）：没碰到它们的那块动画矩形，动画节点底下那层可以贴回上一帧留的（wxml_renderer/backdrop.rs）
+    Rects { rects: Vec<GeoRect>, anim_complete: bool, others: Vec<GeoRect> },
     /// 不动页面画布
     Skip,
 }
@@ -326,6 +330,7 @@ impl MiniEngine {
         // 一次性的变化（setData / scroll-view / 点击态）合成一块；动画节点各自一块 ——
         // 页面顶上一个转圈、中间一个呼吸灯，并成一块就是大半屏
         let mut once = None;
+        let mut data_parts: Vec<GeoRect> = Vec::new();
         if let Some(r) = press_rect {
             page_work = true;
             once = union(once, r);
@@ -340,7 +345,8 @@ impl MiniEngine {
                     self.dmg.fixed_dirty = fixed_changed;
                     // 内容变高（列表追加）也会走到这里：先把画布接长，下面的裁剪窗才算得到新那截
                     self.grow_canvas_to_content();
-                    once = union(once, rect);
+                    // 隔得远的几块分开画（顶上的唱片与底下的播放键），不并成大半屏（invalidate.rs `take_damage_parts`）
+                    data_parts = self.renderer.as_ref().map(|r| r.take_damage_parts(rect)).unwrap_or_else(|| vec![rect]);
                 }
                 FramePlan::Full => {
                     reason = Some(FullReason::Data);
@@ -375,11 +381,13 @@ impl MiniEngine {
             };
             // 点击态在覆盖层里却没记下矩形（不该发生）：rect 为空，整层重画
             let only_press = !press_fixed || press_fixed_rect.is_some();
-            if !self.dmg.fixed_dirty && !self.dmg.fixed_layer_animates && !self.needs_redraw && only_press {
+            if !self.dmg.fixed_dirty && !self.needs_redraw && only_press {
                 self.dmg.fixed_partial = rect;
             }
             self.dmg.fixed_dirty = true;
         }
+        // 覆盖层只因自己的动画重画（没有数据变化、点击态 / scroll-view 那几块也算在内）：只重画动画那几块
+        self.plan_fixed_anim_partial(press_fixed || fixed_area.is_some());
         let fixed = self.dmg.fixed_dirty || self.dmg.fixed_layer_animates;
         if let Some(r) = reason {
             // 结构变了（setData 的 Full）覆盖层与 tabBar 跟着重画；动画 / scroll-view 逼出来的整帧
@@ -439,7 +447,7 @@ impl MiniEngine {
             Some((b0, b1)) if !strip => (b0.max(wy0), b1.min(wy1)),
             _ => (wy0, wy1),
         });
-        rects.extend(once.and_then(clip));
+        rects.extend(once.and_then(clip).into_iter().chain(data_parts.iter().copied().filter_map(clip)));
         let anim_in: Vec<GeoRect> = if page_anim {
             self.dmg.last_animated_bounds.iter().filter_map(|r| clip(*r)).collect()
         } else {
@@ -454,10 +462,17 @@ impl MiniEngine {
             }
         }
         let anim_complete = strip || !anim_in.is_empty();
-        rects.extend(anim_in);
+        // 动画以外的损伤（动画底图看它们碰没碰到自己那块）
+        let mut others: Vec<GeoRect> = rects.clone();
+        others.extend(once.and_then(clip).into_iter().chain(data_parts.iter().copied().filter_map(clip)));
+        others.extend(gifs.iter().copied());
+        others.extend(sticky.iter().copied().filter_map(clip));
         rects.extend(gifs);
         rects.extend(sticky.into_iter().filter_map(clip));
-        let rects = merge_rects(rects);
+        // 动画那几块单独并：它们走「动画底图」（wxml_renderer/backdrop.rs，底下那层贴回上一帧留的），
+        // 和别的损伤并成一块就用不上了。播放页拖进度条时进度条那条与唱片那块被并成 1162×1688，一加上一帧 45ms。
+        // 两边碰上了才并（碰上了底图本来也用不上）
+        let rects = super::engine_damage_rects::merge_keeping_anim(merge_rects(rects), merge_rects(anim_in));
         let area: f32 = rects.iter().map(|r| r.width * r.height).sum();
         // 只有一块时不换整条带：一块矩形本来就只走一趟节点树，换成整条带只是把块外的东西白画一遍。
         // 兴趣圈帖子页（诊断 20261025-100253-98de9a）：滚的是一个占屏 93% 的定高 scroll-view，
@@ -473,7 +488,7 @@ impl MiniEngine {
             PagePass::Skip
         } else {
             // 补条带 / 动画节点都被完整走到了，收集到的动画包围盒可以替换旧记录
-            PagePass::Rects { rects, anim_complete }
+            PagePass::Rects { rects, anim_complete, others }
         };
         if page == PagePass::Skip && !fixed && !tabbar {
             // 数据变了但画面一个像素没变（改的字段不参与渲染）：仍算出了一帧，

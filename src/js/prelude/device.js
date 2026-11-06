@@ -119,8 +119,10 @@
             // onLaunch 抛异常 —— 于是 Vue 的响应式层根本没起来，页面只剩静态骨架。
             // 外部 App / H5 / 别的小程序打开时，宿主在创建选项里给 launchOptions（engine_options.rs）：
             // path / query / scene（1069 App 打开、1065 URL Scheme、1037 小程序打开小程序）/ referrerInfo
-            wx.getLaunchOptionsSync = function() {
+            wx.getLaunchOptionsSync = function(enter) {
                 var h = (typeof __hostLaunchOptions === 'object' && __hostLaunchOptions) ? __hostLaunchOptions : {};
+                // getEnterOptionsSync：挂起后恢复时宿主给的「本次进入」（scene 1038 + referrerInfo，host/engine_park.rs）
+                if (enter && typeof __hostEnterOptions === 'object' && __hostEnterOptions) h = __hostEnterOptions;
                 var q = (h.query && typeof h.query === 'object') ? JSON.parse(JSON.stringify(h.query)) : {};
                 var ref = (h.referrerInfo && typeof h.referrerInfo === 'object') ? JSON.parse(JSON.stringify(h.referrerInfo)) : {};
                 return {
@@ -134,5 +136,5 @@
                     apiCategory: 'default'
                 };
             };
-            // 「本次进入」的参数，字段与启动参数同构
-            wx.getEnterOptionsSync = function() { return wx.getLaunchOptionsSync(); };
+            // 「本次进入」的参数，字段与启动参数同构；从别的小程序回来（挂起后恢复）时是宿主给的那一份
+            wx.getEnterOptionsSync = function() { return wx.getLaunchOptionsSync(true); };

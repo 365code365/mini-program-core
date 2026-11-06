@@ -131,8 +131,10 @@ impl MiniEngine {
         let eff = if super::gesture_native::move_blocked(&self.app) { Default::default() } else {
             input::apply_gesture_move(&mut self.gesture, &mut self.interaction, &mut self.scroll, &mut self.edge_back, self.width as f32, x, y, gesture_now)
         };
-        // 只推动了 scroll-view：不置整帧，出帧时按位置变化只重画它自己的盒子（engine_damage）
-        if eff.needs_redraw && !eff.area_scrolled {
+        // 只推动了 scroll-view：不置整帧，出帧时按位置变化只重画它自己的盒子（engine_damage）。
+        // 拖 slider：滑块与已选段画在 slider 自己的盒子里，只重画这一块（从前整帧：播放页拖进度条每一步
+        // 整条带 + 覆盖层 + tabBar，桌面 16ms 一帧；回调里 setData 改的时间文字照常走失效分析）
+        if eff.needs_redraw && !eff.area_scrolled && !(eff.slider_changed && self.damage_dragging_slider()) {
             self.mark_full();
         }
         if eff.slider_changed {
@@ -175,8 +177,9 @@ impl MiniEngine {
         // 拖过 scroll-view 不算：松手只是把拖动交给惯性，位置一变出帧时按位置变化只重画它的盒子（engine_damage
         // `scroll_area_damage`），与拖动途中同一条路。从前它也在这里整帧：兴趣圈帖子页每次抬手那一帧真机 18~44ms，
         // 正好砸在惯性第一帧上（诊断 20261025-100253-98de9a）
-        let had_press = self.interaction.dragging_slider.is_some()
-            || crate::renderer::components::swiper_is_dragging();
+        // slider 松手：滑块停在最后的值上，只重画它的盒子（位置在 finish 清掉拖动状态之前取）；swiper 照旧整帧
+        let swiper_drag = crate::renderer::components::swiper_is_dragging();
+        let slider_box = self.interaction.dragging_slider.as_ref().map(|d| self.interaction.element_bounds(&d.id));
         let now = self.mono_ms();
         // 拖过 slider：松手发 change，并且这一下不再算 tap（见 slider_input::finish）
         let slider_dragged = crate::host::slider_input::finish(
@@ -205,8 +208,11 @@ impl MiniEngine {
         if outs.contains(&TouchOut::Tap) && !stopped_fling && !slider_dragged && !seek_dragged {
             self.handle_click(x, y);
         }
-        if had_press {
-            self.mark_full();
+        match slider_box {
+            _ if swiper_drag => self.mark_full(),
+            Some(Some((b, fixed))) if b.width > 0.0 && b.height > 0.0 => self.damage_input_box(b, fixed),
+            Some(_) => self.mark_full(),
+            None => {}
         }
     }
 

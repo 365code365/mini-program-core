@@ -112,15 +112,26 @@ pub fn draw_linear_gradient(
     let cache_key = (!vertical && !horizontal && w * h >= row_cache::MIN_AREA)
         .then(|| row_cache::Key::new(grad, x, y, w, h, opacity))
         .filter(row_cache::admit);
-    for py in y0..y1 {
-        let fy = py as f32 + 0.5;
-        if plain_row(py) {
-            if vertical {
+    // 竖直渐变的无圆角行：每行一个颜色，整块交给 `fill_rows`（铺满屏的遮罩分几个线程做，canvas/par_rows.rs）。
+    // 每一行只写自己那一行，先做这些、再做圆角那几行，与从上到下逐行做逐字节相同
+    if vertical {
+        let rows: Vec<(i32, Color)> = (y0..y1)
+            .filter(|&py| plain_row(py))
+            .map(|py| {
+                let fy = py as f32 + 0.5;
                 let proj = (fy - cy) * dy;
                 let t = if full > 0.0 { proj / full + 0.5 } else { 0.5 };
                 let mut c = color_at(t);
                 c.a = (c.a as f32 * opacity) as u8;
-                canvas.fill_span(x0, x1, py, c);
+                (py, c)
+            })
+            .collect();
+        canvas.fill_rows(x0, x1, &rows);
+    }
+    for py in y0..y1 {
+        let fy = py as f32 + 0.5;
+        if plain_row(py) {
+            if vertical {
                 continue;
             }
             if let Some(row) = &row_cache {

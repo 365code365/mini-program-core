@@ -22,6 +22,8 @@ pub struct SavedView {
     pub ui: PageUiState,
     /// 盖住那一刻的页面数据（分栏时另一栏要按它重画，engine_frameset.rs）。只有 SDK 引擎填
     pub data: Option<serde_json::Value>,
+    /// 盖住时页面画布也留下了（SDK 引擎，engine_keep_canvas.rs）：留的那份的编号，0 = 没留
+    pub canvas_token: u64,
 }
 
 impl SavedView {
@@ -45,6 +47,7 @@ impl SavedView {
             renderer: r,
             ui: ui.take_page_state(),
             data: None,
+            canvas_token: 0,
         }
     }
 

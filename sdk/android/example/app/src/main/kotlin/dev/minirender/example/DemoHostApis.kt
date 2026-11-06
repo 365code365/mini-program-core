@@ -21,6 +21,10 @@ class DemoHostApis(
     private val activity: Activity,
     /** wx.navigateToMiniProgram 的参数（appId / path / extraData），用户点了允许之后交给宿主去打开 */
     private val onNavigateToMiniProgram: (JSONObject) -> Unit = {},
+    /** `navigateBackMiniProgram`：回到打开当前小程序的那个（参数是要带回去的 extraData，没给是 null） */
+    private val onNavigateBackMiniProgram: (Any?) -> Unit = {},
+    /** 有没有可回去的上一个小程序（决定 navigateBackMiniProgram 回 success 还是 fail） */
+    private val canNavigateBack: () -> Boolean = { false },
 ) {
     private val granted = mutableSetOf("scope.writePhotosAlbum", "scope.camera")
 
@@ -105,9 +109,16 @@ class DemoHostApis(
             activity.window.decorView.postDelayed({ onNavigateToMiniProgram(call.args) }, 50)
             JSONObject()
         },
-        // 只有被别的小程序打开时才回得去（与微信一致）；示例里小程序是宿主直接打开的
-        "navigateBackMiniProgram" to MiniHostApi { _, reply ->
-            reply.fail("navigateBackMiniProgram:fail 当前小程序不是由其它小程序打开的")
+        // 只有被别的小程序打开时才回得去（与微信一致）：先回 success，再换回去（同 navigateToMiniProgram），
+        // 回去的那个小程序 onShow 拿到 scene 1038 + referrerInfo.extraData
+        "navigateBackMiniProgram" to MiniHostApi { call, reply ->
+            if (!canNavigateBack()) {
+                reply.fail("navigateBackMiniProgram:fail 当前小程序不是由其它小程序打开的")
+            } else {
+                reply.success()
+                val extra = call.args.opt("extraData")?.takeIf { it != JSONObject.NULL }
+                activity.window.decorView.postDelayed({ onNavigateBackMiniProgram(extra) }, 50)
+            }
         },
         "getShareInfo" to sync { JSONObject().put("encryptedData", "ZGVtbw==").put("iv", "ZGVtbw==").put("cloudID", "demo_cloud_id") },
     )
